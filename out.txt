@@ -1,0 +1,4100 @@
+	Meaningful indices: [2]
+	Epoch 0
+	Average objective: 0.0002
+	Alpha values: [0.99900204 0.9990016  0.9990002 ]
+	----
+	Epoch 5
+	Average objective: 0.0002
+	Alpha values: [0.99543977 0.99481934 0.9940634 ]
+	----
+	Epoch 10
+	Average objective: 0.0002
+	Alpha values: [0.99103075 0.99207294 0.9892961 ]
+	----
+	Epoch 15
+	Average objective: 0.0003
+	Alpha values: [0.98709434 0.9885592  0.98453665]
+	----
+Early stopping
+Dataset size: 100
+Best objective: 0.00014142837608233094
+Best alpha: [0.99103075 0.99207294 0.9892961 ]
+===
+	Meaningful indices: [2]
+	Epoch 0
+	Average objective: 5.2183
+	Alpha values: [0.99596274 0.99966407 0.9954666 ]
+	----
+	Epoch 5
+	Average objective: 4.4636
+	Alpha values: [0.9821536 0.9858492 0.9731814]
+	----
+	Epoch 10
+	Average objective: 5.0954
+	Alpha values: [0.9651024  0.9668835  0.94910085]
+	----
+	Epoch 15
+	Average objective: 5.4870
+	Alpha values: [0.95055234 0.9512726  0.92405975]
+	----
+Early stopping
+Dataset size: 500
+Best objective: 2.0198307037353516
+Best alpha: [0.98279774 0.98646396 0.97411066]
+===
+	Meaningful indices: [2]
+	Epoch 0
+	Average objective: 5.5754
+	Alpha values: [0.9912082 0.9921311 0.9908908]
+	----
+	Epoch 5
+	Average objective: 6.2520
+	Alpha values: [0.9596856  0.95934767 0.9488508 ]
+	----
+	Epoch 10
+	Average objective: 5.8881
+	Alpha values: [0.9256037 0.9340162 0.9008296]
+	----
+	Epoch 15
+	Average objective: 6.1071
+	Alpha values: [0.89863133 0.9130492  0.85339844]
+	----
+Early stopping
+Dataset size: 1000
+Best objective: 1.3635931015014648
+Best alpha: [0.97663647 0.97941744 0.9749399 ]
+===
+	Meaningful indices: [2]
+	Epoch 0
+	Average objective: 3.2717
+	Alpha values: [0.9848196  0.9847051  0.98049545]
+	----
+	Epoch 5
+	Average objective: 2.7713
+	Alpha values: [0.91850805 0.93949455 0.8802834 ]
+	----
+	Epoch 10
+	Average objective: 2.9872
+	Alpha values: [0.8465362 0.8843685 0.7828879]
+	----
+	Epoch 15
+	Average objective: 3.0460
+	Alpha values: [0.799609   0.8378982  0.68116224]
+	----
+	Epoch 20
+	Average objective: 2.5380
+	Alpha values: [0.741871   0.78879565 0.5699783 ]
+	----
+	Epoch 25
+	Average objective: 2.0789
+	Alpha values: [0.6926989  0.72949266 0.43689346]
+	----
+	Epoch 30
+	Average objective: 1.3975
+	Alpha values: [0.6659031  0.69341975 0.29870853]
+	----
+	Epoch 35
+	Average objective: 1.2262
+	Alpha values: [0.63221556 0.6522591  0.1300578 ]
+	----
+	Epoch 40
+	Average objective: 0.0677
+	Alpha values: [0.6168545  0.6519703  0.00206082]
+	----
+	Epoch 45
+	Average objective: 0.0375
+	Alpha values: [0.61661077 0.65109825 0.00612041]
+	----
+	Epoch 50
+	Average objective: 0.0803
+	Alpha values: [0.6174572  0.6494989  0.01469315]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Dataset size: 2000
+Best objective: -0.8443117141723633
+Best alpha: [0.6189021  0.65189636 0.05325463]
+===
+	Meaningful indices: [2]
+	Epoch 0
+	Average objective: 0.1946
+	Alpha values: [0.9677172  0.9724827  0.95882434]
+	----
+	Epoch 5
+	Average objective: 0.1603
+	Alpha values: [0.8318741  0.8392254  0.71388286]
+	----
+	Epoch 10
+	Average objective: 0.1395
+	Alpha values: [0.6830963  0.70452136 0.40764534]
+	----
+	Epoch 15
+	Average objective: 0.0239
+	Alpha values: [0.61010873 0.6025427  0.02816844]
+	----
+	Epoch 20
+	Average objective: -0.0003
+	Alpha values: [0.6047763  0.60381585 0.0023131 ]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Dataset size: 5000
+Best objective: -0.043846726417541504
+Best alpha: [0.6097517  0.60232484 0.02664938]
+===
+	Meaningful indices: [2]
+	Epoch 0
+	Average objective: 0.0000
+	Alpha values: [0.96804446 0.96951115 0.94250333]
+	----
+	Epoch 5
+	Average objective: 0.0000
+	Alpha values: [0.7075029  0.75316954 0.60174054]
+	----
+	Epoch 10
+	Average objective: 0.0000
+	Alpha values: [0.45885536 0.54904294 0.10684667]
+	----
+	Epoch 15
+	Average objective: 0.0000
+	Alpha values: [0.01853174 0.07946877 0.02358653]
+	----
+	Epoch 20
+	Average objective: 0.0000
+	Alpha values: [0.02505818 0.0008911  0.02350669]
+	----
+	Epoch 25
+	Average objective: 0.0000
+	Alpha values: [0.02390585 0.00044364 0.02339588]
+	----
+	Epoch 30
+	Average objective: 0.0000
+	Alpha values: [0.02312529 0.0041454  0.02333101]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Dataset size: 7000
+Best objective: -2.472283085808158e-06
+Best alpha: [0.02407174 0.00051383 0.02339593]
+===
+	Meaningful indices: [2]
+	Epoch 0
+	Average objective: 0.0002
+	Alpha values: [0.99900204 0.9990016  0.9990002 ]
+	----
+	Epoch 5
+	Average objective: 0.0002
+	Alpha values: [0.99543977 0.99481934 0.9940634 ]
+	----
+	Epoch 10
+	Average objective: 0.0002
+	Alpha values: [0.99103075 0.99207294 0.9892961 ]
+	----
+	Epoch 15
+	Average objective: 0.0003
+	Alpha values: [0.98709434 0.9885592  0.98453665]
+	----
+Early stopping
+Dataset size: 100
+Best objective: 0.00014142837608233094
+Best alpha: [0.99103075 0.99207294 0.9892961 ]
+===
+	Meaningful indices: [2]
+	Epoch 0
+	Average objective: 5.2183
+	Alpha values: [0.99596274 0.99966407 0.9954666 ]
+	----
+	Epoch 5
+	Average objective: 4.4636
+	Alpha values: [0.9821536 0.9858492 0.9731814]
+	----
+	Epoch 10
+	Average objective: 5.0954
+	Alpha values: [0.9651024  0.9668835  0.94910085]
+	----
+	Epoch 15
+	Average objective: 5.4870
+	Alpha values: [0.95055234 0.9512726  0.92405975]
+	----
+Early stopping
+Dataset size: 500
+Best objective: 2.0198307037353516
+Best alpha: [0.98279774 0.98646396 0.97411066]
+===
+	Meaningful indices: [2]
+	Epoch 0
+	Average objective: 5.5754
+	Alpha values: [0.9912082 0.9921311 0.9908908]
+	----
+	Epoch 5
+	Average objective: 6.2520
+	Alpha values: [0.9596856  0.95934767 0.9488508 ]
+	----
+	Epoch 10
+	Average objective: 5.8881
+	Alpha values: [0.9256037 0.9340162 0.9008296]
+	----
+	Epoch 15
+	Average objective: 6.1071
+	Alpha values: [0.89863133 0.9130492  0.85339844]
+	----
+Early stopping
+Dataset size: 1000
+Best objective: 1.3635931015014648
+Best alpha: [0.97663647 0.97941744 0.9749399 ]
+===
+	Meaningful indices: [2]
+	Epoch 0
+	Average objective: 3.2717
+	Alpha values: [0.9848196  0.9847051  0.98049545]
+	----
+	Epoch 5
+	Average objective: 2.7713
+	Alpha values: [0.91850805 0.93949455 0.8802834 ]
+	----
+	Epoch 10
+	Average objective: 2.9872
+	Alpha values: [0.8465362 0.8843685 0.7828879]
+	----
+	Epoch 15
+	Average objective: 3.0460
+	Alpha values: [0.799609   0.8378982  0.68116224]
+	----
+	Epoch 20
+	Average objective: 2.5380
+	Alpha values: [0.741871   0.78879565 0.5699783 ]
+	----
+	Epoch 25
+	Average objective: 2.0789
+	Alpha values: [0.6926989  0.72949266 0.43689346]
+	----
+	Epoch 30
+	Average objective: 1.3975
+	Alpha values: [0.6659031  0.69341975 0.29870853]
+	----
+	Epoch 35
+	Average objective: 1.2262
+	Alpha values: [0.63221556 0.6522591  0.1300578 ]
+	----
+	Epoch 40
+	Average objective: 0.0677
+	Alpha values: [0.6168545  0.6519703  0.00206082]
+	----
+	Epoch 45
+	Average objective: 0.0375
+	Alpha values: [0.61661077 0.65109825 0.00612041]
+	----
+	Epoch 50
+	Average objective: 0.0803
+	Alpha values: [0.6174572  0.6494989  0.01469315]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Dataset size: 2000
+Best objective: -0.8443117141723633
+Best alpha: [0.6189021  0.65189636 0.05325463]
+===
+	Meaningful indices: [2]
+	Epoch 0
+	Average objective: 0.1946
+	Alpha values: [0.9677172  0.9724827  0.95882434]
+	----
+	Epoch 5
+	Average objective: 0.1603
+	Alpha values: [0.8318741  0.8392254  0.71388286]
+	----
+	Epoch 10
+	Average objective: 0.1395
+	Alpha values: [0.6830963  0.70452136 0.40764534]
+	----
+	Epoch 15
+	Average objective: 0.0239
+	Alpha values: [0.61010873 0.6025427  0.02816844]
+	----
+	Epoch 20
+	Average objective: -0.0003
+	Alpha values: [0.6047763  0.60381585 0.0023131 ]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Dataset size: 5000
+Best objective: -0.043846726417541504
+Best alpha: [0.6097517  0.60232484 0.02664938]
+===
+	Meaningful indices: [2]
+	Epoch 0
+	Average objective: 0.0000
+	Alpha values: [0.96804446 0.96951115 0.94250333]
+	----
+	Epoch 5
+	Average objective: 0.0000
+	Alpha values: [0.7075029  0.75316954 0.60174054]
+	----
+	Epoch 10
+	Average objective: 0.0000
+	Alpha values: [0.45885536 0.54904294 0.10684667]
+	----
+	Epoch 15
+	Average objective: 0.0000
+	Alpha values: [0.01853174 0.07946877 0.02358653]
+	----
+	Epoch 20
+	Average objective: 0.0000
+	Alpha values: [0.02505818 0.0008911  0.02350669]
+	----
+	Epoch 25
+	Average objective: 0.0000
+	Alpha values: [0.02390585 0.00044364 0.02339588]
+	----
+	Epoch 30
+	Average objective: 0.0000
+	Alpha values: [0.02312529 0.0041454  0.02333101]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Dataset size: 7000
+Best objective: -2.472283085808158e-06
+Best alpha: [0.02407174 0.00051383 0.02339593]
+===
+Running experiment with dataset size 100, seed 0
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 0.0062
+	Alpha values: [1.0009991 0.999     0.999     1.0009999 0.999     1.001    ]
+	----
+	Epoch 5
+	Average objective: 0.0177
+	Alpha values: [0.99717563 0.9953244  0.9951311  1.0012003  0.9940557  0.99886066]
+	----
+	Epoch 10
+	Average objective: 0.0150
+	Alpha values: [0.9947884  0.99250627 0.99079907 0.99909043 0.9890699  0.99619937]
+	----
+	Epoch 15
+	Average objective: 0.0138
+	Alpha values: [0.99109197 0.9884757  0.9860472  0.9951418  0.9843238  0.99261737]
+	----
+	Epoch 20
+	Average objective: 0.0191
+	Alpha values: [0.9874461  0.98447245 0.98144627 0.9916653  0.9793739  0.98865277]
+	----
+Early stopping
+Running experiment with dataset size 100, seed 1
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 0.7147
+	Alpha values: [0.999 0.999 0.999 0.999 0.999 1.001]
+	----
+	Epoch 5
+	Average objective: 0.5712
+	Alpha values: [0.9950874  0.99732363 0.99454343 0.9941235  0.9946026  1.0008385 ]
+	----
+	Epoch 10
+	Average objective: 0.6946
+	Alpha values: [0.9926111  0.9966123  0.98979276 0.99015874 0.99012494 0.99783045]
+	----
+Early stopping
+Running experiment with dataset size 100, seed 2
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 3.2535
+	Alpha values: [0.999 0.999 1.001 0.999 0.999 0.999]
+	----
+	Epoch 5
+	Average objective: 2.0851
+	Alpha values: [0.99651915 0.99687785 0.9978067  0.9944468  0.9941261  0.99461323]
+	----
+	Epoch 10
+	Average objective: 2.4849
+	Alpha values: [0.9949137  0.9945934  0.9940048  0.98991007 0.9891019  0.99199843]
+	----
+	Epoch 15
+	Average objective: 3.1622
+	Alpha values: [0.9919408  0.9920208  0.99091977 0.9865005  0.9840269  0.98909837]
+	----
+Early stopping
+Running experiment with dataset size 100, seed 3
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 0.0083
+	Alpha values: [0.999      0.99900013 0.999      0.999      0.999      0.999     ]
+	----
+	Epoch 5
+	Average objective: 0.0057
+	Alpha values: [0.9960727  0.994153   0.9957981  0.99481636 0.9941751  0.9972535 ]
+	----
+	Epoch 10
+	Average objective: 0.0098
+	Alpha values: [0.992546   0.9894183  0.99202937 0.99116504 0.9894387  0.99370414]
+	----
+	Epoch 15
+	Average objective: 0.0078
+	Alpha values: [0.98910403 0.985527   0.9878208  0.9892333  0.9847677  0.990336  ]
+	----
+Early stopping
+Running experiment with dataset size 100, seed 4
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 0.0481
+	Alpha values: [1.0009999 0.999     0.999     0.999     0.999     0.999    ]
+	----
+	Epoch 5
+	Average objective: 0.0477
+	Alpha values: [0.9991536  0.99454373 0.9959902  0.99402374 0.99405444 0.9946354 ]
+	----
+	Epoch 10
+	Average objective: 0.0436
+	Alpha values: [0.99812746 0.99178505 0.99280393 0.9892427  0.98918486 0.99226934]
+	----
+	Epoch 15
+	Average objective: 0.0459
+	Alpha values: [0.9959255  0.98825973 0.9887266  0.9854459  0.98435605 0.9896924 ]
+	----
+Early stopping
+Running experiment with dataset size 500, seed 0
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 1.0421
+	Alpha values: [0.995429  0.9952759 0.995518  0.9950512 0.9954936 1.0017072]
+	----
+	Epoch 5
+	Average objective: 1.0884
+	Alpha values: [0.9814695 0.9791727 0.9731342 0.9743839 0.9727139 0.9918894]
+	----
+	Epoch 10
+	Average objective: 1.0436
+	Alpha values: [0.9653429  0.96246284 0.948567   0.95535815 0.9508865  0.9812787 ]
+	----
+Early stopping
+Running experiment with dataset size 500, seed 1
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 39.2336
+	Alpha values: [0.9956045  0.99613106 0.995786   0.9966746  0.9955262  0.9951749 ]
+	----
+	Epoch 5
+	Average objective: 38.8838
+	Alpha values: [0.98201275 0.98153454 0.9733924  0.97803164 0.97630626 0.9739713 ]
+	----
+	Epoch 10
+	Average objective: 37.3111
+	Alpha values: [0.964404   0.9688235  0.9495481  0.9608996  0.9613966  0.95792174]
+	----
+	Epoch 15
+	Average objective: 28.4081
+	Alpha values: [0.9447893  0.94885045 0.924858   0.9392245  0.9477939  0.937343  ]
+	----
+	Epoch 20
+	Average objective: 36.5672
+	Alpha values: [0.9300308  0.93069124 0.9025875  0.92188394 0.93320274 0.91575027]
+	----
+	Epoch 25
+	Average objective: 41.8763
+	Alpha values: [0.91296    0.91129273 0.8810762  0.90485805 0.9219798  0.89940786]
+	----
+Early stopping
+Running experiment with dataset size 500, seed 2
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 0.0195
+	Alpha values: [0.9952158  0.99714404 0.99538136 0.9962285  0.9951711  0.9981745 ]
+	----
+	Epoch 5
+	Average objective: 0.0160
+	Alpha values: [0.97647864 0.9841776  0.9715905  0.977516   0.97391605 0.9822142 ]
+	----
+	Epoch 10
+	Average objective: 0.0168
+	Alpha values: [0.96331686 0.96558046 0.9478614  0.9632972  0.95143986 0.96523565]
+	----
+	Epoch 15
+	Average objective: 0.0172
+	Alpha values: [0.94851667 0.9481778  0.92383105 0.9479721  0.9306672  0.94885254]
+	----
+Early stopping
+Running experiment with dataset size 500, seed 3
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 1.7576
+	Alpha values: [0.9978972  0.99622416 0.9952014  0.9959565  0.99570256 0.9958948 ]
+	----
+	Epoch 5
+	Average objective: 1.7150
+	Alpha values: [0.9881381  0.98311394 0.9711037  0.97771794 0.9774034  0.98055303]
+	----
+	Epoch 10
+	Average objective: 1.7125
+	Alpha values: [0.9704537  0.97266394 0.94701755 0.96371263 0.96194685 0.96088994]
+	----
+	Epoch 15
+	Average objective: 2.4459
+	Alpha values: [0.9556711  0.95939827 0.92409855 0.94670075 0.95007575 0.9528406 ]
+	----
+Early stopping
+Running experiment with dataset size 500, seed 4
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 10.8808
+	Alpha values: [0.99912095 0.99579835 0.9953975  0.9957468  0.9955368  0.99519473]
+	----
+	Epoch 5
+	Average objective: 11.8741
+	Alpha values: [0.9838225  0.97818947 0.97259825 0.9812921  0.9765188  0.9745794 ]
+	----
+	Epoch 10
+	Average objective: 10.9094
+	Alpha values: [0.96516204 0.9596717  0.9496445  0.96583825 0.95832604 0.95605415]
+	----
+	Epoch 15
+	Average objective: 11.5675
+	Alpha values: [0.948743  0.9447286 0.9273437 0.949718  0.9403683 0.9346525]
+	----
+Early stopping
+Running experiment with dataset size 1000, seed 0
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 21.1263
+	Alpha values: [0.99116874 0.99378276 0.9911825  0.9963329  0.99118686 0.9923356 ]
+	----
+	Epoch 5
+	Average objective: 21.9590
+	Alpha values: [0.9588339  0.962915   0.94419    0.9575902  0.94357145 0.9593423 ]
+	----
+	Epoch 10
+	Average objective: 21.0634
+	Alpha values: [0.9253835  0.9324558  0.8954231  0.9260285  0.8992346  0.92629975]
+	----
+Early stopping
+Running experiment with dataset size 1000, seed 1
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 0.0914
+	Alpha values: [0.9961175  0.9939686  0.99177325 0.9946206  0.99187016 0.9931491 ]
+	----
+	Epoch 5
+	Average objective: 0.0862
+	Alpha values: [0.9711164  0.9614994  0.95275396 0.96758187 0.950277   0.9666324 ]
+	----
+	Epoch 10
+	Average objective: 0.0918
+	Alpha values: [0.94423485 0.93145573 0.91418064 0.93963635 0.9052274  0.9374428 ]
+	----
+	Epoch 15
+	Average objective: 0.0972
+	Alpha values: [0.90947187 0.9090251  0.87459433 0.90708816 0.85622364 0.90068775]
+	----
+	Epoch 20
+	Average objective: 0.0715
+	Alpha values: [0.86446494 0.8789393  0.8327833  0.87379247 0.80636615 0.8690698 ]
+	----
+	Epoch 25
+	Average objective: 0.0651
+	Alpha values: [0.8251417  0.84739393 0.7953711  0.8345945  0.75377154 0.8292307 ]
+	----
+Early stopping
+Running experiment with dataset size 1000, seed 2
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 10.5961
+	Alpha values: [0.9948638  0.99208033 0.99113226 0.9923697  0.9907701  0.9909827 ]
+	----
+	Epoch 5
+	Average objective: 9.6856
+	Alpha values: [0.9665727  0.95851827 0.9518159  0.97277886 0.9505133  0.9610236 ]
+	----
+	Epoch 10
+	Average objective: 9.0982
+	Alpha values: [0.92801017 0.92146826 0.90646917 0.94553804 0.9098428  0.9213288 ]
+	----
+	Epoch 15
+	Average objective: 9.9097
+	Alpha values: [0.89633256 0.8863204  0.864136   0.9075583  0.8731856  0.89323705]
+	----
+Early stopping
+Running experiment with dataset size 1000, seed 3
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 0.3474
+	Alpha values: [0.99338955 0.9922987  0.9947542  0.99254525 0.9904275  0.9941409 ]
+	----
+	Epoch 5
+	Average objective: 0.4128
+	Alpha values: [0.9582204  0.967692   0.96188426 0.9644382  0.94513315 0.9623457 ]
+	----
+	Epoch 10
+	Average objective: 0.3847
+	Alpha values: [0.92794424 0.94461703 0.9300393  0.9311363  0.89809155 0.9275949 ]
+	----
+	Epoch 15
+	Average objective: 0.3916
+	Alpha values: [0.9063973  0.9186793  0.89780873 0.900111   0.85031825 0.8963011 ]
+	----
+Early stopping
+Running experiment with dataset size 1000, seed 4
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 0.1437
+	Alpha values: [0.99615    0.9905749  0.9907306  0.99250656 0.99789447 0.991951  ]
+	----
+	Epoch 5
+	Average objective: 0.1235
+	Alpha values: [0.9665973  0.95313567 0.94451034 0.9666548  0.9745938  0.95846003]
+	----
+	Epoch 10
+	Average objective: 0.1212
+	Alpha values: [0.94498664 0.91711324 0.8982989  0.937884   0.95256984 0.9249093 ]
+	----
+	Epoch 15
+	Average objective: 0.1057
+	Alpha values: [0.9187249  0.8804938  0.8498632  0.9065649  0.9204691  0.88533604]
+	----
+Early stopping
+Running experiment with dataset size 2000, seed 0
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 10.1599
+	Alpha values: [0.9883392  0.9851373  0.9811165  0.9842835  0.9839101  0.98581773]
+	----
+	Epoch 5
+	Average objective: 13.5518
+	Alpha values: [0.9110659  0.92770815 0.8928797  0.9152356  0.9076787  0.9103037 ]
+	----
+	Epoch 10
+	Average objective: 11.9767
+	Alpha values: [0.8454105  0.8626201  0.79724765 0.8507207  0.8393159  0.8491213 ]
+	----
+	Epoch 15
+	Average objective: 12.2569
+	Alpha values: [0.77696204 0.7903442  0.6961461  0.7871079  0.75836647 0.78703976]
+	----
+	Epoch 20
+	Average objective: 7.8093
+	Alpha values: [0.68523884 0.73230845 0.5884773  0.7128137  0.6931768  0.7125854 ]
+	----
+	Epoch 25
+	Average objective: 7.7972
+	Alpha values: [0.60521835 0.63485146 0.47286934 0.6253098  0.61802655 0.6364721 ]
+	----
+	Epoch 30
+	Average objective: 7.0050
+	Alpha values: [0.517259   0.5493037  0.3458734  0.5436502  0.52915895 0.5659125 ]
+	----
+	Epoch 35
+	Average objective: 4.2813
+	Alpha values: [0.44345266 0.46162668 0.20034881 0.46484622 0.44380364 0.48424605]
+	----
+	Epoch 40
+	Average objective: 1.4544
+	Alpha values: [0.4001671  0.4043496  0.06178408 0.43033686 0.36567265 0.4331146 ]
+	----
+	Epoch 45
+	Average objective: 0.0054
+	Alpha values: [0.3781904  0.3870595  0.00620396 0.41080138 0.34256262 0.4202094 ]
+	----
+	Epoch 50
+	Average objective: 0.1911
+	Alpha values: [0.3752224  0.36698806 0.0062168  0.39015806 0.31596196 0.41285175]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 2000, seed 1
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 0.0017
+	Alpha values: [0.9848925  0.98259944 0.98101723 0.9851101  0.9824385  0.9846307 ]
+	----
+	Epoch 5
+	Average objective: 0.0016
+	Alpha values: [0.9149559 0.9200569 0.8899173 0.9309876 0.8886137 0.9330305]
+	----
+	Epoch 10
+	Average objective: 0.0013
+	Alpha values: [0.8495594  0.8488935  0.7971218  0.863746   0.79512495 0.8542389 ]
+	----
+Early stopping
+Running experiment with dataset size 2000, seed 2
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 5.1674
+	Alpha values: [0.9920689  0.9931109  0.9855248  0.9897605  0.98440206 0.9842562 ]
+	----
+	Epoch 5
+	Average objective: 4.1786
+	Alpha values: [0.922797   0.92606425 0.89740986 0.9243515  0.9063985  0.91864717]
+	----
+	Epoch 10
+	Average objective: 4.6349
+	Alpha values: [0.86670285 0.8631099  0.7984179  0.86197954 0.81625175 0.8518577 ]
+	----
+	Epoch 15
+	Average objective: 4.2780
+	Alpha values: [0.7917691 0.7965734 0.6979678 0.78881   0.7294958 0.7799209]
+	----
+	Epoch 20
+	Average objective: 4.1379
+	Alpha values: [0.71584475 0.7388921  0.5972555  0.7213863  0.6280227  0.71500397]
+	----
+	Epoch 25
+	Average objective: 2.8470
+	Alpha values: [0.64822745 0.6642735  0.48626977 0.6582479  0.5279775  0.64920545]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 2000, seed 3
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 2.2772
+	Alpha values: [0.9841966 0.9892454 0.9882156 0.9895958 0.9823391 0.9857927]
+	----
+	Epoch 5
+	Average objective: 2.1817
+	Alpha values: [0.9383462  0.9317398  0.9210356  0.9180996  0.89599925 0.9329351 ]
+	----
+	Epoch 10
+	Average objective: 2.0921
+	Alpha values: [0.8661579  0.8611408  0.85382175 0.8416125  0.80139834 0.87207985]
+	----
+	Epoch 15
+	Average objective: 1.4685
+	Alpha values: [0.8118521  0.8054144  0.79547757 0.7803517  0.69580793 0.81146073]
+	----
+	Epoch 20
+	Average objective: 1.5505
+	Alpha values: [0.7624826  0.7365262  0.72295177 0.70363426 0.5854337  0.7450991 ]
+	----
+	Epoch 25
+	Average objective: 1.4151
+	Alpha values: [0.70895797 0.6684961  0.67323875 0.633633   0.47514686 0.68314064]
+	----
+	Epoch 30
+	Average objective: 1.0155
+	Alpha values: [0.6663426  0.5988965  0.61303496 0.58276623 0.35468933 0.6112883 ]
+	----
+	Epoch 35
+	Average objective: 0.5582
+	Alpha values: [0.6110189  0.5522551  0.5500765  0.52554226 0.22747968 0.5552554 ]
+	----
+	Epoch 40
+	Average objective: 0.2206
+	Alpha values: [0.5710905  0.5145597  0.48696905 0.48119348 0.10626318 0.5106811 ]
+	----
+	Epoch 45
+	Average objective: 0.0118
+	Alpha values: [5.4224604e-01 4.8986459e-01 4.7031036e-01 4.6317521e-01 9.9999999e-09
+ 4.8972028e-01]
+	----
+	Epoch 50
+	Average objective: 0.0673
+	Alpha values: [0.53568345 0.48161432 0.4687407  0.4552926  0.02360235 0.48331952]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 2000, seed 4
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 4.8528
+	Alpha values: [0.99142355 0.9870403  0.98779565 0.98472303 0.9811579  0.9824669 ]
+	----
+	Epoch 5
+	Average objective: 3.9007
+	Alpha values: [0.9322193  0.9312572  0.91836953 0.9098023  0.8860317  0.937537  ]
+	----
+	Epoch 10
+	Average objective: 4.0837
+	Alpha values: [0.86761415 0.8680064  0.8502293  0.8447907  0.7843055  0.8831969 ]
+	----
+	Epoch 15
+	Average objective: 3.9243
+	Alpha values: [0.81222546 0.82585704 0.7812581  0.78114027 0.67774475 0.8236558 ]
+	----
+	Epoch 20
+	Average objective: 2.6471
+	Alpha values: [0.75508565 0.7476208  0.7146085  0.7061841  0.5679396  0.7658575 ]
+	----
+	Epoch 25
+	Average objective: 3.3352
+	Alpha values: [0.67584395 0.7019223  0.6574651  0.63925904 0.45748293 0.7041069 ]
+	----
+	Epoch 30
+	Average objective: 2.3591
+	Alpha values: [0.6120723  0.6429336  0.59655255 0.5546653  0.33548325 0.63665736]
+	----
+	Epoch 35
+	Average objective: 1.4393
+	Alpha values: [0.554855   0.58620554 0.5155517  0.48960206 0.193446   0.55506647]
+	----
+	Epoch 40
+	Average objective: 0.5076
+	Alpha values: [0.5050174  0.5646706  0.47516114 0.46050933 0.05623212 0.5146394 ]
+	----
+	Epoch 45
+	Average objective: -0.0032
+	Alpha values: [4.9325886e-01 5.5207199e-01 4.5558330e-01 4.3781286e-01 9.9999999e-09
+ 4.9602494e-01]
+	----
+	Epoch 50
+	Average objective: 0.1045
+	Alpha values: [0.48737508 0.5430318  0.43972656 0.42730275 0.02050331 0.49279165]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 5000, seed 0
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 0.5671
+	Alpha values: [0.9733515  0.9684052  0.9555653  0.9608844  0.9582018  0.96289074]
+	----
+	Epoch 5
+	Average objective: 0.4972
+	Alpha values: [0.83340937 0.8171917  0.720798   0.7950765  0.787553   0.81369835]
+	----
+	Epoch 10
+	Average objective: 0.3744
+	Alpha values: [0.6712427  0.64419883 0.4357343  0.6473992  0.5855064  0.66692674]
+	----
+	Epoch 15
+	Average objective: 0.1365
+	Alpha values: [0.5233379  0.4866982  0.0913784  0.50591433 0.42404437 0.51687163]
+	----
+	Epoch 20
+	Average objective: 0.0134
+	Alpha values: [0.47722414 0.45451334 0.0241486  0.47045347 0.3573174  0.48484522]
+	----
+	Epoch 25
+	Average objective: 0.0312
+	Alpha values: [0.4442261  0.43984082 0.02326535 0.44502893 0.3154517  0.4542396 ]
+	----
+	Epoch 30
+	Average objective: 0.0261
+	Alpha values: [0.3959005  0.4151358  0.02226413 0.41441092 0.2688434  0.43402538]
+	----
+	Epoch 35
+	Average objective: 0.0078
+	Alpha values: [0.37378028 0.35836607 0.02115662 0.38311657 0.17625952 0.40071163]
+	----
+	Epoch 40
+	Average objective: 0.0113
+	Alpha values: [0.35548133 0.34162244 0.0201349  0.36123246 0.14984109 0.36711213]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 5000, seed 1
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 0.0051
+	Alpha values: [0.9716225  0.95696163 0.95699835 0.97090405 0.965769   0.96592623]
+	----
+	Epoch 5
+	Average objective: 0.0043
+	Alpha values: [0.796756   0.79228085 0.7123123  0.8045108  0.74494857 0.7995548 ]
+	----
+	Epoch 10
+	Average objective: 0.0028
+	Alpha values: [0.62551576 0.5948683  0.44335    0.6042929  0.49301466 0.60574794]
+	----
+	Epoch 15
+	Average objective: 0.0013
+	Alpha values: [0.48305517 0.45282233 0.14278549 0.4274419  0.2679289  0.4422729 ]
+	----
+	Epoch 20
+	Average objective: 0.0002
+	Alpha values: [0.42804232 0.37948838 0.02189584 0.36316222 0.09469987 0.38184887]
+	----
+	Epoch 25
+	Average objective: -0.0000
+	Alpha values: [0.41290766 0.35487255 0.02153022 0.33428752 0.00857152 0.354108  ]
+	----
+	Epoch 30
+	Average objective: 0.0001
+	Alpha values: [0.40340784 0.34347367 0.02122686 0.31585184 0.02079677 0.34400925]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 5000, seed 2
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 0.9690
+	Alpha values: [0.9702533  0.9722575  0.9616881  0.9740133  0.96074283 0.9765668 ]
+	----
+	Epoch 5
+	Average objective: 0.8722
+	Alpha values: [0.81127983 0.8313492  0.7584225  0.8119352  0.7339912  0.83645004]
+	----
+	Epoch 10
+	Average objective: 0.6482
+	Alpha values: [0.6255561  0.67792785 0.50301915 0.6552753  0.46642324 0.6852109 ]
+	----
+	Epoch 15
+	Average objective: 0.3039
+	Alpha values: [0.46397325 0.53677887 0.2762836  0.5166225  0.19739908 0.5369367 ]
+	----
+	Epoch 20
+	Average objective: 0.0257
+	Alpha values: [0.41170558 0.48050514 0.08011878 0.47588235 0.01752162 0.47352323]
+	----
+	Epoch 25
+	Average objective: 0.0004
+	Alpha values: [0.4001901  0.47474223 0.0079712  0.46777087 0.00570076 0.4605732 ]
+	----
+	Epoch 30
+	Average objective: 0.0008
+	Alpha values: [0.39893186 0.46908826 0.02773569 0.46777564 0.00455707 0.4561171 ]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 5000, seed 3
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 11.5139
+	Alpha values: [0.9685932  0.9708698  0.9614192  0.98328054 0.9662236  0.96608037]
+	----
+	Epoch 5
+	Average objective: 10.1942
+	Alpha values: [0.8268564  0.83127594 0.7419506  0.8545813  0.8214622  0.8144996 ]
+	----
+	Epoch 10
+	Average objective: 7.9192
+	Alpha values: [0.6777482  0.6814357  0.48137376 0.6806814  0.64471096 0.65080845]
+	----
+	Epoch 15
+	Average objective: 3.8567
+	Alpha values: [0.5563254  0.5885435  0.18362321 0.5284708  0.5247681  0.4994367 ]
+	----
+	Epoch 20
+	Average objective: 0.0628
+	Alpha values: [0.5081152  0.55632704 0.02294469 0.4728504  0.46528825 0.4659479 ]
+	----
+	Epoch 25
+	Average objective: 0.3346
+	Alpha values: [0.49901354 0.518487   0.02495306 0.4497807  0.4410858  0.44381058]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 5000, seed 4
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 28.8441
+	Alpha values: [0.9709379  0.9742136  0.9610783  0.96918947 0.95624304 0.97381055]
+	----
+	Epoch 5
+	Average objective: 23.6530
+	Alpha values: [0.8079497  0.82000774 0.73021954 0.78852534 0.71228975 0.8005748 ]
+	----
+	Epoch 10
+	Average objective: 17.6704
+	Alpha values: [0.6480468  0.6591713  0.47597548 0.5927659  0.4349301  0.6166058 ]
+	----
+	Epoch 15
+	Average objective: 5.1625
+	Alpha values: [0.48583063 0.49136412 0.20717157 0.4139388  0.11214291 0.4471849 ]
+	----
+	Epoch 20
+	Average objective: 0.6977
+	Alpha values: [0.44584426 0.4624361  0.0756532  0.36935136 0.0239854  0.42933315]
+	----
+	Epoch 25
+	Average objective: 0.6548
+	Alpha values: [0.42900577 0.43465692 0.02654627 0.3495382  0.02404863 0.40935245]
+	----
+	Epoch 30
+	Average objective: 0.3057
+	Alpha values: [0.39381596 0.42250922 0.02642207 0.30969438 0.02403993 0.38996914]
+	----
+	Epoch 35
+	Average objective: -0.0293
+	Alpha values: [0.35308006 0.3920012  0.02631154 0.28220466 0.02403172 0.36992323]
+	----
+	Epoch 40
+	Average objective: 0.1912
+	Alpha values: [0.32421565 0.38486677 0.02623335 0.2587156  0.02402749 0.34556058]
+	----
+	Epoch 45
+	Average objective: 0.1429
+	Alpha values: [0.2851323  0.37180546 0.02610505 0.23423412 0.02402214 0.2950471 ]
+	----
+	Epoch 50
+	Average objective: 0.3133
+	Alpha values: [0.2522549  0.35445276 0.02602967 0.21401219 0.02401637 0.24397352]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 7000, seed 0
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 0.3803
+	Alpha values: [0.9532739  0.96069545 0.9509865  0.9671499  0.9376101  0.9528329 ]
+	----
+	Epoch 5
+	Average objective: 0.2589
+	Alpha values: [0.7271486  0.73350865 0.6593725  0.7396867  0.59573776 0.7302411 ]
+	----
+	Epoch 10
+	Average objective: 0.1002
+	Alpha values: [0.52381915 0.5191183  0.33511806 0.5374889  0.17715658 0.53770167]
+	----
+	Epoch 15
+	Average objective: 0.0020
+	Alpha values: [0.47251064 0.46584836 0.16434333 0.4897659  0.00266691 0.47385502]
+	----
+	Epoch 20
+	Average objective: 0.0009
+	Alpha values: [0.45753777 0.45206425 0.07391253 0.47608086 0.00055079 0.4552402 ]
+	----
+	Epoch 25
+	Average objective: 0.0015
+	Alpha values: [0.445927   0.44525504 0.03516581 0.47414324 0.0058889  0.44506565]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 7000, seed 1
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 0.0023
+	Alpha values: [0.95455724 0.9587445  0.95847076 0.9614513  0.9376923  0.9492645 ]
+	----
+	Epoch 5
+	Average objective: 0.0016
+	Alpha values: [0.72486347 0.75372916 0.68926126 0.75709575 0.59789306 0.7525066 ]
+	----
+	Epoch 10
+	Average objective: 0.0009
+	Alpha values: [0.48880923 0.55755097 0.42485622 0.5980459  0.19210294 0.55037063]
+	----
+	Epoch 15
+	Average objective: 0.0001
+	Alpha values: [0.42070943 0.50980026 0.2966253  0.5349051  0.02469194 0.49304956]
+	----
+	Epoch 20
+	Average objective: 0.0001
+	Alpha values: [0.37810656 0.4623067  0.18351991 0.4967866  0.02434614 0.46742216]
+	----
+	Epoch 25
+	Average objective: 0.0000
+	Alpha values: [3.2592240e-01 4.2167512e-01 9.9999999e-09 4.5219269e-01 2.3981154e-02
+ 4.2809969e-01]
+	----
+	Epoch 30
+	Average objective: 0.0000
+	Alpha values: [0.2732739  0.39672115 0.02892021 0.42906868 0.02367943 0.3972177 ]
+	----
+	Epoch 35
+	Average objective: 0.0000
+	Alpha values: [0.18211082 0.36098748 0.02887025 0.38890836 0.02332103 0.34472921]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 7000, seed 2
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 24.4705
+	Alpha values: [0.9590142  0.96787274 0.949173   0.968359   0.94107294 0.9589217 ]
+	----
+	Epoch 5
+	Average objective: 21.1579
+	Alpha values: [0.74177593 0.78689384 0.65480524 0.7556506  0.62640893 0.76436245]
+	----
+	Epoch 10
+	Average objective: 10.2977
+	Alpha values: [0.5281161  0.60545164 0.31235465 0.5817276  0.24242088 0.56618595]
+	----
+	Epoch 15
+	Average objective: 0.2804
+	Alpha values: [0.43853182 0.52355665 0.1408125  0.5011723  0.0018072  0.50517106]
+	----
+	Epoch 20
+	Average objective: 0.1970
+	Alpha values: [0.42417112 0.5180878  0.06097233 0.48792154 0.00171317 0.5109677 ]
+	----
+	Epoch 25
+	Average objective: -0.0103
+	Alpha values: [0.4159171  0.5080305  0.02687722 0.4778427  0.00166473 0.5122056 ]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 7000, seed 3
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 0.7962
+	Alpha values: [0.96430165 0.9548134  0.942906   0.9534119  0.9335738  0.9732915 ]
+	----
+	Epoch 5
+	Average objective: 0.6092
+	Alpha values: [0.7601062  0.7228957  0.6373592  0.73592955 0.5941609  0.75753355]
+	----
+	Epoch 10
+	Average objective: 0.2578
+	Alpha values: [0.52011627 0.4978892  0.27850398 0.55014104 0.18213111 0.54517007]
+	----
+	Epoch 15
+	Average objective: 0.0099
+	Alpha values: [0.41726264 0.42240942 0.00714163 0.45147422 0.02458317 0.4601007 ]
+	----
+	Epoch 20
+	Average objective: 0.0040
+	Alpha values: [0.40603057 0.4055267  0.00450002 0.44607386 0.02452215 0.44722766]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 7000, seed 4
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 3.1237
+	Alpha values: [0.9611709  0.9597807  0.93519765 0.96780217 0.9447812  0.96727556]
+	----
+	Epoch 5
+	Average objective: 2.2233
+	Alpha values: [0.7398462 0.7496306 0.5737039 0.7203064 0.631555  0.7711113]
+	----
+	Epoch 10
+	Average objective: 0.8299
+	Alpha values: [0.548846   0.5621409  0.15407734 0.47139674 0.28609082 0.6020629 ]
+	----
+	Epoch 15
+	Average objective: 0.0378
+	Alpha values: [0.47932547 0.48543572 0.02267354 0.3974737  0.03370391 0.5243436 ]
+	----
+	Epoch 20
+	Average objective: 0.0610
+	Alpha values: [0.45967212 0.46488613 0.02141517 0.38285628 0.02590752 0.49631044]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 100, seed 0
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 0.0062
+	Alpha values: [1.0009991 0.999     0.999     1.0009999 0.999     1.001    ]
+	----
+	Epoch 5
+	Average objective: 0.0177
+	Alpha values: [0.99717563 0.9953244  0.9951311  1.0012003  0.9940557  0.99886066]
+	----
+	Epoch 10
+	Average objective: 0.0150
+	Alpha values: [0.9947884  0.99250627 0.99079907 0.99909043 0.9890699  0.99619937]
+	----
+	Epoch 15
+	Average objective: 0.0138
+	Alpha values: [0.99109197 0.9884757  0.9860472  0.9951418  0.9843238  0.99261737]
+	----
+	Epoch 20
+	Average objective: 0.0191
+	Alpha values: [0.9874461  0.98447245 0.98144627 0.9916653  0.9793739  0.98865277]
+	----
+Early stopping
+Running experiment with dataset size 100, seed 1
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 0.7147
+	Alpha values: [0.999 0.999 0.999 0.999 0.999 1.001]
+	----
+	Epoch 5
+	Average objective: 0.5712
+	Alpha values: [0.9950874  0.99732363 0.99454343 0.9941235  0.9946026  1.0008385 ]
+	----
+	Epoch 10
+	Average objective: 0.6946
+	Alpha values: [0.9926111  0.9966123  0.98979276 0.99015874 0.99012494 0.99783045]
+	----
+Early stopping
+Running experiment with dataset size 100, seed 2
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 3.2535
+	Alpha values: [0.999 0.999 1.001 0.999 0.999 0.999]
+	----
+	Epoch 5
+	Average objective: 2.0851
+	Alpha values: [0.99651915 0.99687785 0.9978067  0.9944468  0.9941261  0.99461323]
+	----
+	Epoch 10
+	Average objective: 2.4849
+	Alpha values: [0.9949137  0.9945934  0.9940048  0.98991007 0.9891019  0.99199843]
+	----
+	Epoch 15
+	Average objective: 3.1622
+	Alpha values: [0.9919408  0.9920208  0.99091977 0.9865005  0.9840269  0.98909837]
+	----
+Early stopping
+Running experiment with dataset size 100, seed 3
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 0.0083
+	Alpha values: [0.999      0.99900013 0.999      0.999      0.999      0.999     ]
+	----
+	Epoch 5
+	Average objective: 0.0057
+	Alpha values: [0.9960727  0.994153   0.9957981  0.99481636 0.9941751  0.9972535 ]
+	----
+	Epoch 10
+	Average objective: 0.0098
+	Alpha values: [0.992546   0.9894183  0.99202937 0.99116504 0.9894387  0.99370414]
+	----
+	Epoch 15
+	Average objective: 0.0078
+	Alpha values: [0.98910403 0.985527   0.9878208  0.9892333  0.9847677  0.990336  ]
+	----
+Early stopping
+Running experiment with dataset size 100, seed 4
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 0.0481
+	Alpha values: [1.0009999 0.999     0.999     0.999     0.999     0.999    ]
+	----
+	Epoch 5
+	Average objective: 0.0477
+	Alpha values: [0.9991536  0.99454373 0.9959902  0.99402374 0.99405444 0.9946354 ]
+	----
+	Epoch 10
+	Average objective: 0.0436
+	Alpha values: [0.99812746 0.99178505 0.99280393 0.9892427  0.98918486 0.99226934]
+	----
+	Epoch 15
+	Average objective: 0.0459
+	Alpha values: [0.9959255  0.98825973 0.9887266  0.9854459  0.98435605 0.9896924 ]
+	----
+Early stopping
+Running experiment with dataset size 500, seed 0
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 1.0421
+	Alpha values: [0.995429  0.9952759 0.995518  0.9950512 0.9954936 1.0017072]
+	----
+	Epoch 5
+	Average objective: 1.0884
+	Alpha values: [0.9814695 0.9791727 0.9731342 0.9743839 0.9727139 0.9918894]
+	----
+	Epoch 10
+	Average objective: 1.0436
+	Alpha values: [0.9653429  0.96246284 0.948567   0.95535815 0.9508865  0.9812787 ]
+	----
+Early stopping
+Running experiment with dataset size 500, seed 1
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 39.2336
+	Alpha values: [0.9956045  0.99613106 0.995786   0.9966746  0.9955262  0.9951749 ]
+	----
+	Epoch 5
+	Average objective: 38.8838
+	Alpha values: [0.98201275 0.98153454 0.9733924  0.97803164 0.97630626 0.9739713 ]
+	----
+	Epoch 10
+	Average objective: 37.3111
+	Alpha values: [0.964404   0.9688235  0.9495481  0.9608996  0.9613966  0.95792174]
+	----
+	Epoch 15
+	Average objective: 28.4081
+	Alpha values: [0.9447893  0.94885045 0.924858   0.9392245  0.9477939  0.937343  ]
+	----
+	Epoch 20
+	Average objective: 36.5672
+	Alpha values: [0.9300308  0.93069124 0.9025875  0.92188394 0.93320274 0.91575027]
+	----
+	Epoch 25
+	Average objective: 41.8763
+	Alpha values: [0.91296    0.91129273 0.8810762  0.90485805 0.9219798  0.89940786]
+	----
+Early stopping
+Running experiment with dataset size 500, seed 2
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 0.0195
+	Alpha values: [0.9952158  0.99714404 0.99538136 0.9962285  0.9951711  0.9981745 ]
+	----
+	Epoch 5
+	Average objective: 0.0160
+	Alpha values: [0.97647864 0.9841776  0.9715905  0.977516   0.97391605 0.9822142 ]
+	----
+	Epoch 10
+	Average objective: 0.0168
+	Alpha values: [0.96331686 0.96558046 0.9478614  0.9632972  0.95143986 0.96523565]
+	----
+	Epoch 15
+	Average objective: 0.0172
+	Alpha values: [0.94851667 0.9481778  0.92383105 0.9479721  0.9306672  0.94885254]
+	----
+Early stopping
+Running experiment with dataset size 500, seed 3
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 1.7576
+	Alpha values: [0.9978972  0.99622416 0.9952014  0.9959565  0.99570256 0.9958948 ]
+	----
+	Epoch 5
+	Average objective: 1.7150
+	Alpha values: [0.9881381  0.98311394 0.9711037  0.97771794 0.9774034  0.98055303]
+	----
+	Epoch 10
+	Average objective: 1.7125
+	Alpha values: [0.9704537  0.97266394 0.94701755 0.96371263 0.96194685 0.96088994]
+	----
+	Epoch 15
+	Average objective: 2.4459
+	Alpha values: [0.9556711  0.95939827 0.92409855 0.94670075 0.95007575 0.9528406 ]
+	----
+Early stopping
+Running experiment with dataset size 500, seed 4
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 10.8808
+	Alpha values: [0.99912095 0.99579835 0.9953975  0.9957468  0.9955368  0.99519473]
+	----
+	Epoch 5
+	Average objective: 11.8741
+	Alpha values: [0.9838225  0.97818947 0.97259825 0.9812921  0.9765188  0.9745794 ]
+	----
+	Epoch 10
+	Average objective: 10.9094
+	Alpha values: [0.96516204 0.9596717  0.9496445  0.96583825 0.95832604 0.95605415]
+	----
+	Epoch 15
+	Average objective: 11.5675
+	Alpha values: [0.948743  0.9447286 0.9273437 0.949718  0.9403683 0.9346525]
+	----
+Early stopping
+Running experiment with dataset size 1000, seed 0
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 21.1263
+	Alpha values: [0.99116874 0.99378276 0.9911825  0.9963329  0.99118686 0.9923356 ]
+	----
+	Epoch 5
+	Average objective: 21.9590
+	Alpha values: [0.9588339  0.962915   0.94419    0.9575902  0.94357145 0.9593423 ]
+	----
+	Epoch 10
+	Average objective: 21.0634
+	Alpha values: [0.9253835  0.9324558  0.8954231  0.9260285  0.8992346  0.92629975]
+	----
+Early stopping
+Running experiment with dataset size 1000, seed 1
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 0.0914
+	Alpha values: [0.9961175  0.9939686  0.99177325 0.9946206  0.99187016 0.9931491 ]
+	----
+	Epoch 5
+	Average objective: 0.0862
+	Alpha values: [0.9711164  0.9614994  0.95275396 0.96758187 0.950277   0.9666324 ]
+	----
+	Epoch 10
+	Average objective: 0.0918
+	Alpha values: [0.94423485 0.93145573 0.91418064 0.93963635 0.9052274  0.9374428 ]
+	----
+	Epoch 15
+	Average objective: 0.0972
+	Alpha values: [0.90947187 0.9090251  0.87459433 0.90708816 0.85622364 0.90068775]
+	----
+	Epoch 20
+	Average objective: 0.0715
+	Alpha values: [0.86446494 0.8789393  0.8327833  0.87379247 0.80636615 0.8690698 ]
+	----
+	Epoch 25
+	Average objective: 0.0651
+	Alpha values: [0.8251417  0.84739393 0.7953711  0.8345945  0.75377154 0.8292307 ]
+	----
+Early stopping
+Running experiment with dataset size 1000, seed 2
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 10.5961
+	Alpha values: [0.9948638  0.99208033 0.99113226 0.9923697  0.9907701  0.9909827 ]
+	----
+	Epoch 5
+	Average objective: 9.6856
+	Alpha values: [0.9665727  0.95851827 0.9518159  0.97277886 0.9505133  0.9610236 ]
+	----
+	Epoch 10
+	Average objective: 9.0982
+	Alpha values: [0.92801017 0.92146826 0.90646917 0.94553804 0.9098428  0.9213288 ]
+	----
+	Epoch 15
+	Average objective: 9.9097
+	Alpha values: [0.89633256 0.8863204  0.864136   0.9075583  0.8731856  0.89323705]
+	----
+Early stopping
+Running experiment with dataset size 1000, seed 3
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 0.3474
+	Alpha values: [0.99338955 0.9922987  0.9947542  0.99254525 0.9904275  0.9941409 ]
+	----
+	Epoch 5
+	Average objective: 0.4128
+	Alpha values: [0.9582204  0.967692   0.96188426 0.9644382  0.94513315 0.9623457 ]
+	----
+	Epoch 10
+	Average objective: 0.3847
+	Alpha values: [0.92794424 0.94461703 0.9300393  0.9311363  0.89809155 0.9275949 ]
+	----
+	Epoch 15
+	Average objective: 0.3916
+	Alpha values: [0.9063973  0.9186793  0.89780873 0.900111   0.85031825 0.8963011 ]
+	----
+Early stopping
+Running experiment with dataset size 1000, seed 4
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 0.1437
+	Alpha values: [0.99615    0.9905749  0.9907306  0.99250656 0.99789447 0.991951  ]
+	----
+	Epoch 5
+	Average objective: 0.1235
+	Alpha values: [0.9665973  0.95313567 0.94451034 0.9666548  0.9745938  0.95846003]
+	----
+	Epoch 10
+	Average objective: 0.1212
+	Alpha values: [0.94498664 0.91711324 0.8982989  0.937884   0.95256984 0.9249093 ]
+	----
+	Epoch 15
+	Average objective: 0.1057
+	Alpha values: [0.9187249  0.8804938  0.8498632  0.9065649  0.9204691  0.88533604]
+	----
+Early stopping
+Running experiment with dataset size 2000, seed 0
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 10.1599
+	Alpha values: [0.9883392  0.9851373  0.9811165  0.9842835  0.9839101  0.98581773]
+	----
+	Epoch 5
+	Average objective: 13.5518
+	Alpha values: [0.9110659  0.92770815 0.8928797  0.9152356  0.9076787  0.9103037 ]
+	----
+	Epoch 10
+	Average objective: 11.9767
+	Alpha values: [0.8454105  0.8626201  0.79724765 0.8507207  0.8393159  0.8491213 ]
+	----
+	Epoch 15
+	Average objective: 12.2569
+	Alpha values: [0.77696204 0.7903442  0.6961461  0.7871079  0.75836647 0.78703976]
+	----
+	Epoch 20
+	Average objective: 7.8093
+	Alpha values: [0.68523884 0.73230845 0.5884773  0.7128137  0.6931768  0.7125854 ]
+	----
+	Epoch 25
+	Average objective: 7.7972
+	Alpha values: [0.60521835 0.63485146 0.47286934 0.6253098  0.61802655 0.6364721 ]
+	----
+	Epoch 30
+	Average objective: 7.0050
+	Alpha values: [0.517259   0.5493037  0.3458734  0.5436502  0.52915895 0.5659125 ]
+	----
+	Epoch 35
+	Average objective: 4.2813
+	Alpha values: [0.44345266 0.46162668 0.20034881 0.46484622 0.44380364 0.48424605]
+	----
+	Epoch 40
+	Average objective: 1.4544
+	Alpha values: [0.4001671  0.4043496  0.06178408 0.43033686 0.36567265 0.4331146 ]
+	----
+	Epoch 45
+	Average objective: 0.0054
+	Alpha values: [0.3781904  0.3870595  0.00620396 0.41080138 0.34256262 0.4202094 ]
+	----
+	Epoch 50
+	Average objective: 0.1911
+	Alpha values: [0.3752224  0.36698806 0.0062168  0.39015806 0.31596196 0.41285175]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 2000, seed 1
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 0.0017
+	Alpha values: [0.9848925  0.98259944 0.98101723 0.9851101  0.9824385  0.9846307 ]
+	----
+	Epoch 5
+	Average objective: 0.0016
+	Alpha values: [0.9149559 0.9200569 0.8899173 0.9309876 0.8886137 0.9330305]
+	----
+	Epoch 10
+	Average objective: 0.0013
+	Alpha values: [0.8495594  0.8488935  0.7971218  0.863746   0.79512495 0.8542389 ]
+	----
+Early stopping
+Running experiment with dataset size 2000, seed 2
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 5.1674
+	Alpha values: [0.9920689  0.9931109  0.9855248  0.9897605  0.98440206 0.9842562 ]
+	----
+	Epoch 5
+	Average objective: 4.1786
+	Alpha values: [0.922797   0.92606425 0.89740986 0.9243515  0.9063985  0.91864717]
+	----
+	Epoch 10
+	Average objective: 4.6349
+	Alpha values: [0.86670285 0.8631099  0.7984179  0.86197954 0.81625175 0.8518577 ]
+	----
+	Epoch 15
+	Average objective: 4.2780
+	Alpha values: [0.7917691 0.7965734 0.6979678 0.78881   0.7294958 0.7799209]
+	----
+	Epoch 20
+	Average objective: 4.1379
+	Alpha values: [0.71584475 0.7388921  0.5972555  0.7213863  0.6280227  0.71500397]
+	----
+	Epoch 25
+	Average objective: 2.8470
+	Alpha values: [0.64822745 0.6642735  0.48626977 0.6582479  0.5279775  0.64920545]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 2000, seed 3
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 2.2772
+	Alpha values: [0.9841966 0.9892454 0.9882156 0.9895958 0.9823391 0.9857927]
+	----
+	Epoch 5
+	Average objective: 2.1817
+	Alpha values: [0.9383462  0.9317398  0.9210356  0.9180996  0.89599925 0.9329351 ]
+	----
+	Epoch 10
+	Average objective: 2.0921
+	Alpha values: [0.8661579  0.8611408  0.85382175 0.8416125  0.80139834 0.87207985]
+	----
+	Epoch 15
+	Average objective: 1.4685
+	Alpha values: [0.8118521  0.8054144  0.79547757 0.7803517  0.69580793 0.81146073]
+	----
+	Epoch 20
+	Average objective: 1.5505
+	Alpha values: [0.7624826  0.7365262  0.72295177 0.70363426 0.5854337  0.7450991 ]
+	----
+	Epoch 25
+	Average objective: 1.4151
+	Alpha values: [0.70895797 0.6684961  0.67323875 0.633633   0.47514686 0.68314064]
+	----
+	Epoch 30
+	Average objective: 1.0155
+	Alpha values: [0.6663426  0.5988965  0.61303496 0.58276623 0.35468933 0.6112883 ]
+	----
+	Epoch 35
+	Average objective: 0.5582
+	Alpha values: [0.6110189  0.5522551  0.5500765  0.52554226 0.22747968 0.5552554 ]
+	----
+	Epoch 40
+	Average objective: 0.2206
+	Alpha values: [0.5710905  0.5145597  0.48696905 0.48119348 0.10626318 0.5106811 ]
+	----
+	Epoch 45
+	Average objective: 0.0118
+	Alpha values: [5.4224604e-01 4.8986459e-01 4.7031036e-01 4.6317521e-01 9.9999999e-09
+ 4.8972028e-01]
+	----
+	Epoch 50
+	Average objective: 0.0673
+	Alpha values: [0.53568345 0.48161432 0.4687407  0.4552926  0.02360235 0.48331952]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 2000, seed 4
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 4.8528
+	Alpha values: [0.99142355 0.9870403  0.98779565 0.98472303 0.9811579  0.9824669 ]
+	----
+	Epoch 5
+	Average objective: 3.9007
+	Alpha values: [0.9322193  0.9312572  0.91836953 0.9098023  0.8860317  0.937537  ]
+	----
+	Epoch 10
+	Average objective: 4.0837
+	Alpha values: [0.86761415 0.8680064  0.8502293  0.8447907  0.7843055  0.8831969 ]
+	----
+	Epoch 15
+	Average objective: 3.9243
+	Alpha values: [0.81222546 0.82585704 0.7812581  0.78114027 0.67774475 0.8236558 ]
+	----
+	Epoch 20
+	Average objective: 2.6471
+	Alpha values: [0.75508565 0.7476208  0.7146085  0.7061841  0.5679396  0.7658575 ]
+	----
+	Epoch 25
+	Average objective: 3.3352
+	Alpha values: [0.67584395 0.7019223  0.6574651  0.63925904 0.45748293 0.7041069 ]
+	----
+	Epoch 30
+	Average objective: 2.3591
+	Alpha values: [0.6120723  0.6429336  0.59655255 0.5546653  0.33548325 0.63665736]
+	----
+	Epoch 35
+	Average objective: 1.4393
+	Alpha values: [0.554855   0.58620554 0.5155517  0.48960206 0.193446   0.55506647]
+	----
+	Epoch 40
+	Average objective: 0.5076
+	Alpha values: [0.5050174  0.5646706  0.47516114 0.46050933 0.05623212 0.5146394 ]
+	----
+	Epoch 45
+	Average objective: -0.0032
+	Alpha values: [4.9325886e-01 5.5207199e-01 4.5558330e-01 4.3781286e-01 9.9999999e-09
+ 4.9602494e-01]
+	----
+	Epoch 50
+	Average objective: 0.1045
+	Alpha values: [0.48737508 0.5430318  0.43972656 0.42730275 0.02050331 0.49279165]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 5000, seed 0
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 0.5671
+	Alpha values: [0.9733515  0.9684052  0.9555653  0.9608844  0.9582018  0.96289074]
+	----
+	Epoch 5
+	Average objective: 0.4972
+	Alpha values: [0.83340937 0.8171917  0.720798   0.7950765  0.787553   0.81369835]
+	----
+	Epoch 10
+	Average objective: 0.3744
+	Alpha values: [0.6712427  0.64419883 0.4357343  0.6473992  0.5855064  0.66692674]
+	----
+	Epoch 15
+	Average objective: 0.1365
+	Alpha values: [0.5233379  0.4866982  0.0913784  0.50591433 0.42404437 0.51687163]
+	----
+	Epoch 20
+	Average objective: 0.0134
+	Alpha values: [0.47722414 0.45451334 0.0241486  0.47045347 0.3573174  0.48484522]
+	----
+	Epoch 25
+	Average objective: 0.0312
+	Alpha values: [0.4442261  0.43984082 0.02326535 0.44502893 0.3154517  0.4542396 ]
+	----
+	Epoch 30
+	Average objective: 0.0261
+	Alpha values: [0.3959005  0.4151358  0.02226413 0.41441092 0.2688434  0.43402538]
+	----
+	Epoch 35
+	Average objective: 0.0078
+	Alpha values: [0.37378028 0.35836607 0.02115662 0.38311657 0.17625952 0.40071163]
+	----
+	Epoch 40
+	Average objective: 0.0113
+	Alpha values: [0.35548133 0.34162244 0.0201349  0.36123246 0.14984109 0.36711213]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 5000, seed 1
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 0.0051
+	Alpha values: [0.9716225  0.95696163 0.95699835 0.97090405 0.965769   0.96592623]
+	----
+	Epoch 5
+	Average objective: 0.0043
+	Alpha values: [0.796756   0.79228085 0.7123123  0.8045108  0.74494857 0.7995548 ]
+	----
+	Epoch 10
+	Average objective: 0.0028
+	Alpha values: [0.62551576 0.5948683  0.44335    0.6042929  0.49301466 0.60574794]
+	----
+	Epoch 15
+	Average objective: 0.0013
+	Alpha values: [0.48305517 0.45282233 0.14278549 0.4274419  0.2679289  0.4422729 ]
+	----
+	Epoch 20
+	Average objective: 0.0002
+	Alpha values: [0.42804232 0.37948838 0.02189584 0.36316222 0.09469987 0.38184887]
+	----
+	Epoch 25
+	Average objective: -0.0000
+	Alpha values: [0.41290766 0.35487255 0.02153022 0.33428752 0.00857152 0.354108  ]
+	----
+	Epoch 30
+	Average objective: 0.0001
+	Alpha values: [0.40340784 0.34347367 0.02122686 0.31585184 0.02079677 0.34400925]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 5000, seed 2
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 0.9690
+	Alpha values: [0.9702533  0.9722575  0.9616881  0.9740133  0.96074283 0.9765668 ]
+	----
+	Epoch 5
+	Average objective: 0.8722
+	Alpha values: [0.81127983 0.8313492  0.7584225  0.8119352  0.7339912  0.83645004]
+	----
+	Epoch 10
+	Average objective: 0.6482
+	Alpha values: [0.6255561  0.67792785 0.50301915 0.6552753  0.46642324 0.6852109 ]
+	----
+	Epoch 15
+	Average objective: 0.3039
+	Alpha values: [0.46397325 0.53677887 0.2762836  0.5166225  0.19739908 0.5369367 ]
+	----
+	Epoch 20
+	Average objective: 0.0257
+	Alpha values: [0.41170558 0.48050514 0.08011878 0.47588235 0.01752162 0.47352323]
+	----
+	Epoch 25
+	Average objective: 0.0004
+	Alpha values: [0.4001901  0.47474223 0.0079712  0.46777087 0.00570076 0.4605732 ]
+	----
+	Epoch 30
+	Average objective: 0.0008
+	Alpha values: [0.39893186 0.46908826 0.02773569 0.46777564 0.00455707 0.4561171 ]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 5000, seed 3
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 11.5139
+	Alpha values: [0.9685932  0.9708698  0.9614192  0.98328054 0.9662236  0.96608037]
+	----
+	Epoch 5
+	Average objective: 10.1942
+	Alpha values: [0.8268564  0.83127594 0.7419506  0.8545813  0.8214622  0.8144996 ]
+	----
+	Epoch 10
+	Average objective: 7.9192
+	Alpha values: [0.6777482  0.6814357  0.48137376 0.6806814  0.64471096 0.65080845]
+	----
+	Epoch 15
+	Average objective: 3.8567
+	Alpha values: [0.5563254  0.5885435  0.18362321 0.5284708  0.5247681  0.4994367 ]
+	----
+	Epoch 20
+	Average objective: 0.0628
+	Alpha values: [0.5081152  0.55632704 0.02294469 0.4728504  0.46528825 0.4659479 ]
+	----
+	Epoch 25
+	Average objective: 0.3346
+	Alpha values: [0.49901354 0.518487   0.02495306 0.4497807  0.4410858  0.44381058]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 5000, seed 4
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 28.8441
+	Alpha values: [0.9709379  0.9742136  0.9610783  0.96918947 0.95624304 0.97381055]
+	----
+	Epoch 5
+	Average objective: 23.6530
+	Alpha values: [0.8079497  0.82000774 0.73021954 0.78852534 0.71228975 0.8005748 ]
+	----
+	Epoch 10
+	Average objective: 17.6704
+	Alpha values: [0.6480468  0.6591713  0.47597548 0.5927659  0.4349301  0.6166058 ]
+	----
+	Epoch 15
+	Average objective: 5.1625
+	Alpha values: [0.48583063 0.49136412 0.20717157 0.4139388  0.11214291 0.4471849 ]
+	----
+	Epoch 20
+	Average objective: 0.6977
+	Alpha values: [0.44584426 0.4624361  0.0756532  0.36935136 0.0239854  0.42933315]
+	----
+	Epoch 25
+	Average objective: 0.6548
+	Alpha values: [0.42900577 0.43465692 0.02654627 0.3495382  0.02404863 0.40935245]
+	----
+	Epoch 30
+	Average objective: 0.3057
+	Alpha values: [0.39381596 0.42250922 0.02642207 0.30969438 0.02403993 0.38996914]
+	----
+	Epoch 35
+	Average objective: -0.0293
+	Alpha values: [0.35308006 0.3920012  0.02631154 0.28220466 0.02403172 0.36992323]
+	----
+	Epoch 40
+	Average objective: 0.1912
+	Alpha values: [0.32421565 0.38486677 0.02623335 0.2587156  0.02402749 0.34556058]
+	----
+	Epoch 45
+	Average objective: 0.1429
+	Alpha values: [0.2851323  0.37180546 0.02610505 0.23423412 0.02402214 0.2950471 ]
+	----
+	Epoch 50
+	Average objective: 0.3133
+	Alpha values: [0.2522549  0.35445276 0.02602967 0.21401219 0.02401637 0.24397352]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 7000, seed 0
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 0.3803
+	Alpha values: [0.9532739  0.96069545 0.9509865  0.9671499  0.9376101  0.9528329 ]
+	----
+	Epoch 5
+	Average objective: 0.2589
+	Alpha values: [0.7271486  0.73350865 0.6593725  0.7396867  0.59573776 0.7302411 ]
+	----
+	Epoch 10
+	Average objective: 0.1002
+	Alpha values: [0.52381915 0.5191183  0.33511806 0.5374889  0.17715658 0.53770167]
+	----
+	Epoch 15
+	Average objective: 0.0020
+	Alpha values: [0.47251064 0.46584836 0.16434333 0.4897659  0.00266691 0.47385502]
+	----
+	Epoch 20
+	Average objective: 0.0009
+	Alpha values: [0.45753777 0.45206425 0.07391253 0.47608086 0.00055079 0.4552402 ]
+	----
+	Epoch 25
+	Average objective: 0.0015
+	Alpha values: [0.445927   0.44525504 0.03516581 0.47414324 0.0058889  0.44506565]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 7000, seed 1
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 0.0023
+	Alpha values: [0.95455724 0.9587445  0.95847076 0.9614513  0.9376923  0.9492645 ]
+	----
+	Epoch 5
+	Average objective: 0.0016
+	Alpha values: [0.72486347 0.75372916 0.68926126 0.75709575 0.59789306 0.7525066 ]
+	----
+	Epoch 10
+	Average objective: 0.0009
+	Alpha values: [0.48880923 0.55755097 0.42485622 0.5980459  0.19210294 0.55037063]
+	----
+	Epoch 15
+	Average objective: 0.0001
+	Alpha values: [0.42070943 0.50980026 0.2966253  0.5349051  0.02469194 0.49304956]
+	----
+	Epoch 20
+	Average objective: 0.0001
+	Alpha values: [0.37810656 0.4623067  0.18351991 0.4967866  0.02434614 0.46742216]
+	----
+	Epoch 25
+	Average objective: 0.0000
+	Alpha values: [3.2592240e-01 4.2167512e-01 9.9999999e-09 4.5219269e-01 2.3981154e-02
+ 4.2809969e-01]
+	----
+	Epoch 30
+	Average objective: 0.0000
+	Alpha values: [0.2732739  0.39672115 0.02892021 0.42906868 0.02367943 0.3972177 ]
+	----
+	Epoch 35
+	Average objective: 0.0000
+	Alpha values: [0.18211082 0.36098748 0.02887025 0.38890836 0.02332103 0.34472921]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 7000, seed 2
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 24.4705
+	Alpha values: [0.9590142  0.96787274 0.949173   0.968359   0.94107294 0.9589217 ]
+	----
+	Epoch 5
+	Average objective: 21.1579
+	Alpha values: [0.74177593 0.78689384 0.65480524 0.7556506  0.62640893 0.76436245]
+	----
+	Epoch 10
+	Average objective: 10.2977
+	Alpha values: [0.5281161  0.60545164 0.31235465 0.5817276  0.24242088 0.56618595]
+	----
+	Epoch 15
+	Average objective: 0.2804
+	Alpha values: [0.43853182 0.52355665 0.1408125  0.5011723  0.0018072  0.50517106]
+	----
+	Epoch 20
+	Average objective: 0.1970
+	Alpha values: [0.42417112 0.5180878  0.06097233 0.48792154 0.00171317 0.5109677 ]
+	----
+	Epoch 25
+	Average objective: -0.0103
+	Alpha values: [0.4159171  0.5080305  0.02687722 0.4778427  0.00166473 0.5122056 ]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 7000, seed 3
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 0.7962
+	Alpha values: [0.96430165 0.9548134  0.942906   0.9534119  0.9335738  0.9732915 ]
+	----
+	Epoch 5
+	Average objective: 0.6092
+	Alpha values: [0.7601062  0.7228957  0.6373592  0.73592955 0.5941609  0.75753355]
+	----
+	Epoch 10
+	Average objective: 0.2578
+	Alpha values: [0.52011627 0.4978892  0.27850398 0.55014104 0.18213111 0.54517007]
+	----
+	Epoch 15
+	Average objective: 0.0099
+	Alpha values: [0.41726264 0.42240942 0.00714163 0.45147422 0.02458317 0.4601007 ]
+	----
+	Epoch 20
+	Average objective: 0.0040
+	Alpha values: [0.40603057 0.4055267  0.00450002 0.44607386 0.02452215 0.44722766]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 7000, seed 4
+	Meaningful indices: [5 2]
+	Epoch 0
+	Average objective: 3.1237
+	Alpha values: [0.9611709  0.9597807  0.93519765 0.96780217 0.9447812  0.96727556]
+	----
+	Epoch 5
+	Average objective: 2.2233
+	Alpha values: [0.7398462 0.7496306 0.5737039 0.7203064 0.631555  0.7711113]
+	----
+	Epoch 10
+	Average objective: 0.8299
+	Alpha values: [0.548846   0.5621409  0.15407734 0.47139674 0.28609082 0.6020629 ]
+	----
+	Epoch 15
+	Average objective: 0.0378
+	Alpha values: [0.47932547 0.48543572 0.02267354 0.3974737  0.03370391 0.5243436 ]
+	----
+	Epoch 20
+	Average objective: 0.0610
+	Alpha values: [0.45967212 0.46488613 0.02141517 0.38285628 0.02590752 0.49631044]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 100, seed 0
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 0.0062
+	Alpha values: [1.0009991 0.999     0.999     1.0009999 0.999     1.001    ]
+	----
+	Epoch 5
+	Average objective: 0.0177
+	Alpha values: [0.99717563 0.9953244  0.9951311  1.0012003  0.9940557  0.99886066]
+	----
+	Epoch 10
+	Average objective: 0.0150
+	Alpha values: [0.9947884  0.99250627 0.99079907 0.99909043 0.9890699  0.99619937]
+	----
+	Epoch 15
+	Average objective: 0.0138
+	Alpha values: [0.99109197 0.9884757  0.9860472  0.9951418  0.9843238  0.99261737]
+	----
+	Epoch 20
+	Average objective: 0.0191
+	Alpha values: [0.9874461  0.98447245 0.98144627 0.9916653  0.9793739  0.98865277]
+	----
+Early stopping
+Running experiment with dataset size 100, seed 1
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 0.7147
+	Alpha values: [0.999 0.999 0.999 0.999 0.999 1.001]
+	----
+	Epoch 5
+	Average objective: 0.5712
+	Alpha values: [0.9950874  0.99732363 0.99454343 0.9941235  0.9946026  1.0008385 ]
+	----
+	Epoch 10
+	Average objective: 0.6946
+	Alpha values: [0.9926111  0.9966123  0.98979276 0.99015874 0.99012494 0.99783045]
+	----
+Early stopping
+Running experiment with dataset size 100, seed 2
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 3.2535
+	Alpha values: [0.999 0.999 1.001 0.999 0.999 0.999]
+	----
+	Epoch 5
+	Average objective: 2.0851
+	Alpha values: [0.99651915 0.99687785 0.9978067  0.9944468  0.9941261  0.99461323]
+	----
+	Epoch 10
+	Average objective: 2.4849
+	Alpha values: [0.9949137  0.9945934  0.9940048  0.98991007 0.9891019  0.99199843]
+	----
+	Epoch 15
+	Average objective: 3.1622
+	Alpha values: [0.9919408  0.9920208  0.99091977 0.9865005  0.9840269  0.98909837]
+	----
+Early stopping
+Running experiment with dataset size 100, seed 3
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 0.0083
+	Alpha values: [0.999      0.99900013 0.999      0.999      0.999      0.999     ]
+	----
+	Epoch 5
+	Average objective: 0.0057
+	Alpha values: [0.9960727  0.994153   0.9957981  0.99481636 0.9941751  0.9972535 ]
+	----
+	Epoch 10
+	Average objective: 0.0098
+	Alpha values: [0.992546   0.9894183  0.99202937 0.99116504 0.9894387  0.99370414]
+	----
+	Epoch 15
+	Average objective: 0.0078
+	Alpha values: [0.98910403 0.985527   0.9878208  0.9892333  0.9847677  0.990336  ]
+	----
+Early stopping
+Running experiment with dataset size 100, seed 4
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 0.0481
+	Alpha values: [1.0009999 0.999     0.999     0.999     0.999     0.999    ]
+	----
+	Epoch 5
+	Average objective: 0.0477
+	Alpha values: [0.9991536  0.99454373 0.9959902  0.99402374 0.99405444 0.9946354 ]
+	----
+	Epoch 10
+	Average objective: 0.0436
+	Alpha values: [0.99812746 0.99178505 0.99280393 0.9892427  0.98918486 0.99226934]
+	----
+	Epoch 15
+	Average objective: 0.0459
+	Alpha values: [0.9959255  0.98825973 0.9887266  0.9854459  0.98435605 0.9896924 ]
+	----
+Early stopping
+Running experiment with dataset size 500, seed 0
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 1.0421
+	Alpha values: [0.995429  0.9952759 0.995518  0.9950512 0.9954936 1.0017072]
+	----
+	Epoch 5
+	Average objective: 1.0884
+	Alpha values: [0.9814695 0.9791727 0.9731342 0.9743839 0.9727139 0.9918894]
+	----
+	Epoch 10
+	Average objective: 1.0436
+	Alpha values: [0.9653429  0.96246284 0.948567   0.95535815 0.9508865  0.9812787 ]
+	----
+Early stopping
+Running experiment with dataset size 500, seed 1
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 39.2336
+	Alpha values: [0.9956045  0.99613106 0.995786   0.9966746  0.9955262  0.9951749 ]
+	----
+	Epoch 5
+	Average objective: 38.8838
+	Alpha values: [0.98201275 0.98153454 0.9733924  0.97803164 0.97630626 0.9739713 ]
+	----
+	Epoch 10
+	Average objective: 37.3111
+	Alpha values: [0.964404   0.9688235  0.9495481  0.9608996  0.9613966  0.95792174]
+	----
+	Epoch 15
+	Average objective: 28.4081
+	Alpha values: [0.9447893  0.94885045 0.924858   0.9392245  0.9477939  0.937343  ]
+	----
+	Epoch 20
+	Average objective: 36.5672
+	Alpha values: [0.9300308  0.93069124 0.9025875  0.92188394 0.93320274 0.91575027]
+	----
+	Epoch 25
+	Average objective: 41.8763
+	Alpha values: [0.91296    0.91129273 0.8810762  0.90485805 0.9219798  0.89940786]
+	----
+Early stopping
+Running experiment with dataset size 500, seed 2
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 0.0195
+	Alpha values: [0.9952158  0.99714404 0.99538136 0.9962285  0.9951711  0.9981745 ]
+	----
+	Epoch 5
+	Average objective: 0.0160
+	Alpha values: [0.97647864 0.9841776  0.9715905  0.977516   0.97391605 0.9822142 ]
+	----
+	Epoch 10
+	Average objective: 0.0168
+	Alpha values: [0.96331686 0.96558046 0.9478614  0.9632972  0.95143986 0.96523565]
+	----
+	Epoch 15
+	Average objective: 0.0172
+	Alpha values: [0.94851667 0.9481778  0.92383105 0.9479721  0.9306672  0.94885254]
+	----
+Early stopping
+Running experiment with dataset size 500, seed 3
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 1.7576
+	Alpha values: [0.9978972  0.99622416 0.9952014  0.9959565  0.99570256 0.9958948 ]
+	----
+	Epoch 5
+	Average objective: 1.7150
+	Alpha values: [0.9881381  0.98311394 0.9711037  0.97771794 0.9774034  0.98055303]
+	----
+	Epoch 10
+	Average objective: 1.7125
+	Alpha values: [0.9704537  0.97266394 0.94701755 0.96371263 0.96194685 0.96088994]
+	----
+	Epoch 15
+	Average objective: 2.4459
+	Alpha values: [0.9556711  0.95939827 0.92409855 0.94670075 0.95007575 0.9528406 ]
+	----
+Early stopping
+Running experiment with dataset size 500, seed 4
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 10.8808
+	Alpha values: [0.99912095 0.99579835 0.9953975  0.9957468  0.9955368  0.99519473]
+	----
+	Epoch 5
+	Average objective: 11.8741
+	Alpha values: [0.9838225  0.97818947 0.97259825 0.9812921  0.9765188  0.9745794 ]
+	----
+	Epoch 10
+	Average objective: 10.9094
+	Alpha values: [0.96516204 0.9596717  0.9496445  0.96583825 0.95832604 0.95605415]
+	----
+	Epoch 15
+	Average objective: 11.5675
+	Alpha values: [0.948743  0.9447286 0.9273437 0.949718  0.9403683 0.9346525]
+	----
+Early stopping
+Running experiment with dataset size 1000, seed 0
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 21.1263
+	Alpha values: [0.99116874 0.99378276 0.9911825  0.9963329  0.99118686 0.9923356 ]
+	----
+	Epoch 5
+	Average objective: 21.9590
+	Alpha values: [0.9588339  0.962915   0.94419    0.9575902  0.94357145 0.9593423 ]
+	----
+	Epoch 10
+	Average objective: 21.0634
+	Alpha values: [0.9253835  0.9324558  0.8954231  0.9260285  0.8992346  0.92629975]
+	----
+Early stopping
+Running experiment with dataset size 1000, seed 1
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 0.0914
+	Alpha values: [0.9961175  0.9939686  0.99177325 0.9946206  0.99187016 0.9931491 ]
+	----
+	Epoch 5
+	Average objective: 0.0862
+	Alpha values: [0.9711164  0.9614994  0.95275396 0.96758187 0.950277   0.9666324 ]
+	----
+	Epoch 10
+	Average objective: 0.0918
+	Alpha values: [0.94423485 0.93145573 0.91418064 0.93963635 0.9052274  0.9374428 ]
+	----
+	Epoch 15
+	Average objective: 0.0972
+	Alpha values: [0.90947187 0.9090251  0.87459433 0.90708816 0.85622364 0.90068775]
+	----
+	Epoch 20
+	Average objective: 0.0715
+	Alpha values: [0.86446494 0.8789393  0.8327833  0.87379247 0.80636615 0.8690698 ]
+	----
+	Epoch 25
+	Average objective: 0.0651
+	Alpha values: [0.8251417  0.84739393 0.7953711  0.8345945  0.75377154 0.8292307 ]
+	----
+Early stopping
+Running experiment with dataset size 1000, seed 2
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 10.5961
+	Alpha values: [0.9948638  0.99208033 0.99113226 0.9923697  0.9907701  0.9909827 ]
+	----
+	Epoch 5
+	Average objective: 9.6856
+	Alpha values: [0.9665727  0.95851827 0.9518159  0.97277886 0.9505133  0.9610236 ]
+	----
+	Epoch 10
+	Average objective: 9.0982
+	Alpha values: [0.92801017 0.92146826 0.90646917 0.94553804 0.9098428  0.9213288 ]
+	----
+	Epoch 15
+	Average objective: 9.9097
+	Alpha values: [0.89633256 0.8863204  0.864136   0.9075583  0.8731856  0.89323705]
+	----
+Early stopping
+Running experiment with dataset size 1000, seed 3
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 0.3474
+	Alpha values: [0.99338955 0.9922987  0.9947542  0.99254525 0.9904275  0.9941409 ]
+	----
+	Epoch 5
+	Average objective: 0.4128
+	Alpha values: [0.9582204  0.967692   0.96188426 0.9644382  0.94513315 0.9623457 ]
+	----
+	Epoch 10
+	Average objective: 0.3847
+	Alpha values: [0.92794424 0.94461703 0.9300393  0.9311363  0.89809155 0.9275949 ]
+	----
+	Epoch 15
+	Average objective: 0.3916
+	Alpha values: [0.9063973  0.9186793  0.89780873 0.900111   0.85031825 0.8963011 ]
+	----
+Early stopping
+Running experiment with dataset size 1000, seed 4
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 0.1437
+	Alpha values: [0.99615    0.9905749  0.9907306  0.99250656 0.99789447 0.991951  ]
+	----
+	Epoch 5
+	Average objective: 0.1235
+	Alpha values: [0.9665973  0.95313567 0.94451034 0.9666548  0.9745938  0.95846003]
+	----
+	Epoch 10
+	Average objective: 0.1212
+	Alpha values: [0.94498664 0.91711324 0.8982989  0.937884   0.95256984 0.9249093 ]
+	----
+	Epoch 15
+	Average objective: 0.1057
+	Alpha values: [0.9187249  0.8804938  0.8498632  0.9065649  0.9204691  0.88533604]
+	----
+Early stopping
+Running experiment with dataset size 2000, seed 0
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 10.1599
+	Alpha values: [0.9883392  0.9851373  0.9811165  0.9842835  0.9839101  0.98581773]
+	----
+	Epoch 5
+	Average objective: 13.5518
+	Alpha values: [0.9110659  0.92770815 0.8928797  0.9152356  0.9076787  0.9103037 ]
+	----
+	Epoch 10
+	Average objective: 11.9767
+	Alpha values: [0.8454105  0.8626201  0.79724765 0.8507207  0.8393159  0.8491213 ]
+	----
+	Epoch 15
+	Average objective: 12.2569
+	Alpha values: [0.77696204 0.7903442  0.6961461  0.7871079  0.75836647 0.78703976]
+	----
+	Epoch 20
+	Average objective: 7.8093
+	Alpha values: [0.68523884 0.73230845 0.5884773  0.7128137  0.6931768  0.7125854 ]
+	----
+	Epoch 25
+	Average objective: 7.7972
+	Alpha values: [0.60521835 0.63485146 0.47286934 0.6253098  0.61802655 0.6364721 ]
+	----
+	Epoch 30
+	Average objective: 7.0050
+	Alpha values: [0.517259   0.5493037  0.3458734  0.5436502  0.52915895 0.5659125 ]
+	----
+	Epoch 35
+	Average objective: 4.2813
+	Alpha values: [0.44345266 0.46162668 0.20034881 0.46484622 0.44380364 0.48424605]
+	----
+	Epoch 40
+	Average objective: 1.4544
+	Alpha values: [0.4001671  0.4043496  0.06178408 0.43033686 0.36567265 0.4331146 ]
+	----
+	Epoch 45
+	Average objective: 0.0054
+	Alpha values: [0.3781904  0.3870595  0.00620396 0.41080138 0.34256262 0.4202094 ]
+	----
+	Epoch 50
+	Average objective: 0.1911
+	Alpha values: [0.3752224  0.36698806 0.0062168  0.39015806 0.31596196 0.41285175]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 2000, seed 1
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 0.0017
+	Alpha values: [0.9848925  0.98259944 0.98101723 0.9851101  0.9824385  0.9846307 ]
+	----
+	Epoch 5
+	Average objective: 0.0016
+	Alpha values: [0.9149559 0.9200569 0.8899173 0.9309876 0.8886137 0.9330305]
+	----
+	Epoch 10
+	Average objective: 0.0013
+	Alpha values: [0.8495594  0.8488935  0.7971218  0.863746   0.79512495 0.8542389 ]
+	----
+Early stopping
+Running experiment with dataset size 2000, seed 2
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 5.1674
+	Alpha values: [0.9920689  0.9931109  0.9855248  0.9897605  0.98440206 0.9842562 ]
+	----
+	Epoch 5
+	Average objective: 4.1786
+	Alpha values: [0.922797   0.92606425 0.89740986 0.9243515  0.9063985  0.91864717]
+	----
+	Epoch 10
+	Average objective: 4.6349
+	Alpha values: [0.86670285 0.8631099  0.7984179  0.86197954 0.81625175 0.8518577 ]
+	----
+	Epoch 15
+	Average objective: 4.2780
+	Alpha values: [0.7917691 0.7965734 0.6979678 0.78881   0.7294958 0.7799209]
+	----
+	Epoch 20
+	Average objective: 4.1379
+	Alpha values: [0.71584475 0.7388921  0.5972555  0.7213863  0.6280227  0.71500397]
+	----
+	Epoch 25
+	Average objective: 2.8470
+	Alpha values: [0.64822745 0.6642735  0.48626977 0.6582479  0.5279775  0.64920545]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 2000, seed 3
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 2.2772
+	Alpha values: [0.9841966 0.9892454 0.9882156 0.9895958 0.9823391 0.9857927]
+	----
+	Epoch 5
+	Average objective: 2.1817
+	Alpha values: [0.9383462  0.9317398  0.9210356  0.9180996  0.89599925 0.9329351 ]
+	----
+	Epoch 10
+	Average objective: 2.0921
+	Alpha values: [0.8661579  0.8611408  0.85382175 0.8416125  0.80139834 0.87207985]
+	----
+	Epoch 15
+	Average objective: 1.4685
+	Alpha values: [0.8118521  0.8054144  0.79547757 0.7803517  0.69580793 0.81146073]
+	----
+	Epoch 20
+	Average objective: 1.5505
+	Alpha values: [0.7624826  0.7365262  0.72295177 0.70363426 0.5854337  0.7450991 ]
+	----
+	Epoch 25
+	Average objective: 1.4151
+	Alpha values: [0.70895797 0.6684961  0.67323875 0.633633   0.47514686 0.68314064]
+	----
+	Epoch 30
+	Average objective: 1.0155
+	Alpha values: [0.6663426  0.5988965  0.61303496 0.58276623 0.35468933 0.6112883 ]
+	----
+	Epoch 35
+	Average objective: 0.5582
+	Alpha values: [0.6110189  0.5522551  0.5500765  0.52554226 0.22747968 0.5552554 ]
+	----
+	Epoch 40
+	Average objective: 0.2206
+	Alpha values: [0.5710905  0.5145597  0.48696905 0.48119348 0.10626318 0.5106811 ]
+	----
+	Epoch 45
+	Average objective: 0.0118
+	Alpha values: [5.4224604e-01 4.8986459e-01 4.7031036e-01 4.6317521e-01 9.9999999e-09
+ 4.8972028e-01]
+	----
+	Epoch 50
+	Average objective: 0.0673
+	Alpha values: [0.53568345 0.48161432 0.4687407  0.4552926  0.02360235 0.48331952]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 2000, seed 4
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 4.8528
+	Alpha values: [0.99142355 0.9870403  0.98779565 0.98472303 0.9811579  0.9824669 ]
+	----
+	Epoch 5
+	Average objective: 3.9007
+	Alpha values: [0.9322193  0.9312572  0.91836953 0.9098023  0.8860317  0.937537  ]
+	----
+	Epoch 10
+	Average objective: 4.0837
+	Alpha values: [0.86761415 0.8680064  0.8502293  0.8447907  0.7843055  0.8831969 ]
+	----
+	Epoch 15
+	Average objective: 3.9243
+	Alpha values: [0.81222546 0.82585704 0.7812581  0.78114027 0.67774475 0.8236558 ]
+	----
+	Epoch 20
+	Average objective: 2.6471
+	Alpha values: [0.75508565 0.7476208  0.7146085  0.7061841  0.5679396  0.7658575 ]
+	----
+	Epoch 25
+	Average objective: 3.3352
+	Alpha values: [0.67584395 0.7019223  0.6574651  0.63925904 0.45748293 0.7041069 ]
+	----
+	Epoch 30
+	Average objective: 2.3591
+	Alpha values: [0.6120723  0.6429336  0.59655255 0.5546653  0.33548325 0.63665736]
+	----
+	Epoch 35
+	Average objective: 1.4393
+	Alpha values: [0.554855   0.58620554 0.5155517  0.48960206 0.193446   0.55506647]
+	----
+	Epoch 40
+	Average objective: 0.5076
+	Alpha values: [0.5050174  0.5646706  0.47516114 0.46050933 0.05623212 0.5146394 ]
+	----
+	Epoch 45
+	Average objective: -0.0032
+	Alpha values: [4.9325886e-01 5.5207199e-01 4.5558330e-01 4.3781286e-01 9.9999999e-09
+ 4.9602494e-01]
+	----
+	Epoch 50
+	Average objective: 0.1045
+	Alpha values: [0.48737508 0.5430318  0.43972656 0.42730275 0.02050331 0.49279165]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 5000, seed 0
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 0.5671
+	Alpha values: [0.9733515  0.9684052  0.9555653  0.9608844  0.9582018  0.96289074]
+	----
+	Epoch 5
+	Average objective: 0.4972
+	Alpha values: [0.83340937 0.8171917  0.720798   0.7950765  0.787553   0.81369835]
+	----
+	Epoch 10
+	Average objective: 0.3744
+	Alpha values: [0.6712427  0.64419883 0.4357343  0.6473992  0.5855064  0.66692674]
+	----
+	Epoch 15
+	Average objective: 0.1365
+	Alpha values: [0.5233379  0.4866982  0.0913784  0.50591433 0.42404437 0.51687163]
+	----
+	Epoch 20
+	Average objective: 0.0134
+	Alpha values: [0.47722414 0.45451334 0.0241486  0.47045347 0.3573174  0.48484522]
+	----
+	Epoch 25
+	Average objective: 0.0312
+	Alpha values: [0.4442261  0.43984082 0.02326535 0.44502893 0.3154517  0.4542396 ]
+	----
+	Epoch 30
+	Average objective: 0.0261
+	Alpha values: [0.3959005  0.4151358  0.02226413 0.41441092 0.2688434  0.43402538]
+	----
+	Epoch 35
+	Average objective: 0.0078
+	Alpha values: [0.37378028 0.35836607 0.02115662 0.38311657 0.17625952 0.40071163]
+	----
+	Epoch 40
+	Average objective: 0.0113
+	Alpha values: [0.35548133 0.34162244 0.0201349  0.36123246 0.14984109 0.36711213]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 5000, seed 1
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 0.0051
+	Alpha values: [0.9716225  0.95696163 0.95699835 0.97090405 0.965769   0.96592623]
+	----
+	Epoch 5
+	Average objective: 0.0043
+	Alpha values: [0.796756   0.79228085 0.7123123  0.8045108  0.74494857 0.7995548 ]
+	----
+	Epoch 10
+	Average objective: 0.0028
+	Alpha values: [0.62551576 0.5948683  0.44335    0.6042929  0.49301466 0.60574794]
+	----
+	Epoch 15
+	Average objective: 0.0013
+	Alpha values: [0.48305517 0.45282233 0.14278549 0.4274419  0.2679289  0.4422729 ]
+	----
+	Epoch 20
+	Average objective: 0.0002
+	Alpha values: [0.42804232 0.37948838 0.02189584 0.36316222 0.09469987 0.38184887]
+	----
+	Epoch 25
+	Average objective: -0.0000
+	Alpha values: [0.41290766 0.35487255 0.02153022 0.33428752 0.00857152 0.354108  ]
+	----
+	Epoch 30
+	Average objective: 0.0001
+	Alpha values: [0.40340784 0.34347367 0.02122686 0.31585184 0.02079677 0.34400925]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 5000, seed 2
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 0.9690
+	Alpha values: [0.9702533  0.9722575  0.9616881  0.9740133  0.96074283 0.9765668 ]
+	----
+	Epoch 5
+	Average objective: 0.8722
+	Alpha values: [0.81127983 0.8313492  0.7584225  0.8119352  0.7339912  0.83645004]
+	----
+	Epoch 10
+	Average objective: 0.6482
+	Alpha values: [0.6255561  0.67792785 0.50301915 0.6552753  0.46642324 0.6852109 ]
+	----
+	Epoch 15
+	Average objective: 0.3039
+	Alpha values: [0.46397325 0.53677887 0.2762836  0.5166225  0.19739908 0.5369367 ]
+	----
+	Epoch 20
+	Average objective: 0.0257
+	Alpha values: [0.41170558 0.48050514 0.08011878 0.47588235 0.01752162 0.47352323]
+	----
+	Epoch 25
+	Average objective: 0.0004
+	Alpha values: [0.4001901  0.47474223 0.0079712  0.46777087 0.00570076 0.4605732 ]
+	----
+	Epoch 30
+	Average objective: 0.0008
+	Alpha values: [0.39893186 0.46908826 0.02773569 0.46777564 0.00455707 0.4561171 ]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 5000, seed 3
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 11.5139
+	Alpha values: [0.9685932  0.9708698  0.9614192  0.98328054 0.9662236  0.96608037]
+	----
+	Epoch 5
+	Average objective: 10.1942
+	Alpha values: [0.8268564  0.83127594 0.7419506  0.8545813  0.8214622  0.8144996 ]
+	----
+	Epoch 10
+	Average objective: 7.9192
+	Alpha values: [0.6777482  0.6814357  0.48137376 0.6806814  0.64471096 0.65080845]
+	----
+	Epoch 15
+	Average objective: 3.8567
+	Alpha values: [0.5563254  0.5885435  0.18362321 0.5284708  0.5247681  0.4994367 ]
+	----
+	Epoch 20
+	Average objective: 0.0628
+	Alpha values: [0.5081152  0.55632704 0.02294469 0.4728504  0.46528825 0.4659479 ]
+	----
+	Epoch 25
+	Average objective: 0.3346
+	Alpha values: [0.49901354 0.518487   0.02495306 0.4497807  0.4410858  0.44381058]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 5000, seed 4
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 28.8441
+	Alpha values: [0.9709379  0.9742136  0.9610783  0.96918947 0.95624304 0.97381055]
+	----
+	Epoch 5
+	Average objective: 23.6530
+	Alpha values: [0.8079497  0.82000774 0.73021954 0.78852534 0.71228975 0.8005748 ]
+	----
+	Epoch 10
+	Average objective: 17.6704
+	Alpha values: [0.6480468  0.6591713  0.47597548 0.5927659  0.4349301  0.6166058 ]
+	----
+	Epoch 15
+	Average objective: 5.1625
+	Alpha values: [0.48583063 0.49136412 0.20717157 0.4139388  0.11214291 0.4471849 ]
+	----
+	Epoch 20
+	Average objective: 0.6977
+	Alpha values: [0.44584426 0.4624361  0.0756532  0.36935136 0.0239854  0.42933315]
+	----
+	Epoch 25
+	Average objective: 0.6548
+	Alpha values: [0.42900577 0.43465692 0.02654627 0.3495382  0.02404863 0.40935245]
+	----
+	Epoch 30
+	Average objective: 0.3057
+	Alpha values: [0.39381596 0.42250922 0.02642207 0.30969438 0.02403993 0.38996914]
+	----
+	Epoch 35
+	Average objective: -0.0293
+	Alpha values: [0.35308006 0.3920012  0.02631154 0.28220466 0.02403172 0.36992323]
+	----
+	Epoch 40
+	Average objective: 0.1912
+	Alpha values: [0.32421565 0.38486677 0.02623335 0.2587156  0.02402749 0.34556058]
+	----
+	Epoch 45
+	Average objective: 0.1429
+	Alpha values: [0.2851323  0.37180546 0.02610505 0.23423412 0.02402214 0.2950471 ]
+	----
+	Epoch 50
+	Average objective: 0.3133
+	Alpha values: [0.2522549  0.35445276 0.02602967 0.21401219 0.02401637 0.24397352]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 7000, seed 0
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 0.3803
+	Alpha values: [0.9532739  0.96069545 0.9509865  0.9671499  0.9376101  0.9528329 ]
+	----
+	Epoch 5
+	Average objective: 0.2589
+	Alpha values: [0.7271486  0.73350865 0.6593725  0.7396867  0.59573776 0.7302411 ]
+	----
+	Epoch 10
+	Average objective: 0.1002
+	Alpha values: [0.52381915 0.5191183  0.33511806 0.5374889  0.17715658 0.53770167]
+	----
+	Epoch 15
+	Average objective: 0.0020
+	Alpha values: [0.47251064 0.46584836 0.16434333 0.4897659  0.00266691 0.47385502]
+	----
+	Epoch 20
+	Average objective: 0.0009
+	Alpha values: [0.45753777 0.45206425 0.07391253 0.47608086 0.00055079 0.4552402 ]
+	----
+	Epoch 25
+	Average objective: 0.0015
+	Alpha values: [0.445927   0.44525504 0.03516581 0.47414324 0.0058889  0.44506565]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 7000, seed 1
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 0.0023
+	Alpha values: [0.95455724 0.9587445  0.95847076 0.9614513  0.9376923  0.9492645 ]
+	----
+	Epoch 5
+	Average objective: 0.0016
+	Alpha values: [0.72486347 0.75372916 0.68926126 0.75709575 0.59789306 0.7525066 ]
+	----
+	Epoch 10
+	Average objective: 0.0009
+	Alpha values: [0.48880923 0.55755097 0.42485622 0.5980459  0.19210294 0.55037063]
+	----
+	Epoch 15
+	Average objective: 0.0001
+	Alpha values: [0.42070943 0.50980026 0.2966253  0.5349051  0.02469194 0.49304956]
+	----
+	Epoch 20
+	Average objective: 0.0001
+	Alpha values: [0.37810656 0.4623067  0.18351991 0.4967866  0.02434614 0.46742216]
+	----
+	Epoch 25
+	Average objective: 0.0000
+	Alpha values: [3.2592240e-01 4.2167512e-01 9.9999999e-09 4.5219269e-01 2.3981154e-02
+ 4.2809969e-01]
+	----
+	Epoch 30
+	Average objective: 0.0000
+	Alpha values: [0.2732739  0.39672115 0.02892021 0.42906868 0.02367943 0.3972177 ]
+	----
+	Epoch 35
+	Average objective: 0.0000
+	Alpha values: [0.18211082 0.36098748 0.02887025 0.38890836 0.02332103 0.34472921]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 7000, seed 2
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 24.4705
+	Alpha values: [0.9590142  0.96787274 0.949173   0.968359   0.94107294 0.9589217 ]
+	----
+	Epoch 5
+	Average objective: 21.1579
+	Alpha values: [0.74177593 0.78689384 0.65480524 0.7556506  0.62640893 0.76436245]
+	----
+	Epoch 10
+	Average objective: 10.2977
+	Alpha values: [0.5281161  0.60545164 0.31235465 0.5817276  0.24242088 0.56618595]
+	----
+	Epoch 15
+	Average objective: 0.2804
+	Alpha values: [0.43853182 0.52355665 0.1408125  0.5011723  0.0018072  0.50517106]
+	----
+	Epoch 20
+	Average objective: 0.1970
+	Alpha values: [0.42417112 0.5180878  0.06097233 0.48792154 0.00171317 0.5109677 ]
+	----
+	Epoch 25
+	Average objective: -0.0103
+	Alpha values: [0.4159171  0.5080305  0.02687722 0.4778427  0.00166473 0.5122056 ]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 7000, seed 3
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 0.7962
+	Alpha values: [0.96430165 0.9548134  0.942906   0.9534119  0.9335738  0.9732915 ]
+	----
+	Epoch 5
+	Average objective: 0.6092
+	Alpha values: [0.7601062  0.7228957  0.6373592  0.73592955 0.5941609  0.75753355]
+	----
+	Epoch 10
+	Average objective: 0.2578
+	Alpha values: [0.52011627 0.4978892  0.27850398 0.55014104 0.18213111 0.54517007]
+	----
+	Epoch 15
+	Average objective: 0.0099
+	Alpha values: [0.41726264 0.42240942 0.00714163 0.45147422 0.02458317 0.4601007 ]
+	----
+	Epoch 20
+	Average objective: 0.0040
+	Alpha values: [0.40603057 0.4055267  0.00450002 0.44607386 0.02452215 0.44722766]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 7000, seed 4
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 3.1237
+	Alpha values: [0.9611709  0.9597807  0.93519765 0.96780217 0.9447812  0.96727556]
+	----
+	Epoch 5
+	Average objective: 2.2233
+	Alpha values: [0.7398462 0.7496306 0.5737039 0.7203064 0.631555  0.7711113]
+	----
+	Epoch 10
+	Average objective: 0.8299
+	Alpha values: [0.548846   0.5621409  0.15407734 0.47139674 0.28609082 0.6020629 ]
+	----
+	Epoch 15
+	Average objective: 0.0378
+	Alpha values: [0.47932547 0.48543572 0.02267354 0.3974737  0.03370391 0.5243436 ]
+	----
+	Epoch 20
+	Average objective: 0.0610
+	Alpha values: [0.45967212 0.46488613 0.02141517 0.38285628 0.02590752 0.49631044]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 100, seed 0
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 0.0062
+	Alpha values: [1.0009991 0.999     0.999     1.0009999 0.999     1.001    ]
+	----
+	Epoch 5
+	Average objective: 0.0177
+	Alpha values: [0.99717563 0.9953244  0.9951311  1.0012003  0.9940557  0.99886066]
+	----
+	Epoch 10
+	Average objective: 0.0150
+	Alpha values: [0.9947884  0.99250627 0.99079907 0.99909043 0.9890699  0.99619937]
+	----
+	Epoch 15
+	Average objective: 0.0138
+	Alpha values: [0.99109197 0.9884757  0.9860472  0.9951418  0.9843238  0.99261737]
+	----
+	Epoch 20
+	Average objective: 0.0191
+	Alpha values: [0.9874461  0.98447245 0.98144627 0.9916653  0.9793739  0.98865277]
+	----
+Early stopping
+Running experiment with dataset size 100, seed 1
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 0.7147
+	Alpha values: [0.999 0.999 0.999 0.999 0.999 1.001]
+	----
+	Epoch 5
+	Average objective: 0.5712
+	Alpha values: [0.9950874  0.99732363 0.99454343 0.9941235  0.9946026  1.0008385 ]
+	----
+	Epoch 10
+	Average objective: 0.6946
+	Alpha values: [0.9926111  0.9966123  0.98979276 0.99015874 0.99012494 0.99783045]
+	----
+Early stopping
+Running experiment with dataset size 100, seed 2
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 3.2535
+	Alpha values: [0.999 0.999 1.001 0.999 0.999 0.999]
+	----
+	Epoch 5
+	Average objective: 2.0851
+	Alpha values: [0.99651915 0.99687785 0.9978067  0.9944468  0.9941261  0.99461323]
+	----
+	Epoch 10
+	Average objective: 2.4849
+	Alpha values: [0.9949137  0.9945934  0.9940048  0.98991007 0.9891019  0.99199843]
+	----
+	Epoch 15
+	Average objective: 3.1622
+	Alpha values: [0.9919408  0.9920208  0.99091977 0.9865005  0.9840269  0.98909837]
+	----
+Early stopping
+Running experiment with dataset size 100, seed 3
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 0.0083
+	Alpha values: [0.999      0.99900013 0.999      0.999      0.999      0.999     ]
+	----
+	Epoch 5
+	Average objective: 0.0057
+	Alpha values: [0.9960727  0.994153   0.9957981  0.99481636 0.9941751  0.9972535 ]
+	----
+	Epoch 10
+	Average objective: 0.0098
+	Alpha values: [0.992546   0.9894183  0.99202937 0.99116504 0.9894387  0.99370414]
+	----
+	Epoch 15
+	Average objective: 0.0078
+	Alpha values: [0.98910403 0.985527   0.9878208  0.9892333  0.9847677  0.990336  ]
+	----
+Early stopping
+Running experiment with dataset size 100, seed 4
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 0.0481
+	Alpha values: [1.0009999 0.999     0.999     0.999     0.999     0.999    ]
+	----
+	Epoch 5
+	Average objective: 0.0477
+	Alpha values: [0.9991536  0.99454373 0.9959902  0.99402374 0.99405444 0.9946354 ]
+	----
+	Epoch 10
+	Average objective: 0.0436
+	Alpha values: [0.99812746 0.99178505 0.99280393 0.9892427  0.98918486 0.99226934]
+	----
+	Epoch 15
+	Average objective: 0.0459
+	Alpha values: [0.9959255  0.98825973 0.9887266  0.9854459  0.98435605 0.9896924 ]
+	----
+Early stopping
+Running experiment with dataset size 500, seed 0
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 1.0421
+	Alpha values: [0.995429  0.9952759 0.995518  0.9950512 0.9954936 1.0017072]
+	----
+	Epoch 5
+	Average objective: 1.0884
+	Alpha values: [0.9814695 0.9791727 0.9731342 0.9743839 0.9727139 0.9918894]
+	----
+	Epoch 10
+	Average objective: 1.0436
+	Alpha values: [0.9653429  0.96246284 0.948567   0.95535815 0.9508865  0.9812787 ]
+	----
+Early stopping
+Running experiment with dataset size 500, seed 1
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 39.2336
+	Alpha values: [0.9956045  0.99613106 0.995786   0.9966746  0.9955262  0.9951749 ]
+	----
+	Epoch 5
+	Average objective: 38.8838
+	Alpha values: [0.98201275 0.98153454 0.9733924  0.97803164 0.97630626 0.9739713 ]
+	----
+	Epoch 10
+	Average objective: 37.3111
+	Alpha values: [0.964404   0.9688235  0.9495481  0.9608996  0.9613966  0.95792174]
+	----
+	Epoch 15
+	Average objective: 28.4081
+	Alpha values: [0.9447893  0.94885045 0.924858   0.9392245  0.9477939  0.937343  ]
+	----
+	Epoch 20
+	Average objective: 36.5672
+	Alpha values: [0.9300308  0.93069124 0.9025875  0.92188394 0.93320274 0.91575027]
+	----
+	Epoch 25
+	Average objective: 41.8763
+	Alpha values: [0.91296    0.91129273 0.8810762  0.90485805 0.9219798  0.89940786]
+	----
+Early stopping
+Running experiment with dataset size 500, seed 2
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 0.0195
+	Alpha values: [0.9952158  0.99714404 0.99538136 0.9962285  0.9951711  0.9981745 ]
+	----
+	Epoch 5
+	Average objective: 0.0160
+	Alpha values: [0.97647864 0.9841776  0.9715905  0.977516   0.97391605 0.9822142 ]
+	----
+	Epoch 10
+	Average objective: 0.0168
+	Alpha values: [0.96331686 0.96558046 0.9478614  0.9632972  0.95143986 0.96523565]
+	----
+	Epoch 15
+	Average objective: 0.0172
+	Alpha values: [0.94851667 0.9481778  0.92383105 0.9479721  0.9306672  0.94885254]
+	----
+Early stopping
+Running experiment with dataset size 500, seed 3
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 1.7576
+	Alpha values: [0.9978972  0.99622416 0.9952014  0.9959565  0.99570256 0.9958948 ]
+	----
+	Epoch 5
+	Average objective: 1.7150
+	Alpha values: [0.9881381  0.98311394 0.9711037  0.97771794 0.9774034  0.98055303]
+	----
+	Epoch 10
+	Average objective: 1.7125
+	Alpha values: [0.9704537  0.97266394 0.94701755 0.96371263 0.96194685 0.96088994]
+	----
+	Epoch 15
+	Average objective: 2.4459
+	Alpha values: [0.9556711  0.95939827 0.92409855 0.94670075 0.95007575 0.9528406 ]
+	----
+Early stopping
+Running experiment with dataset size 500, seed 4
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 10.8808
+	Alpha values: [0.99912095 0.99579835 0.9953975  0.9957468  0.9955368  0.99519473]
+	----
+	Epoch 5
+	Average objective: 11.8741
+	Alpha values: [0.9838225  0.97818947 0.97259825 0.9812921  0.9765188  0.9745794 ]
+	----
+	Epoch 10
+	Average objective: 10.9094
+	Alpha values: [0.96516204 0.9596717  0.9496445  0.96583825 0.95832604 0.95605415]
+	----
+	Epoch 15
+	Average objective: 11.5675
+	Alpha values: [0.948743  0.9447286 0.9273437 0.949718  0.9403683 0.9346525]
+	----
+Early stopping
+Running experiment with dataset size 1000, seed 0
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 21.1263
+	Alpha values: [0.99116874 0.99378276 0.9911825  0.9963329  0.99118686 0.9923356 ]
+	----
+	Epoch 5
+	Average objective: 21.9590
+	Alpha values: [0.9588339  0.962915   0.94419    0.9575902  0.94357145 0.9593423 ]
+	----
+	Epoch 10
+	Average objective: 21.0634
+	Alpha values: [0.9253835  0.9324558  0.8954231  0.9260285  0.8992346  0.92629975]
+	----
+Early stopping
+Running experiment with dataset size 1000, seed 1
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 0.0914
+	Alpha values: [0.9961175  0.9939686  0.99177325 0.9946206  0.99187016 0.9931491 ]
+	----
+	Epoch 5
+	Average objective: 0.0862
+	Alpha values: [0.9711164  0.9614994  0.95275396 0.96758187 0.950277   0.9666324 ]
+	----
+	Epoch 10
+	Average objective: 0.0918
+	Alpha values: [0.94423485 0.93145573 0.91418064 0.93963635 0.9052274  0.9374428 ]
+	----
+	Epoch 15
+	Average objective: 0.0972
+	Alpha values: [0.90947187 0.9090251  0.87459433 0.90708816 0.85622364 0.90068775]
+	----
+	Epoch 20
+	Average objective: 0.0715
+	Alpha values: [0.86446494 0.8789393  0.8327833  0.87379247 0.80636615 0.8690698 ]
+	----
+	Epoch 25
+	Average objective: 0.0651
+	Alpha values: [0.8251417  0.84739393 0.7953711  0.8345945  0.75377154 0.8292307 ]
+	----
+Early stopping
+Running experiment with dataset size 1000, seed 2
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 10.5961
+	Alpha values: [0.9948638  0.99208033 0.99113226 0.9923697  0.9907701  0.9909827 ]
+	----
+	Epoch 5
+	Average objective: 9.6856
+	Alpha values: [0.9665727  0.95851827 0.9518159  0.97277886 0.9505133  0.9610236 ]
+	----
+	Epoch 10
+	Average objective: 9.0982
+	Alpha values: [0.92801017 0.92146826 0.90646917 0.94553804 0.9098428  0.9213288 ]
+	----
+	Epoch 15
+	Average objective: 9.9097
+	Alpha values: [0.89633256 0.8863204  0.864136   0.9075583  0.8731856  0.89323705]
+	----
+Early stopping
+Running experiment with dataset size 1000, seed 3
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 0.3474
+	Alpha values: [0.99338955 0.9922987  0.9947542  0.99254525 0.9904275  0.9941409 ]
+	----
+	Epoch 5
+	Average objective: 0.4128
+	Alpha values: [0.9582204  0.967692   0.96188426 0.9644382  0.94513315 0.9623457 ]
+	----
+	Epoch 10
+	Average objective: 0.3847
+	Alpha values: [0.92794424 0.94461703 0.9300393  0.9311363  0.89809155 0.9275949 ]
+	----
+	Epoch 15
+	Average objective: 0.3916
+	Alpha values: [0.9063973  0.9186793  0.89780873 0.900111   0.85031825 0.8963011 ]
+	----
+Early stopping
+Running experiment with dataset size 1000, seed 4
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 0.1437
+	Alpha values: [0.99615    0.9905749  0.9907306  0.99250656 0.99789447 0.991951  ]
+	----
+	Epoch 5
+	Average objective: 0.1235
+	Alpha values: [0.9665973  0.95313567 0.94451034 0.9666548  0.9745938  0.95846003]
+	----
+	Epoch 10
+	Average objective: 0.1212
+	Alpha values: [0.94498664 0.91711324 0.8982989  0.937884   0.95256984 0.9249093 ]
+	----
+	Epoch 15
+	Average objective: 0.1057
+	Alpha values: [0.9187249  0.8804938  0.8498632  0.9065649  0.9204691  0.88533604]
+	----
+Early stopping
+Running experiment with dataset size 2000, seed 0
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 10.1599
+	Alpha values: [0.9883392  0.9851373  0.9811165  0.9842835  0.9839101  0.98581773]
+	----
+	Epoch 5
+	Average objective: 13.5518
+	Alpha values: [0.9110659  0.92770815 0.8928797  0.9152356  0.9076787  0.9103037 ]
+	----
+	Epoch 10
+	Average objective: 11.9767
+	Alpha values: [0.8454105  0.8626201  0.79724765 0.8507207  0.8393159  0.8491213 ]
+	----
+	Epoch 15
+	Average objective: 12.2569
+	Alpha values: [0.77696204 0.7903442  0.6961461  0.7871079  0.75836647 0.78703976]
+	----
+	Epoch 20
+	Average objective: 7.8093
+	Alpha values: [0.68523884 0.73230845 0.5884773  0.7128137  0.6931768  0.7125854 ]
+	----
+	Epoch 25
+	Average objective: 7.7972
+	Alpha values: [0.60521835 0.63485146 0.47286934 0.6253098  0.61802655 0.6364721 ]
+	----
+	Epoch 30
+	Average objective: 7.0050
+	Alpha values: [0.517259   0.5493037  0.3458734  0.5436502  0.52915895 0.5659125 ]
+	----
+	Epoch 35
+	Average objective: 4.2813
+	Alpha values: [0.44345266 0.46162668 0.20034881 0.46484622 0.44380364 0.48424605]
+	----
+	Epoch 40
+	Average objective: 1.4544
+	Alpha values: [0.4001671  0.4043496  0.06178408 0.43033686 0.36567265 0.4331146 ]
+	----
+	Epoch 45
+	Average objective: 0.0054
+	Alpha values: [0.3781904  0.3870595  0.00620396 0.41080138 0.34256262 0.4202094 ]
+	----
+	Epoch 50
+	Average objective: 0.1911
+	Alpha values: [0.3752224  0.36698806 0.0062168  0.39015806 0.31596196 0.41285175]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 2000, seed 1
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 0.0017
+	Alpha values: [0.9848925  0.98259944 0.98101723 0.9851101  0.9824385  0.9846307 ]
+	----
+	Epoch 5
+	Average objective: 0.0016
+	Alpha values: [0.9149559 0.9200569 0.8899173 0.9309876 0.8886137 0.9330305]
+	----
+	Epoch 10
+	Average objective: 0.0013
+	Alpha values: [0.8495594  0.8488935  0.7971218  0.863746   0.79512495 0.8542389 ]
+	----
+Early stopping
+Running experiment with dataset size 2000, seed 2
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 5.1674
+	Alpha values: [0.9920689  0.9931109  0.9855248  0.9897605  0.98440206 0.9842562 ]
+	----
+	Epoch 5
+	Average objective: 4.1786
+	Alpha values: [0.922797   0.92606425 0.89740986 0.9243515  0.9063985  0.91864717]
+	----
+	Epoch 10
+	Average objective: 4.6349
+	Alpha values: [0.86670285 0.8631099  0.7984179  0.86197954 0.81625175 0.8518577 ]
+	----
+	Epoch 15
+	Average objective: 4.2780
+	Alpha values: [0.7917691 0.7965734 0.6979678 0.78881   0.7294958 0.7799209]
+	----
+	Epoch 20
+	Average objective: 4.1379
+	Alpha values: [0.71584475 0.7388921  0.5972555  0.7213863  0.6280227  0.71500397]
+	----
+	Epoch 25
+	Average objective: 2.8470
+	Alpha values: [0.64822745 0.6642735  0.48626977 0.6582479  0.5279775  0.64920545]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 2000, seed 3
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 2.2772
+	Alpha values: [0.9841966 0.9892454 0.9882156 0.9895958 0.9823391 0.9857927]
+	----
+	Epoch 5
+	Average objective: 2.1817
+	Alpha values: [0.9383462  0.9317398  0.9210356  0.9180996  0.89599925 0.9329351 ]
+	----
+	Epoch 10
+	Average objective: 2.0921
+	Alpha values: [0.8661579  0.8611408  0.85382175 0.8416125  0.80139834 0.87207985]
+	----
+	Epoch 15
+	Average objective: 1.4685
+	Alpha values: [0.8118521  0.8054144  0.79547757 0.7803517  0.69580793 0.81146073]
+	----
+	Epoch 20
+	Average objective: 1.5505
+	Alpha values: [0.7624826  0.7365262  0.72295177 0.70363426 0.5854337  0.7450991 ]
+	----
+	Epoch 25
+	Average objective: 1.4151
+	Alpha values: [0.70895797 0.6684961  0.67323875 0.633633   0.47514686 0.68314064]
+	----
+	Epoch 30
+	Average objective: 1.0155
+	Alpha values: [0.6663426  0.5988965  0.61303496 0.58276623 0.35468933 0.6112883 ]
+	----
+	Epoch 35
+	Average objective: 0.5582
+	Alpha values: [0.6110189  0.5522551  0.5500765  0.52554226 0.22747968 0.5552554 ]
+	----
+	Epoch 40
+	Average objective: 0.2206
+	Alpha values: [0.5710905  0.5145597  0.48696905 0.48119348 0.10626318 0.5106811 ]
+	----
+	Epoch 45
+	Average objective: 0.0118
+	Alpha values: [5.4224604e-01 4.8986459e-01 4.7031036e-01 4.6317521e-01 9.9999999e-09
+ 4.8972028e-01]
+	----
+	Epoch 50
+	Average objective: 0.0673
+	Alpha values: [0.53568345 0.48161432 0.4687407  0.4552926  0.02360235 0.48331952]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 2000, seed 4
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 4.8528
+	Alpha values: [0.99142355 0.9870403  0.98779565 0.98472303 0.9811579  0.9824669 ]
+	----
+	Epoch 5
+	Average objective: 3.9007
+	Alpha values: [0.9322193  0.9312572  0.91836953 0.9098023  0.8860317  0.937537  ]
+	----
+	Epoch 10
+	Average objective: 4.0837
+	Alpha values: [0.86761415 0.8680064  0.8502293  0.8447907  0.7843055  0.8831969 ]
+	----
+	Epoch 15
+	Average objective: 3.9243
+	Alpha values: [0.81222546 0.82585704 0.7812581  0.78114027 0.67774475 0.8236558 ]
+	----
+	Epoch 20
+	Average objective: 2.6471
+	Alpha values: [0.75508565 0.7476208  0.7146085  0.7061841  0.5679396  0.7658575 ]
+	----
+	Epoch 25
+	Average objective: 3.3352
+	Alpha values: [0.67584395 0.7019223  0.6574651  0.63925904 0.45748293 0.7041069 ]
+	----
+	Epoch 30
+	Average objective: 2.3591
+	Alpha values: [0.6120723  0.6429336  0.59655255 0.5546653  0.33548325 0.63665736]
+	----
+	Epoch 35
+	Average objective: 1.4393
+	Alpha values: [0.554855   0.58620554 0.5155517  0.48960206 0.193446   0.55506647]
+	----
+	Epoch 40
+	Average objective: 0.5076
+	Alpha values: [0.5050174  0.5646706  0.47516114 0.46050933 0.05623212 0.5146394 ]
+	----
+	Epoch 45
+	Average objective: -0.0032
+	Alpha values: [4.9325886e-01 5.5207199e-01 4.5558330e-01 4.3781286e-01 9.9999999e-09
+ 4.9602494e-01]
+	----
+	Epoch 50
+	Average objective: 0.1045
+	Alpha values: [0.48737508 0.5430318  0.43972656 0.42730275 0.02050331 0.49279165]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 5000, seed 0
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 0.5671
+	Alpha values: [0.9733515  0.9684052  0.9555653  0.9608844  0.9582018  0.96289074]
+	----
+	Epoch 5
+	Average objective: 0.4972
+	Alpha values: [0.83340937 0.8171917  0.720798   0.7950765  0.787553   0.81369835]
+	----
+	Epoch 10
+	Average objective: 0.3744
+	Alpha values: [0.6712427  0.64419883 0.4357343  0.6473992  0.5855064  0.66692674]
+	----
+	Epoch 15
+	Average objective: 0.1365
+	Alpha values: [0.5233379  0.4866982  0.0913784  0.50591433 0.42404437 0.51687163]
+	----
+	Epoch 20
+	Average objective: 0.0134
+	Alpha values: [0.47722414 0.45451334 0.0241486  0.47045347 0.3573174  0.48484522]
+	----
+	Epoch 25
+	Average objective: 0.0312
+	Alpha values: [0.4442261  0.43984082 0.02326535 0.44502893 0.3154517  0.4542396 ]
+	----
+	Epoch 30
+	Average objective: 0.0261
+	Alpha values: [0.3959005  0.4151358  0.02226413 0.41441092 0.2688434  0.43402538]
+	----
+	Epoch 35
+	Average objective: 0.0078
+	Alpha values: [0.37378028 0.35836607 0.02115662 0.38311657 0.17625952 0.40071163]
+	----
+	Epoch 40
+	Average objective: 0.0113
+	Alpha values: [0.35548133 0.34162244 0.0201349  0.36123246 0.14984109 0.36711213]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 5000, seed 1
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 0.0051
+	Alpha values: [0.9716225  0.95696163 0.95699835 0.97090405 0.965769   0.96592623]
+	----
+	Epoch 5
+	Average objective: 0.0043
+	Alpha values: [0.796756   0.79228085 0.7123123  0.8045108  0.74494857 0.7995548 ]
+	----
+	Epoch 10
+	Average objective: 0.0028
+	Alpha values: [0.62551576 0.5948683  0.44335    0.6042929  0.49301466 0.60574794]
+	----
+	Epoch 15
+	Average objective: 0.0013
+	Alpha values: [0.48305517 0.45282233 0.14278549 0.4274419  0.2679289  0.4422729 ]
+	----
+	Epoch 20
+	Average objective: 0.0002
+	Alpha values: [0.42804232 0.37948838 0.02189584 0.36316222 0.09469987 0.38184887]
+	----
+	Epoch 25
+	Average objective: -0.0000
+	Alpha values: [0.41290766 0.35487255 0.02153022 0.33428752 0.00857152 0.354108  ]
+	----
+	Epoch 30
+	Average objective: 0.0001
+	Alpha values: [0.40340784 0.34347367 0.02122686 0.31585184 0.02079677 0.34400925]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 5000, seed 2
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 0.9690
+	Alpha values: [0.9702533  0.9722575  0.9616881  0.9740133  0.96074283 0.9765668 ]
+	----
+	Epoch 5
+	Average objective: 0.8722
+	Alpha values: [0.81127983 0.8313492  0.7584225  0.8119352  0.7339912  0.83645004]
+	----
+	Epoch 10
+	Average objective: 0.6482
+	Alpha values: [0.6255561  0.67792785 0.50301915 0.6552753  0.46642324 0.6852109 ]
+	----
+	Epoch 15
+	Average objective: 0.3039
+	Alpha values: [0.46397325 0.53677887 0.2762836  0.5166225  0.19739908 0.5369367 ]
+	----
+	Epoch 20
+	Average objective: 0.0257
+	Alpha values: [0.41170558 0.48050514 0.08011878 0.47588235 0.01752162 0.47352323]
+	----
+	Epoch 25
+	Average objective: 0.0004
+	Alpha values: [0.4001901  0.47474223 0.0079712  0.46777087 0.00570076 0.4605732 ]
+	----
+	Epoch 30
+	Average objective: 0.0008
+	Alpha values: [0.39893186 0.46908826 0.02773569 0.46777564 0.00455707 0.4561171 ]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 5000, seed 3
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 11.5139
+	Alpha values: [0.9685932  0.9708698  0.9614192  0.98328054 0.9662236  0.96608037]
+	----
+	Epoch 5
+	Average objective: 10.1942
+	Alpha values: [0.8268564  0.83127594 0.7419506  0.8545813  0.8214622  0.8144996 ]
+	----
+	Epoch 10
+	Average objective: 7.9192
+	Alpha values: [0.6777482  0.6814357  0.48137376 0.6806814  0.64471096 0.65080845]
+	----
+	Epoch 15
+	Average objective: 3.8567
+	Alpha values: [0.5563254  0.5885435  0.18362321 0.5284708  0.5247681  0.4994367 ]
+	----
+	Epoch 20
+	Average objective: 0.0628
+	Alpha values: [0.5081152  0.55632704 0.02294469 0.4728504  0.46528825 0.4659479 ]
+	----
+	Epoch 25
+	Average objective: 0.3346
+	Alpha values: [0.49901354 0.518487   0.02495306 0.4497807  0.4410858  0.44381058]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 5000, seed 4
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 28.8441
+	Alpha values: [0.9709379  0.9742136  0.9610783  0.96918947 0.95624304 0.97381055]
+	----
+	Epoch 5
+	Average objective: 23.6530
+	Alpha values: [0.8079497  0.82000774 0.73021954 0.78852534 0.71228975 0.8005748 ]
+	----
+	Epoch 10
+	Average objective: 17.6704
+	Alpha values: [0.6480468  0.6591713  0.47597548 0.5927659  0.4349301  0.6166058 ]
+	----
+	Epoch 15
+	Average objective: 5.1625
+	Alpha values: [0.48583063 0.49136412 0.20717157 0.4139388  0.11214291 0.4471849 ]
+	----
+	Epoch 20
+	Average objective: 0.6977
+	Alpha values: [0.44584426 0.4624361  0.0756532  0.36935136 0.0239854  0.42933315]
+	----
+	Epoch 25
+	Average objective: 0.6548
+	Alpha values: [0.42900577 0.43465692 0.02654627 0.3495382  0.02404863 0.40935245]
+	----
+	Epoch 30
+	Average objective: 0.3057
+	Alpha values: [0.39381596 0.42250922 0.02642207 0.30969438 0.02403993 0.38996914]
+	----
+	Epoch 35
+	Average objective: -0.0293
+	Alpha values: [0.35308006 0.3920012  0.02631154 0.28220466 0.02403172 0.36992323]
+	----
+	Epoch 40
+	Average objective: 0.1912
+	Alpha values: [0.32421565 0.38486677 0.02623335 0.2587156  0.02402749 0.34556058]
+	----
+	Epoch 45
+	Average objective: 0.1429
+	Alpha values: [0.2851323  0.37180546 0.02610505 0.23423412 0.02402214 0.2950471 ]
+	----
+	Epoch 50
+	Average objective: 0.3133
+	Alpha values: [0.2522549  0.35445276 0.02602967 0.21401219 0.02401637 0.24397352]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 7000, seed 0
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 0.3803
+	Alpha values: [0.9532739  0.96069545 0.9509865  0.9671499  0.9376101  0.9528329 ]
+	----
+	Epoch 5
+	Average objective: 0.2589
+	Alpha values: [0.7271486  0.73350865 0.6593725  0.7396867  0.59573776 0.7302411 ]
+	----
+	Epoch 10
+	Average objective: 0.1002
+	Alpha values: [0.52381915 0.5191183  0.33511806 0.5374889  0.17715658 0.53770167]
+	----
+	Epoch 15
+	Average objective: 0.0020
+	Alpha values: [0.47251064 0.46584836 0.16434333 0.4897659  0.00266691 0.47385502]
+	----
+	Epoch 20
+	Average objective: 0.0009
+	Alpha values: [0.45753777 0.45206425 0.07391253 0.47608086 0.00055079 0.4552402 ]
+	----
+	Epoch 25
+	Average objective: 0.0015
+	Alpha values: [0.445927   0.44525504 0.03516581 0.47414324 0.0058889  0.44506565]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 7000, seed 1
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 0.0023
+	Alpha values: [0.95455724 0.9587445  0.95847076 0.9614513  0.9376923  0.9492645 ]
+	----
+	Epoch 5
+	Average objective: 0.0016
+	Alpha values: [0.72486347 0.75372916 0.68926126 0.75709575 0.59789306 0.7525066 ]
+	----
+	Epoch 10
+	Average objective: 0.0009
+	Alpha values: [0.48880923 0.55755097 0.42485622 0.5980459  0.19210294 0.55037063]
+	----
+	Epoch 15
+	Average objective: 0.0001
+	Alpha values: [0.42070943 0.50980026 0.2966253  0.5349051  0.02469194 0.49304956]
+	----
+	Epoch 20
+	Average objective: 0.0001
+	Alpha values: [0.37810656 0.4623067  0.18351991 0.4967866  0.02434614 0.46742216]
+	----
+	Epoch 25
+	Average objective: 0.0000
+	Alpha values: [3.2592240e-01 4.2167512e-01 9.9999999e-09 4.5219269e-01 2.3981154e-02
+ 4.2809969e-01]
+	----
+	Epoch 30
+	Average objective: 0.0000
+	Alpha values: [0.2732739  0.39672115 0.02892021 0.42906868 0.02367943 0.3972177 ]
+	----
+	Epoch 35
+	Average objective: 0.0000
+	Alpha values: [0.18211082 0.36098748 0.02887025 0.38890836 0.02332103 0.34472921]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 7000, seed 2
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 24.4705
+	Alpha values: [0.9590142  0.96787274 0.949173   0.968359   0.94107294 0.9589217 ]
+	----
+	Epoch 5
+	Average objective: 21.1579
+	Alpha values: [0.74177593 0.78689384 0.65480524 0.7556506  0.62640893 0.76436245]
+	----
+	Epoch 10
+	Average objective: 10.2977
+	Alpha values: [0.5281161  0.60545164 0.31235465 0.5817276  0.24242088 0.56618595]
+	----
+	Epoch 15
+	Average objective: 0.2804
+	Alpha values: [0.43853182 0.52355665 0.1408125  0.5011723  0.0018072  0.50517106]
+	----
+	Epoch 20
+	Average objective: 0.1970
+	Alpha values: [0.42417112 0.5180878  0.06097233 0.48792154 0.00171317 0.5109677 ]
+	----
+	Epoch 25
+	Average objective: -0.0103
+	Alpha values: [0.4159171  0.5080305  0.02687722 0.4778427  0.00166473 0.5122056 ]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 7000, seed 3
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 0.7962
+	Alpha values: [0.96430165 0.9548134  0.942906   0.9534119  0.9335738  0.9732915 ]
+	----
+	Epoch 5
+	Average objective: 0.6092
+	Alpha values: [0.7601062  0.7228957  0.6373592  0.73592955 0.5941609  0.75753355]
+	----
+	Epoch 10
+	Average objective: 0.2578
+	Alpha values: [0.52011627 0.4978892  0.27850398 0.55014104 0.18213111 0.54517007]
+	----
+	Epoch 15
+	Average objective: 0.0099
+	Alpha values: [0.41726264 0.42240942 0.00714163 0.45147422 0.02458317 0.4601007 ]
+	----
+	Epoch 20
+	Average objective: 0.0040
+	Alpha values: [0.40603057 0.4055267  0.00450002 0.44607386 0.02452215 0.44722766]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+Running experiment with dataset size 7000, seed 4
+	Meaningful indices: [2 4]
+	Epoch 0
+	Average objective: 3.1237
+	Alpha values: [0.9611709  0.9597807  0.93519765 0.96780217 0.9447812  0.96727556]
+	----
+	Epoch 5
+	Average objective: 2.2233
+	Alpha values: [0.7398462 0.7496306 0.5737039 0.7203064 0.631555  0.7711113]
+	----
+	Epoch 10
+	Average objective: 0.8299
+	Alpha values: [0.548846   0.5621409  0.15407734 0.47139674 0.28609082 0.6020629 ]
+	----
+	Epoch 15
+	Average objective: 0.0378
+	Alpha values: [0.47932547 0.48543572 0.02267354 0.3974737  0.03370391 0.5243436 ]
+	----
+	Epoch 20
+	Average objective: 0.0610
+	Alpha values: [0.45967212 0.46488613 0.02141517 0.38285628 0.02590752 0.49631044]
+	----
+Early stopping
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances
+	Warning: NaN values found in squared distances

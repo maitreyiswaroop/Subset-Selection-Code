@@ -1,0 +1,1 @@
+python3 main.py --dim_X 1 --k 1 --size 10000 --epsilon 0

@@ -1,2 +1,15 @@
 datasets/
 results/
+code_v1/
+subset/
+
+# Python basics
+__pycache__/
+*.py[cod]
+
+# Mac system files
+.DS_Store
+
+# Results
+results/
+*.png
