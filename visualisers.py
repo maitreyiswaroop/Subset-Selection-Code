@@ -317,3 +317,52 @@ def plot_variable_importance(results_list, dataset_sizes, optimizer_type, save_p
     os.makedirs(os.path.dirname(save_path + f'{optimizer_type}/'), exist_ok=True)
     plt.savefig(save_path + f'{optimizer_type}/meaningful_weight_vs_size.png')
     plt.close()
+
+def plot_population_covariances(pop_data, save_path, meaningful_indices):
+    """Plot covariance matrices for all populations in a single figure."""
+    n_pops = len(pop_data)
+    fig, axes = plt.subplots(1, n_pops, figsize=(6*n_pops, 5))
+    if n_pops == 1:
+        axes = [axes]
+    
+    vmin, vmax = float('inf'), float('-inf')
+    # First pass to get common scale
+    for pop in pop_data:
+        X = pop['X'].cpu().numpy()
+        cov = np.corrcoef(X.T)  # Using correlation instead of covariance for better visualization
+        vmin = min(vmin, np.min(cov))
+        vmax = max(vmax, np.max(cov))
+    
+    for idx, (ax, pop) in enumerate(zip(axes, pop_data)):
+        X = pop['X'].cpu().numpy()
+        cov = np.corrcoef(X.T)
+        
+        # Create mask for meaningful features
+        meaningful = np.zeros(X.shape[1], dtype=bool)
+        meaningful[pop['meaningful_indices']] = True
+        
+        im = ax.imshow(cov, cmap='RdBu_r', vmin=-1, vmax=1)
+        
+        # Add grid to separate features
+        ax.set_xticks(np.arange(-.5, X.shape[1], 1), minor=True)
+        ax.set_yticks(np.arange(-.5, X.shape[1], 1), minor=True)
+        ax.grid(which="minor", color="black", linestyle='-', linewidth=0.5)
+        
+        # Highlight meaningful features
+        for i in pop['meaningful_indices']:
+            ax.add_patch(plt.Rectangle((i-0.5, -0.5), 1, X.shape[1], 
+                                     fill=False, color='green', linewidth=2))
+            ax.add_patch(plt.Rectangle((-0.5, i-0.5), X.shape[1], 1, 
+                                     fill=False, color='green', linewidth=2))
+        
+        ax.set_title(f'Population {pop["pop_id"]}\nDataset: {pop.get("dataset_type", "Unknown")}')
+        ax.set_xlabel('Feature Index')
+        ax.set_ylabel('Feature Index')
+    
+    # Add colorbar
+    fig.colorbar(im, ax=axes, label='Correlation', orientation='horizontal', pad=0.2)
+    
+    plt.tight_layout()
+    plt.savefig(os.path.join(save_path, 'feature_correlations.png'), 
+                bbox_inches='tight', dpi=300)
+    plt.close()

@@ -1,10 +1,11 @@
+# grad_desc_looped.py
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
 import pandas as pd
 import os
 from copy import deepcopy
-from grad_desc_diagnostic_v5 import run_experiment_with_diagnostics
+from grad_desc_diagnostic import run_experiment_with_diagnostics
 
 
 def run_multiple_seeds_experiment(dataset_sizes, num_seeds=5, **experiment_kwargs):

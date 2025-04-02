@@ -134,3 +134,50 @@ def plot_data(X, Y, Y_pred=None, title=None, separate=False, save_dir=None):
     else:
         plt.show()
     plt.close()
+
+def generate_data_continuous(pop_id, m1, m, dataset_type="linear_regression", 
+                             dataset_size=10000,
+                             noise_scale=0.0, seed=None, common_meaningful_indices=None):
+    """
+    Generate continuous data for a given population.
+    
+    For each population:
+    - A set of "common" meaningful variables (provided as common_meaningful_indices) is used.
+    - Additional unique meaningful indices are selected (if m1 > len(common_meaningful_indices)).
+    - Y is generated using the specified dataset_type for that population.
+    """
+    if seed is not None:
+        np.random.seed(seed + pop_id*50)  # Different seed per population
+
+    # Determine meaningful indices for this population
+    k_common = len(common_meaningful_indices)
+    if m1 > k_common:
+        remaining = [i for i in range(m) if i not in common_meaningful_indices]
+        unique_indices = np.random.choice(remaining, size=m1 - k_common, replace=False)
+        meaningful_indices = np.sort(np.concatenate([common_meaningful_indices, unique_indices]))
+    else:
+        meaningful_indices = np.array(common_meaningful_indices[:m1])
+    
+    # Generate meaningful features
+    X_meaningful = np.random.normal(0, 1, (dataset_size, len(meaningful_indices)))
+    A_meaningful = np.random.randn(len(meaningful_indices))
+    AX = X_meaningful.dot(A_meaningful)
+    
+    if dataset_type == "linear_regression":
+        Y = AX + noise_scale * np.random.randn(dataset_size)
+    elif dataset_type == "quadratic_regression":
+        Y = AX**2 + noise_scale * np.random.randn(dataset_size)
+    elif dataset_type == "cubic_regression":
+        Y = AX**3 + noise_scale * np.random.randn(dataset_size)
+    elif dataset_type == "sinusoidal_regression":
+        Y = np.sin(AX) + noise_scale * np.random.randn(dataset_size)
+    else:
+        raise ValueError("Unknown dataset_type for population ", pop_id)
+    
+    # Create full X by filling the non-meaningful columns with noise
+    X = np.random.normal(0, 1, (dataset_size, m))
+    # Place the meaningful features at the specified indices
+    X[:, meaningful_indices] = X_meaningful
+    
+    print(f"Population {pop_id} - Meaningful indices: {meaningful_indices}")
+    return X, Y, A_meaningful, meaningful_indices

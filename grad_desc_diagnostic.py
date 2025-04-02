@@ -1,4 +1,4 @@
-# grad_desc_diagnostic_v5.py
+# grad_desc_diagnostic.py
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
@@ -107,7 +107,7 @@ def estimate_conditional_expectation(X_batch, S_batch, E_Y_given_X_batch, alpha)
     # Compute weighted distances
     # squared_distances = ((X_expanded - S_expanded) / torch.sqrt(alpha_expanded))**2
     # adding epsilon to avoid numerical instability
-    squared_distances = ((X_expanded - S_expanded) * torch.sqrt(1/alpha_expanded + 1e-8))**2
+    squared_distances = ((X_expanded - S_expanded) * torch.sqrt(1/(alpha_expanded + 1e-2)))**2
 
     # Check for NaNs in squared distances
     if torch.isnan(squared_distances).any():
@@ -124,11 +124,45 @@ def estimate_conditional_expectation(X_batch, S_batch, E_Y_given_X_batch, alpha)
     
     return E_Y_given_S
 
+def compute_reg_penalty(alpha, reg_type, reg_lambda, epsilon=1e-8):
+    """
+    Compute the regularization penalty for the given alpha.
+    
+    Parameters:
+      alpha      : The parameter vector (torch tensor).
+      reg_type   : String indicating the regularization type.
+                   Options: None, "Neg_L1", "Max_Dev", "Reciprocal_L1",
+                            "Quadratic_Barrier", "Exponential"
+      reg_lambda : Regularization strength.
+      epsilon    : A small constant to avoid division by zero.
+    
+    Returns:
+      A torch scalar representing the regularization penalty.
+    """
+    if reg_type is None:
+        return torch.tensor(0.0, device=alpha.device)
+    elif reg_type == "Neg_L1":
+        return - reg_lambda * torch.sum(torch.abs(alpha))
+    elif reg_type == "Max_Dev":
+        max_val = torch.tensor(1.0, device=alpha.device)
+        return reg_lambda * torch.sum(torch.abs(max_val - alpha))
+    elif reg_type == "Reciprocal_L1":
+        return reg_lambda * torch.sum(torch.abs(1.0 / (alpha + epsilon)))
+    elif reg_type == "Quadratic_Barrier":
+        # Heavily penalizes alpha values near 0.
+        return reg_lambda * torch.sum((alpha + epsilon) ** (-2))
+    elif reg_type == "Exponential":
+        # Softly penalizes small alpha values.
+        return reg_lambda * torch.sum(torch.exp(-alpha))
+    else:
+        raise ValueError("Unknown reg_type: " + str(reg_type))
+
 
 def run_experiment_with_diagnostics(dataset_size, m1, m, 
                                     dataset_type='linear_regression',
                                     estimator_fn=plugin_estimator,
-                                    noise_scale=0.0, num_epochs=30, lambda_val=0,
+                                    noise_scale=0.0, num_epochs=30, 
+                                    reg_type=None, reg_lambda=0,
                                     learning_rate=0.001,
                                     batch_size=100,
                                     optimizer_type='sgd', seed=None, 
@@ -174,12 +208,12 @@ def run_experiment_with_diagnostics(dataset_size, m1, m,
     best_alpha = None
     
     # Track full batch objectives for smoothness analysis
-    def compute_full_batch_objective(alpha_val, lambda_val=lambda_val):
+    def compute_full_batch_objective(alpha_val, reg_lambda=0, reg_type=None):
         # reg_max = torch.ones_like(alpha_val) * CLAMP_MAX
         S_alpha = X + torch.randn_like(X) * torch.sqrt(alpha_val)
         E_Y_given_S = estimate_conditional_expectation(X, S_alpha, E_Y_given_X, alpha_val)
         obj = torch.mean(E_Y_given_X**2) - torch.mean(E_Y_given_S**2)
-        objective = obj + lambda_val * torch.norm(1/alpha_val, p=1)
+        objective = obj + compute_reg_penalty(alpha_val, reg_type, reg_lambda)
         return objective
     
     patience = early_stopping_patience
@@ -206,7 +240,8 @@ def run_experiment_with_diagnostics(dataset_size, m1, m,
             # Compute objective
             # reg_max = torch.ones_like(alpha) * CLAMP_MAX
             obj = torch.mean(batch_E_Y_given_X**2) - torch.mean(E_Y_given_S**2)
-            objective = obj + lambda_val * torch.norm(alpha, p=1)
+            reg_penalty = compute_reg_penalty(alpha, reg_type, reg_lambda)
+            objective = obj + reg_penalty
             if torch.isnan(objective) or torch.isinf(objective):
                 print("Warning: Invalid objective value encountered")
                 continue
@@ -249,7 +284,7 @@ def run_experiment_with_diagnostics(dataset_size, m1, m,
         # Plot 1: Objective value over epochs
         plt.subplot(2, 2, 1)
         plt.plot(objective_history)
-        plt.legend(['Total', 'Variance', f'L1 Reg (λ={lambda_val})'])
+        plt.legend(['Total', 'Variance', f'L1 Reg (λ={reg_lambda})'])
         plt.title('Objective Value vs Epoch')
         plt.xlabel('Epoch')
         plt.ylabel('Objective Value')
@@ -282,7 +317,7 @@ def run_experiment_with_diagnostics(dataset_size, m1, m,
             obj = compute_full_batch_objective(perturbed_alpha).item()
             landscape.append(obj)
         plt.plot(delta, landscape)
-        plt.title('Objective Landscape Around Final Point')
+        plt.title('Main Objective Landscape Around Final Point')
         plt.xlabel('Perturbation')
         plt.ylabel('Objective Value')
         
@@ -311,7 +346,7 @@ def main():
     save_path = './results/gradient_descent_diagnostics/' + ('single_alpha/' if m1 == 1 else 'multiple_alpha/')
     for dataset_size in dataset_sizes:
         results = run_experiment_with_diagnostics(dataset_size=dataset_size, m1=m1, m=3, num_epochs=100, 
-                                                  lambda_val=0,
+                                                  reg_lambda=0,
                                                   seed=10,
                                                   learning_rate=0.001,
                                                   batch_size=dataset_size,
@@ -329,32 +364,6 @@ def main():
     # Save results in df
     df = pd.DataFrame(results_list)
     df.to_csv(f'./results/gradient_descent_diagnostics/{optimizer_type}/gradient_descent_diagnostics_results.csv', index=False)
-
-    # meaningful_weights = []
-    # meaningful_stds = []  # To track variation across meaningful variables
-    # for result in results_list:
-    #     meaningful_indices = result['true_variable_index']  # Get all meaningful indices
-    #     final_alpha = result['final_alpha']
-        
-    #     # Get weights for all meaningful variables
-    #     meaningful_vars = final_alpha[meaningful_indices]
-        
-    #     # Store mean and std of meaningful variables
-    #     meaningful_weights.append(np.mean(meaningful_vars))
-    #     meaningful_stds.append(np.std(meaningful_vars))
-
-    # plt.figure(figsize=(8, 6))
-    # # Plot mean with error bars showing std across meaningful variables
-    # plt.errorbar(dataset_sizes, meaningful_weights, yerr=meaningful_stds, 
-    #             fmt='bo-', capsize=5, label='Mean ± Std')
-    # plt.xscale('log')
-    # plt.xlabel('Dataset Size')
-    # plt.ylabel('Average Noise of Meaningful Variables (α)')
-    # plt.grid(True)
-    # plt.title(f'Average Noise of {len(meaningful_indices)} Meaningful Variables vs Dataset Size')
-    # plt.legend()
-    # plt.savefig(f'./results/gradient_descent_diagnostics/{optimizer_type}/meaningful_weight_vs_size.png')
-    # plt.close()
 
     plot_variable_importance(results_list, dataset_sizes, optimizer_type)
 
