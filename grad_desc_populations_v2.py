@@ -233,7 +233,6 @@ def compute_full_batch_objective_IF_optimized(X, Y, alpha, term1, E_Y_given_X_mo
     alpha = torch.clamp(alpha, min=CLAMP_MIN, max=CLAMP_MAX)
     
     X_np = X.cpu().numpy()
-    Y_np = Y.cpu().numpy()
     
     # For the second term, generate S(alpha) and compute E[Y|S(alpha)]^2
     batch_size = X.size(0)

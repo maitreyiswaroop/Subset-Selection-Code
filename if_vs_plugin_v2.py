@@ -79,9 +79,10 @@ def IF_estimator_squared_conditional(X, Y, estimator_type="rf"):
 # --- Testing and plotting code ---
 
 # 1. Generate a very large dataset (≈1e6 points)
-N_large = 10**7
+N_large = 10**6
 X_large, Y_large = make_regression(n_samples=N_large, n_features=10, noise=1.0, random_state=10)
-alpha = np.random.uniform(0.1, 2.0, size=X_large.shape[1])
+# alpha = np.random.uniform(0.1, 2.0, size=X_large.shape[1])
+alpha = np.random.uniform(0.1, 1.0, size=X_large.shape[1])
 cov_matrix = np.diag(alpha)
 S_alpha = np.random.multivariate_normal(
     mean=np.zeros(X_large.shape[1]),
@@ -130,4 +131,5 @@ plt.ylabel("Estimate of E[E[Y|S]^2]")
 plt.title("Plugin vs. IF-based Estimators vs. Sample Size")
 plt.legend()
 plt.grid(True)
-plt.show()
+plt.savefig("if_vs_plugin_term_2_small_alpha.png")
+plt.close()
