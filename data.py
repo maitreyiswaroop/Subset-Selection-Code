@@ -2,6 +2,7 @@ import numpy as np
 import os
 import pickle
 import matplotlib.pyplot as plt
+from resnets import create_resnet_datasets
 
 def generate_data(m: int = 10, n_samples: int=10000, 
                   custom_X: np.ndarray=None, # hack yway to have own data with some covariance structure
@@ -137,7 +138,8 @@ def plot_data(X, Y, Y_pred=None, title=None, separate=False, save_dir=None):
 
 def generate_data_continuous(pop_id, m1, m, dataset_type="linear_regression", 
                              dataset_size=10000,
-                             noise_scale=0.0, seed=None, common_meaningful_indices=None):
+                             noise_scale=0.0, seed=None, 
+                             common_meaningful_indices=None, indices_taken =[]):
     """
     Generate continuous data for a given population.
     
@@ -152,32 +154,61 @@ def generate_data_continuous(pop_id, m1, m, dataset_type="linear_regression",
     # Determine meaningful indices for this population
     k_common = len(common_meaningful_indices)
     if m1 > k_common:
-        remaining = [i for i in range(m) if i not in common_meaningful_indices]
+        remaining = [i for i in range(m) if i not in common_meaningful_indices and i not in indices_taken]
         unique_indices = np.random.choice(remaining, size=m1 - k_common, replace=False)
         meaningful_indices = np.sort(np.concatenate([common_meaningful_indices, unique_indices]))
     else:
         meaningful_indices = np.array(common_meaningful_indices[:m1])
     
-    # Generate meaningful features
-    X_meaningful = np.random.normal(0, 1, (dataset_size, len(meaningful_indices)))
-    A_meaningful = np.random.randn(len(meaningful_indices))
-    AX = X_meaningful.dot(A_meaningful)
-    
-    if dataset_type == "linear_regression":
-        Y = AX + noise_scale * np.random.randn(dataset_size)
-    elif dataset_type == "quadratic_regression":
-        Y = AX**2 + noise_scale * np.random.randn(dataset_size)
-    elif dataset_type == "cubic_regression":
-        Y = AX**3 + noise_scale * np.random.randn(dataset_size)
-    elif dataset_type == "sinusoidal_regression":
-        Y = np.sin(AX) + noise_scale * np.random.randn(dataset_size)
+    if 'resnet' not in dataset_type:    
+        # Generate meaningful features
+        X_meaningful = np.random.normal(0, 1, (dataset_size, len(meaningful_indices)))
+        A_meaningful = np.random.randn(len(meaningful_indices))
+        AX = X_meaningful.dot(A_meaningful)
+        
+        if dataset_type == "linear_regression":
+            Y = AX + noise_scale * np.random.randn(dataset_size)
+        elif dataset_type == "quadratic_regression":
+            Y = AX**2 + noise_scale * np.random.randn(dataset_size)
+        elif dataset_type == "cubic_regression":
+            Y = AX**3 + noise_scale * np.random.randn(dataset_size)
+        elif dataset_type == "sinusoidal_regression":
+            Y = np.sin(AX) + noise_scale * np.random.randn(dataset_size)
+        else:
+            raise ValueError("Unknown dataset_type for population ", pop_id)
+        
+        # Create full X by filling the non-meaningful columns with noise
+        X = np.random.normal(0, 1, (dataset_size, m))
+        # Place the meaningful features at the specified indices
+        X[:, meaningful_indices] = X_meaningful
+        
+        print(f"Population {pop_id} - Meaningful indices: {meaningful_indices}")
     else:
-        raise ValueError("Unknown dataset_type for population ", pop_id)
-    
-    # Create full X by filling the non-meaningful columns with noise
-    X = np.random.normal(0, 1, (dataset_size, m))
-    # Place the meaningful features at the specified indices
-    X[:, meaningful_indices] = X_meaningful
-    
-    print(f"Population {pop_id} - Meaningful indices: {meaningful_indices}")
+        print(f"Generating ResNet dataset for population {pop_id}")
+        A_meaningful = None
+        X_meaningful,Y = create_resnet_datasets(
+            n = dataset_size,
+            x_dist="normal",
+            x_params=(0, 1),
+            noise=noise_scale,
+            x_dim=m1,input_dim=m1,
+            hidden_dims=[10, 20, 30, 20, 10],
+            num_blocks=5,
+            use_conv=False,
+            num_classes=None,
+            seed=seed + pop_id*50,
+            save = False,
+            save_path=None,
+            activation='relu',
+            initialisation="kaiming")
+        
+        X = np.random.normal(0, 1, (dataset_size, m))
+        X[:, meaningful_indices] = X_meaningful
+        print(f"Population {pop_id} - Meaningful indices: {meaningful_indices}")
+
+        Y = Y.flatten() 
+    # meaningful_indices = np.sort(meaningful_indices)
+    # if indices_taken is not None:
+    #     indices_taken.extend(meaningful_indices.tolist())
+
     return X, Y, A_meaningful, meaningful_indices

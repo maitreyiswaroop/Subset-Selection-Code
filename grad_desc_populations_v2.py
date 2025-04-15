@@ -20,7 +20,7 @@ from data import generate_data_continuous
 CLAMP_MAX = 10.0
 CLAMP_MIN = 1e-4
 EPS = 1e-4
-FREEZE_THRESHOLD = 0.01  # Threshold below which alpha values are frozen
+FREEZE_THRESHOLD = 0.1  # Threshold below which alpha values are frozen
 
 def plugin_estimator(X, Y, estimator_type="rf"):
     """
@@ -233,6 +233,7 @@ def compute_full_batch_objective_IF_optimized(X, Y, alpha, term1, E_Y_given_X_mo
     alpha = torch.clamp(alpha, min=CLAMP_MIN, max=CLAMP_MAX)
     
     X_np = X.cpu().numpy()
+    Y_np = Y.cpu().numpy()
     
     # For the second term, generate S(alpha) and compute E[Y|S(alpha)]^2
     batch_size = X.size(0)
@@ -292,6 +293,7 @@ def run_experiment_multi_population(pop_configs, m1, m,
     
     # Generate datasets for each population
     pop_data = []
+    indices_taken = []
     for pop_config in pop_configs:
         pop_id = pop_config['pop_id']
         dataset_type = pop_config['dataset_type']
@@ -301,8 +303,13 @@ def run_experiment_multi_population(pop_configs, m1, m,
             dataset_size=dataset_size,
             noise_scale=noise_scale, 
             seed=seed, 
-            common_meaningful_indices=common_meaningful_indices
+            common_meaningful_indices=common_meaningful_indices,
+            indices_taken=indices_taken
         )
+        indices_taken.append(meaningful_indices)
+        # remove the common meaningful indices from the list
+        indices_taken = list(set(indices_taken[-1]) - set(common_meaningful_indices))
+        print(f" Indices_taken: {indices_taken}")
         X = torch.tensor(new_X, dtype=torch.float32)
         Y = torch.tensor(Y, dtype=torch.float32)
         
@@ -365,7 +372,7 @@ def run_experiment_multi_population(pop_configs, m1, m,
     else:
         raise ValueError("alpha_init must be 'ones' or 'random'")
     
-    optimizer = optim.Adam([alpha], lr=learning_rate) if optimizer_type=='adam' else optim.SGD([alpha], lr=learning_rate)
+    optimizer = optim.Adam([alpha], lr=learning_rate) if optimizer_type=='adam' else optim.SGD([alpha], lr=learning_rate, momentum=0.9, nesterov=True)
     
     alpha_history = [alpha.detach().cpu().numpy()]
     objective_history = []
@@ -399,8 +406,6 @@ def run_experiment_multi_population(pop_configs, m1, m,
         optimizer.zero_grad()
         robust_objective.backward()
         torch.nn.utils.clip_grad_norm_([alpha], max_norm=1.0)
-        optimizer.step()
-
         if param_freezing:
             with torch.no_grad():
                 # Identify indices where alpha is below threshold
@@ -408,7 +413,16 @@ def run_experiment_multi_population(pop_configs, m1, m,
                 # Zero out gradients for those indices before the next step
                 if alpha.grad is not None:
                     alpha.grad[frozen_mask] = 0
-
+                if verbose:
+                    print(f"frozen_mask: {frozen_mask.cpu().numpy()}")
+                                # Reset momentum buffers for frozen indices if using SGD with momentum
+                for group in optimizer.param_groups:
+                    for p in group['params']:
+                        state = optimizer.state[p]
+                        if 'momentum_buffer' in state:
+                            buf = state['momentum_buffer']
+                            buf[frozen_mask] = 0
+        optimizer.step()
         with torch.no_grad():
             alpha.clamp_(min=CLAMP_MIN, max=CLAMP_MAX)
         gradient_history.append(alpha.grad.cpu().numpy())
@@ -509,10 +523,10 @@ def get_latest_run_number(save_path):
 def parse_args():
     parser = argparse.ArgumentParser(description='Multi-population variable selection')
     parser.add_argument('--m1', type=int, default=4, help='Number of meaningful features per population')
-    parser.add_argument('--m', type=int, default=15, help='Total number of features')
+    parser.add_argument('--m', type=int, default=25, help='Total number of features')
     parser.add_argument('--dataset-size', type=int, default=10000)
-    parser.add_argument('--noise-scale', type=float, default=0.01)
-    parser.add_argument('--num-epochs', type=int, default=100)
+    parser.add_argument('--noise-scale', type=float, default=0.1)
+    parser.add_argument('--num-epochs', type=int, default=150)
     parser.add_argument('--reg-type', type=str, default='Reciprocal_L1')
     parser.add_argument('--reg-lambda', type=float, default=0.001)
     parser.add_argument('--learning-rate', type=float, default=0.05)
@@ -540,6 +554,8 @@ def main():
     pop_configs = [
         {'pop_id': 0, 'dataset_type': "linear_regression"},
         {'pop_id': 1, 'dataset_type': "sinusoidal_regression"}
+        # {'pop_id': 2, 'dataset_type': "quadratic_regression"},
+        # {'pop_id': 3, 'dataset_type': "cubic_regression"}
     ]
 
      # also save all the experiment params in a json file for reproducibility

@@ -366,3 +366,31 @@ def plot_population_covariances(pop_data, save_path, meaningful_indices):
     plt.savefig(os.path.join(save_path, 'feature_correlations.png'), 
                 bbox_inches='tight', dpi=300)
     plt.close()
+
+def visualise_dataset(X, y, title, save_path=None, show=False, caption=None, log_scale=False):
+    """
+    Visualize a dataset of multidimensional tensors.
+
+    Parameters:
+    X (numpy.ndarray): The input dataset, a 1D array.
+    y (numpy.ndarray): The target dataset, a 1D array.
+    """
+    if log_scale:
+        y = np.log(y)
+    # check for numpy
+    if isinstance(X, torch.Tensor):
+        X = X.detach().numpy()
+    if isinstance(y, torch.Tensor):
+        y = y.detach().numpy()
+    fig, ax = plt.subplots()
+    ax.scatter(X, y)
+    ax.set_title(title)
+    ax.set_xlabel('X')
+    ax.set_ylabel('y')
+    if caption is not None:
+        ax.text(0.5, 0.5, caption, horizontalalignment='center', verticalalignment='center', transform=ax.transAxes)
+    if save_path is not None:
+        plt.savefig(save_path)
+    if show:
+        plt.show()
+    plt.close('all')

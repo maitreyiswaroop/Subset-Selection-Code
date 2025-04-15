@@ -10,32 +10,95 @@ from copy import deepcopy
 from data import generate_data_continuous
 import argparse
 
-def pooled_lasso(pop_configs, m1, m, budget, dataset_size=10000, noise_scale=0.01, 
-                alpha=0.01, seed=None):
+def evaluate_variable_selection(selected_indices, all_meaningful_indices, common_meaningful_indices):
     """
-    Baseline 1: Pool all populations and use Lasso regression to select variables.
+    Evaluate variable selection performance with metrics specific to subset selection.
     
     Parameters:
     -----------
-    pop_configs : list
-        List of population configurations
-    m1 : int
-        Number of meaningful features per population
-    m : int
-        Total number of features
-    dataset_size : int
-        Number of samples per population
-    noise_scale : float
-        Scale of noise in the data
-    alpha : float
-        L1 regularization parameter for Lasso
-    seed : int
-        Random seed
-        
+    selected_indices : list or array
+        Indices of selected variables
+    all_meaningful_indices : list of lists
+        List of meaningful indices for each population
+    common_meaningful_indices : list or array
+        Indices of common meaningful variables across populations
+    
     Returns:
     --------
     dict
-        Dictionary with results including selected variables and scores
+        Dictionary with evaluation metrics including:
+        - precision, recall, f1_score (traditional metrics)
+        - common_vars_selected_ratio: percentage of common variables selected
+        - population_vars_selected: percentage of variables selected for each population
+        - non_common_vars_selected: percentage of non-common variables selected for each population
+    """
+    selected_indices = set(selected_indices)
+    common_meaningful_indices = set(common_meaningful_indices)
+    
+    # Calculate traditional metrics
+    true_indices = set()
+    for indices in all_meaningful_indices:
+        true_indices.update(indices)
+    
+    precision = len(selected_indices & true_indices) / len(selected_indices) if selected_indices else 0
+    recall = len(selected_indices & true_indices) / len(true_indices) if true_indices else 0
+    f1_score = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0
+    
+    # Calculate common variables selection ratio
+    if common_meaningful_indices:
+        common_vars_selected = len(selected_indices & common_meaningful_indices)
+        common_vars_selected_ratio = common_vars_selected / len(common_meaningful_indices)
+    else:
+        common_vars_selected_ratio = 0
+    
+    # Calculate per-population metrics
+    population_vars_selected = []
+    non_common_vars_selected = []
+    
+    for pop_idx, pop_meaningful_indices in enumerate(all_meaningful_indices):
+        pop_meaningful_indices = set(pop_meaningful_indices)
+        
+        # All variables for this population
+        pop_vars_selected = len(selected_indices & pop_meaningful_indices)
+        pop_vars_selected_ratio = pop_vars_selected / len(pop_meaningful_indices) if pop_meaningful_indices else 0
+        population_vars_selected.append({
+            'population': pop_idx,
+            'vars_selected_ratio': pop_vars_selected_ratio,
+            'vars_selected': pop_vars_selected,
+            'total_vars': len(pop_meaningful_indices)
+        })
+        
+        # Non-common variables for this population
+        pop_non_common_indices = pop_meaningful_indices - common_meaningful_indices
+        if pop_non_common_indices:
+            non_common_selected = len(selected_indices & pop_non_common_indices)
+            non_common_ratio = non_common_selected / len(pop_non_common_indices)
+        else:
+            non_common_ratio = 0
+            non_common_selected = 0
+            
+        non_common_vars_selected.append({
+            'population': pop_idx,
+            'non_common_vars_selected_ratio': non_common_ratio,
+            'non_common_vars_selected': non_common_selected,
+            'total_non_common_vars': len(pop_non_common_indices)
+        })
+    
+    return {
+        'precision': precision,
+        'recall': recall,
+        'f1_score': f1_score,
+        'common_vars_selected_ratio': common_vars_selected_ratio,
+        'common_vars_selected': common_vars_selected if 'common_vars_selected' in locals() else 0,
+        'total_common_vars': len(common_meaningful_indices),
+        'population_vars_selected': population_vars_selected,
+        'non_common_vars_selected': non_common_vars_selected
+    }
+
+def pooled_lasso(pop_configs, m1, m, dataset_size=10000, noise_scale=0.01, 
+                alpha=0.01, seed=None):
+    """
+    Baseline 1: Pool all populations and use Lasso regression to select variables.
     """
     if seed is not None:
         np.random.seed(seed)
@@ -76,29 +139,29 @@ def pooled_lasso(pop_configs, m1, m, budget, dataset_size=10000, noise_scale=0.0
     
     # Select top 2*m1 features based on absolute coefficient values
     coef_abs = np.abs(lasso.coef_)
-    selected_indices = np.argsort(-coef_abs)[:budget]
+    selected_indices = np.argsort(-coef_abs)[:2*m1]
     
-    # Evaluate the selection
-    true_indices = set()
-    for indices in all_meaningful_indices:
-        true_indices.update(indices)
-    print('True indices:', true_indices)
-    print('Selected indices:', selected_indices)
+    # Evaluate the selection with enhanced metrics
+    evaluation_metrics = evaluate_variable_selection(
+        selected_indices, 
+        all_meaningful_indices, 
+        common_meaningful_indices
+    )
     
-    recall = len(set(selected_indices) & true_indices) / len(true_indices)
-    precision = len(set(selected_indices) & true_indices) / len(selected_indices)
-    
-    return {
+    # Add specific method info
+    result = {
         'selected_indices': selected_indices.tolist(),
-        'true_indices': list(true_indices),
         'method': 'pooled_lasso',
-        'recall': recall,
-        'precision': precision,
-        'f1_score': 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0,
         'coef_values': coef_abs[selected_indices].tolist()
     }
+    
+    # Update with all evaluation metrics
+    result.update(evaluation_metrics)
+    
+    return result
 
-def population_wise_regression(pop_configs, m1, m, budget, dataset_size=10000, noise_scale=0.01, 
+
+def population_wise_regression(pop_configs, m1, m, dataset_size=10000, noise_scale=0.01, 
                               model_type='linear', voting='frequency', seed=None):
     """
     Baseline 2: Perform regression on each population and use a voting mechanism to select variables.
@@ -181,7 +244,7 @@ def population_wise_regression(pop_configs, m1, m, budget, dataset_size=10000, n
             importance = np.abs(model.coef_)
         
         # Select top features for this population
-        top_indices = np.argsort(-importance)[:budget]
+        top_indices = np.argsort(-importance)[:2*m1]
         
         # Update voting
         votes[top_indices] += 1
@@ -196,16 +259,16 @@ def population_wise_regression(pop_configs, m1, m, budget, dataset_size=10000, n
     # Select final variables based on voting mechanism
     if voting == 'frequency':
         # Select based on frequency of appearance
-        selected_indices = np.argsort(-votes)[:budget]
+        selected_indices = np.argsort(-votes)[:2*m1]
     elif voting == 'rank_sum':
         # Select based on sum of ranks
-        selected_indices = np.argsort(-rank_scores)[:budget]
+        selected_indices = np.argsort(-rank_scores)[:2*m1]
     elif voting == 'borda':
         # Borda count
-        selected_indices = np.argsort(-rank_scores)[:budget]
+        selected_indices = np.argsort(-rank_scores)[:2*m1]
     elif voting == 'weighted':
         # Weighted by importance
-        selected_indices = np.argsort(-importance_scores)[:budget]
+        selected_indices = np.argsort(-importance_scores)[:2*m1]
     else:
         raise ValueError(f"Unknown voting mechanism: {voting}")
     
@@ -216,7 +279,7 @@ def population_wise_regression(pop_configs, m1, m, budget, dataset_size=10000, n
     
     recall = len(set(selected_indices) & true_indices) / len(true_indices)
     precision = len(set(selected_indices) & true_indices) / len(selected_indices)
-    
+
     return {
         'selected_indices': selected_indices.tolist(),
         'true_indices': list(true_indices),
@@ -229,7 +292,7 @@ def population_wise_regression(pop_configs, m1, m, budget, dataset_size=10000, n
         'importance_scores': importance_scores[selected_indices].tolist()
     }
 
-def mutual_information_selection(pop_configs, m1, m, budget, dataset_size=10000, noise_scale=0.01, 
+def mutual_information_selection(pop_configs, m1, m, dataset_size=10000, noise_scale=0.01, 
                                pooling='union', seed=None):
     """
     Baseline 3: Use mutual information to select variables.
@@ -292,7 +355,7 @@ def mutual_information_selection(pop_configs, m1, m, budget, dataset_size=10000,
         mi = mutual_info_regression(X, Y, random_state=seed)
         
         # Select top features for this population
-        top_indices = np.argsort(-mi)[:budget]
+        top_indices = np.argsort(-mi)[:2*m1]
         pop_selected.append(top_indices)
         
         # Update MI scores
@@ -309,7 +372,7 @@ def mutual_information_selection(pop_configs, m1, m, budget, dataset_size=10000,
         if len(selected_set) > 2*m1:
             selected_indices = np.array(list(selected_set))
             selected_scores = mi_scores[selected_indices]
-            selected_indices = selected_indices[np.argsort(-selected_scores)[:budget]]
+            selected_indices = selected_indices[np.argsort(-selected_scores)[:2*m1]]
         else:
             # If less than 2*m1, fill with top MI features
             remaining = 2*m1 - len(selected_set)
@@ -340,11 +403,11 @@ def mutual_information_selection(pop_configs, m1, m, budget, dataset_size=10000,
             # If more than 2*m1, take top by MI score
             selected_indices = np.array(list(selected_set))
             selected_scores = mi_scores[selected_indices]
-            selected_indices = selected_indices[np.argsort(-selected_scores)[:budget]]
+            selected_indices = selected_indices[np.argsort(-selected_scores)[:2*m1]]
     
     elif pooling == 'weighted':
         # Simply take top 2*m1 features by combined MI scores
-        selected_indices = np.argsort(-mi_scores)[:budget]
+        selected_indices = np.argsort(-mi_scores)[:2*m1]
     
     else:
         raise ValueError(f"Unknown pooling method: {pooling}")
@@ -367,7 +430,7 @@ def mutual_information_selection(pop_configs, m1, m, budget, dataset_size=10000,
         'mi_scores': mi_scores[selected_indices].tolist()
     }
 
-def stability_selection(pop_configs, m1, m, budget, dataset_size=10000, noise_scale=0.01, 
+def stability_selection(pop_configs, m1, m, dataset_size=10000, noise_scale=0.01, 
                        n_bootstraps=50, sample_fraction=0.75, alpha_range=None, 
                        threshold=0.7, seed=None):
     """
@@ -472,7 +535,7 @@ def stability_selection(pop_configs, m1, m, budget, dataset_size=10000, noise_sc
     
     # If we have more than 2*m1 stable features, take the top ones
     if len(stable_features) > 2*m1:
-        selected_indices = stable_features[np.argsort(-max_probability[stable_features])[:budget]]
+        selected_indices = stable_features[np.argsort(-max_probability[stable_features])[:2*m1]]
     # If we have fewer, add more based on probability
     elif len(stable_features) < 2*m1:
         remaining = 2*m1 - len(stable_features)
@@ -500,7 +563,7 @@ def stability_selection(pop_configs, m1, m, budget, dataset_size=10000, noise_sc
         'selection_probabilities': max_probability[selected_indices].tolist()
     }
 
-def group_lasso_selection(pop_configs, m1, m, budget, dataset_size=10000, noise_scale=0.01, 
+def group_lasso_selection(pop_configs, m1, m, dataset_size=10000, noise_scale=0.01, 
                          alpha=0.01, seed=None):
     """
     Baseline 5: Group Lasso approach (by treating populations as groups and selecting features
@@ -570,7 +633,7 @@ def group_lasso_selection(pop_configs, m1, m, budget, dataset_size=10000, noise_
     group_norms = np.sqrt(np.sum(all_coefs**2, axis=0))
     
     # Select top features based on group norms
-    selected_indices = np.argsort(-group_norms)[:budget]
+    selected_indices = np.argsort(-group_norms)[:2*m1]
     
     # Evaluate the selection
     true_indices = set()
@@ -590,7 +653,7 @@ def group_lasso_selection(pop_configs, m1, m, budget, dataset_size=10000, noise_
         'group_norms': group_norms[selected_indices].tolist()
     }
 
-def condorcet_voting(pop_configs, m1, m, budget, dataset_size=10000, noise_scale=0.01, 
+def condorcet_voting(pop_configs, m1, m, dataset_size=10000, noise_scale=0.01, 
                     model_type='rf', seed=None):
     """
     Baseline 6: Condorcet voting method for variable selection.
@@ -688,7 +751,7 @@ def condorcet_voting(pop_configs, m1, m, budget, dataset_size=10000, noise_scale
     copeland_scores = wins - losses
     
     # Select top features based on Copeland scores
-    selected_indices = np.argsort(-copeland_scores)[:budget]
+    selected_indices = np.argsort(-copeland_scores)[:2*m1]
     
     # Evaluate the selection
     true_indices = set()
@@ -724,7 +787,7 @@ def convert_to_serializable(obj):
         return list(obj)
     return obj
 
-def run_all_baselines(pop_configs, m1, m, budget, dataset_size=10000, noise_scale=0.01, seed=42, save_path='./results/baselines/'):
+def run_all_baselines(pop_configs, m1, m, dataset_size=10000, noise_scale=0.01, seed=42, save_path='./results/baselines/'):
     """
     Run all baseline methods and return/save the results.
     
@@ -754,9 +817,8 @@ def run_all_baselines(pop_configs, m1, m, budget, dataset_size=10000, noise_scal
     
     results = {}
     
-    budget = m1//2 + len(pop_configs) * (m1//2)
     # Run all baselines
-    results['pooled_lasso'] = pooled_lasso(pop_configs, m1, m, budget, dataset_size, noise_scale, alpha=0.01, seed=seed)
+    results['pooled_lasso'] = pooled_lasso(pop_configs, m1, m, dataset_size, noise_scale, alpha=0.01, seed=seed)
     
     # Population-wise regression with different models and voting mechanisms
     model_types = ['linear', 'rf', 'lasso']
@@ -766,7 +828,7 @@ def run_all_baselines(pop_configs, m1, m, budget, dataset_size=10000, noise_scal
         for voting in voting_methods:
             key = f'population_wise_{model_type}_{voting}'
             results[key] = population_wise_regression(
-                pop_configs, m1, m, budget, dataset_size, noise_scale, 
+                pop_configs, m1, m, dataset_size, noise_scale, 
                 model_type=model_type, voting=voting, seed=seed
             )
     
@@ -775,7 +837,7 @@ def run_all_baselines(pop_configs, m1, m, budget, dataset_size=10000, noise_scal
     for pooling in pooling_methods:
         key = f'mutual_information_{pooling}'
         results[key] = mutual_information_selection(
-            pop_configs, m1, m, budget, dataset_size, noise_scale, 
+            pop_configs, m1, m, dataset_size, noise_scale, 
             pooling=pooling, seed=seed
         )
     
@@ -787,14 +849,14 @@ def run_all_baselines(pop_configs, m1, m, budget, dataset_size=10000, noise_scal
     
     # Group Lasso approach
     results['group_lasso'] = group_lasso_selection(
-        pop_configs, m1, m, budget, dataset_size, noise_scale, alpha=0.01, seed=seed
+        pop_configs, m1, m, dataset_size, noise_scale, alpha=0.01, seed=seed
     )
     
     # Condorcet voting with different base models
     for model_type in model_types:
         key = f'condorcet_{model_type}'
         results[key] = condorcet_voting(
-            pop_configs, m1, m, budget, dataset_size, noise_scale, 
+            pop_configs, m1, m, dataset_size, noise_scale, 
             model_type=model_type, seed=seed
         )
     
@@ -809,37 +871,63 @@ def run_all_baselines(pop_configs, m1, m, budget, dataset_size=10000, noise_scal
 
 def summarize_results(results, save_path='./results/baselines/'):
     """
-    Summarize the results of all baseline methods.
-    
-    Parameters:
-    -----------
-    results : dict
-        Dictionary with results for all methods
-    save_path : str
-        Path to save summary
-        
-    Returns:
-    --------
-    pandas.DataFrame
-        DataFrame with summarized results
+    Summarize the results of all baseline methods with enhanced metrics.
     """
     summary = []
     
     for method_name, method_results in results.items():
-        summary.append({
+        summary_row = {
             'method': method_name,
             'precision': method_results['precision'],
             'recall': method_results['recall'],
-            'f1_score': method_results['f1_score']
-        })
+            'f1_score': method_results['f1_score'],
+            'common_vars_selected_ratio': method_results['common_vars_selected_ratio'],
+            'common_vars_selected': method_results['common_vars_selected'],
+            'total_common_vars': method_results['total_common_vars']
+        }
+        
+        # Add average percentage of vars selected per population
+        pop_vars_selected = method_results['population_vars_selected']
+        avg_pop_vars_ratio = sum(item['vars_selected_ratio'] for item in pop_vars_selected) / len(pop_vars_selected)
+        summary_row['avg_pop_vars_selected_ratio'] = avg_pop_vars_ratio
+        
+        # Add average percentage of non-common vars selected per population
+        non_common_vars = method_results['non_common_vars_selected']
+        avg_non_common_ratio = sum(item['non_common_vars_selected_ratio'] for item in non_common_vars) / len(non_common_vars)
+        summary_row['avg_non_common_vars_selected_ratio'] = avg_non_common_ratio
+        
+        summary.append(summary_row)
     
     summary_df = pd.DataFrame(summary)
-    summary_df = summary_df.sort_values('f1_score', ascending=False)
     
-    # Save summary
-    summary_df.to_csv(os.path.join(save_path, 'baseline_summary.csv'), index=False)
+    # Create different sorted views
+    f1_sorted = summary_df.sort_values('f1_score', ascending=False)
+    common_sorted = summary_df.sort_values('common_vars_selected_ratio', ascending=False)
     
-    return summary_df
+    # Save summaries
+    f1_sorted.to_csv(os.path.join(save_path, 'baseline_summary_by_f1.csv'), index=False)
+    common_sorted.to_csv(os.path.join(save_path, 'baseline_summary_by_common_vars.csv'), index=False)
+    
+    # Create detailed population-specific results
+    population_detail = []
+    for method_name, method_results in results.items():
+        for pop_detail in method_results['population_vars_selected']:
+            row = {
+                'method': method_name,
+                'population': pop_detail['population'],
+                'vars_selected_ratio': pop_detail['vars_selected_ratio'],
+                'non_common_vars_ratio': next(
+                    (item['non_common_vars_selected_ratio'] for item in method_results['non_common_vars_selected'] 
+                     if item['population'] == pop_detail['population']), 
+                    0
+                )
+            }
+            population_detail.append(row)
+    
+    pop_detail_df = pd.DataFrame(population_detail)
+    pop_detail_df.to_csv(os.path.join(save_path, 'baseline_population_detail.csv'), index=False)
+    
+    return f1_sorted, common_sorted, pop_detail_df
 
 def compare_with_gradient_descent(baseline_results, grad_desc_results, save_path='./results/comparison/'):
     """
@@ -926,14 +1014,11 @@ if __name__ == "__main__":
         for i in range(len(args.populations))
     ]
     
-    budget = args.m1//2 + len(pop_configs) * (args.m1//2)
-    print(f"Running with budget: {budget}")
     # Run all baselines
     results = run_all_baselines(
         pop_configs=pop_configs,
         m1=args.m1,
         m=args.m,
-        budget=budget,
         dataset_size=args.dataset_size,
         noise_scale=args.noise_scale,
         seed=args.seed,
