@@ -3,9 +3,37 @@ import torch.nn as nn
 import torch.nn.init as init
 import math
 import os
-from visualisers import visualise_dataset
+# from visualisers import visualise_dataset 
 import numpy as np
 import matplotlib.pyplot as plt
+
+def visualise_dataset(X, y, title, save_path=None, show=False, caption=None, log_scale=False):
+    """
+    Visualize a dataset of multidimensional tensors.
+
+    Parameters:
+    X (numpy.ndarray): The input dataset, a 1D array.
+    y (numpy.ndarray): The target dataset, a 1D array.
+    """
+    if log_scale:
+        y = np.log(y)
+    # check for numpy
+    if isinstance(X, torch.Tensor):
+        X = X.detach().numpy()
+    if isinstance(y, torch.Tensor):
+        y = y.detach().numpy()
+    fig, ax = plt.subplots()
+    ax.scatter(X, y)
+    ax.set_title(title)
+    ax.set_xlabel('X')
+    ax.set_ylabel('y')
+    if caption is not None:
+        ax.text(0.5, 0.5, caption, horizontalalignment='center', verticalalignment='center', transform=ax.transAxes)
+    if save_path is not None:
+        plt.savefig(save_path)
+    if show:
+        plt.show()
+    plt.close('all')
 
 class CustomResNetBlock(nn.Module):
     def __init__(self, in_dim, out_dim, activation, use_conv=False):
@@ -261,6 +289,8 @@ def return_resnet_dataset(n: int, x_dist: str='uniform', x_params: tuple=(0, 1),
         for i in range(x_dim):
             if visualise:
                 save_file = os.path.join(save_path, 'plots', 'denoised_fns', f'denoised_f_{i}_x.png')
+                # check for existence of the directory
+                os.makedirs(os.path.join(save_path, 'plots', 'denoised_fns'), exist_ok=True)
                 visualise_dataset(x[:, i], y, f'denoised_f_{i}(x)', show=False, save_path=save_file)
         
         # adding noise to the output
@@ -269,6 +299,8 @@ def return_resnet_dataset(n: int, x_dist: str='uniform', x_params: tuple=(0, 1),
         for i in range(x_dim):
             if visualise:
                 save_file = os.path.join(save_path, 'plots', 'fns', f'f_{i}_x.png')
+                # check for existence of the directory
+                os.makedirs(os.path.join(save_path, 'plots', 'fns'), exist_ok=True)
                 visualise_dataset(x[:, i], y, f'f_{i}(x)', show=False, save_path=save_file)
 
         if save_path is not None:
@@ -278,6 +310,9 @@ def return_resnet_dataset(n: int, x_dist: str='uniform', x_params: tuple=(0, 1),
             with open(os.path.join(save_path, 'resnet_model_summary.txt'), 'w') as file:
                 file.write(str(model))
         if visualise:
+            # check for existence of the directory
+            os.makedirs(os.path.join(save_path, 'plots', 'outputs'), exist_ok=True)
+            # plotting the output of the ResNet model for different values of alpha
             n = 1000
             alphas = [0, 0.25, 0.5, 0.75, 1.0]
             for j in range(x_dim):

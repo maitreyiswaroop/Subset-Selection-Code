@@ -8,8 +8,8 @@ import torch.optim as optim
 import matplotlib.pyplot as plt
 import pandas as pd
 from copy import deepcopy
-from grad_desc_populations import generate_data_continuous, plugin_estimator, estimate_conditional_expectation
-from grad_desc_populations import compute_reg_penalty, compute_full_batch_objective, CLAMP_MIN, CLAMP_MAX
+from code_v1.grad_desc_populations import generate_data_continuous, plugin_estimator, estimate_conditional_expectation
+from code_v1.grad_desc_populations import compute_reg_penalty, compute_full_batch_objective, CLAMP_MIN, CLAMP_MAX
 
 def run_experiment_multi_population_with_seed(pop_configs, m1, m, 
                                               dataset_size=10000,
@@ -30,7 +30,7 @@ def run_experiment_multi_population_with_seed(pop_configs, m1, m,
     os.makedirs(seed_save_path, exist_ok=True)
     
     # Run the experiment with the given seed
-    from grad_desc_populations import run_experiment_multi_population
+    from code_v1.grad_desc_populations import run_experiment_multi_population
     results = run_experiment_multi_population(
         pop_configs=pop_configs,
         m1=m1,

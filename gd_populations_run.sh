@@ -10,8 +10,8 @@ BASE_ARGS="$BASE_ARGS --reg-type Reciprocal_L1 --reg-lambda 0.001 --batch-size 2
 
 python3 grad_desc_populations_v2.py \
     --m1 4 \
-    --m 15 \
-    --dataset-size 10000 \
+    --m 20 \
+    --dataset-size 1000 \
     --noise-scale 0.01 \
     --num-epochs 1000 \
     --reg-type Reciprocal_L1 \
@@ -19,10 +19,10 @@ python3 grad_desc_populations_v2.py \
     --learning-rate 0.05 \
     --batch-size 256 \
     --optimizer-type sgd \
-    --seed 42 \
+    --seed 17 \
     --patience 10 \
     --alpha-init random \
     --estimator-type if \
-    --populations linear_regression sinusoidal_regression \
+    --populations resnet resnet resnet \
     --param-freezing \
     --save-path ./results/multi_population/

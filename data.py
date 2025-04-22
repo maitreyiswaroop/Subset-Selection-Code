@@ -137,6 +137,7 @@ def plot_data(X, Y, Y_pred=None, title=None, separate=False, save_dir=None):
     plt.close()
 
 def generate_data_continuous(pop_id, m1, m, dataset_type="linear_regression", 
+                             data_distribution="normal",
                              dataset_size=10000,
                              noise_scale=0.0, seed=None, 
                              common_meaningful_indices=None, indices_taken =[]):
@@ -162,7 +163,12 @@ def generate_data_continuous(pop_id, m1, m, dataset_type="linear_regression",
     
     if 'resnet' not in dataset_type:    
         # Generate meaningful features
-        X_meaningful = np.random.normal(0, 1, (dataset_size, len(meaningful_indices)))
+        if data_distribution == "normal":
+            X_meaningful = np.random.normal(0, 1, (dataset_size, len(meaningful_indices)))
+        elif data_distribution == "uniform":
+            X_meaningful = np.random.uniform(0, 1, (dataset_size, len(meaningful_indices)))
+        else:
+            raise ValueError("Unknown data_distribution for population ", pop_id)
         A_meaningful = np.random.randn(len(meaningful_indices))
         AX = X_meaningful.dot(A_meaningful)
         
@@ -178,7 +184,10 @@ def generate_data_continuous(pop_id, m1, m, dataset_type="linear_regression",
             raise ValueError("Unknown dataset_type for population ", pop_id)
         
         # Create full X by filling the non-meaningful columns with noise
-        X = np.random.normal(0, 1, (dataset_size, m))
+        if data_distribution == "normal":
+            X = np.random.normal(0, 1, (dataset_size, m))
+        elif data_distribution == "uniform":
+            X = np.random.uniform(0, 1, (dataset_size, m))
         # Place the meaningful features at the specified indices
         X[:, meaningful_indices] = X_meaningful
         
@@ -188,21 +197,24 @@ def generate_data_continuous(pop_id, m1, m, dataset_type="linear_regression",
         A_meaningful = None
         X_meaningful,Y = create_resnet_datasets(
             n = dataset_size,
-            x_dist="normal",
+            x_dist=data_distribution,
             x_params=(0, 1),
             noise=noise_scale,
             x_dim=m1,input_dim=m1,
-            hidden_dims=[10, 20, 30, 20, 10],
+            hidden_dims=[10, 20, 80, 20, 10],
             num_blocks=5,
             use_conv=False,
             num_classes=None,
             seed=seed + pop_id*50,
             save = False,
             save_path=None,
-            activation='relu',
+            activation='tanh',
             initialisation="kaiming")
         
-        X = np.random.normal(0, 1, (dataset_size, m))
+        if data_distribution == "normal":
+            X = np.random.normal(0, 1, (dataset_size, m))
+        elif data_distribution == "uniform":
+            X = np.random.uniform(0, 1, (dataset_size, m))
         X[:, meaningful_indices] = X_meaningful
         print(f"Population {pop_id} - Meaningful indices: {meaningful_indices}")
 
@@ -210,5 +222,141 @@ def generate_data_continuous(pop_id, m1, m, dataset_type="linear_regression",
     # meaningful_indices = np.sort(meaningful_indices)
     # if indices_taken is not None:
     #     indices_taken.extend(meaningful_indices.tolist())
+
+    return X, Y, A_meaningful, meaningful_indices
+
+def generate_data_continuous_with_corr(pop_id, m1, m, dataset_type="linear_regression", 
+                             data_distribution="normal",
+                             dataset_size=10000,
+                             noise_scale=0.0, seed=None, 
+                             common_meaningful_indices=None, indices_taken=[],
+                             corr_strength=0.5):  # New parameter for correlation strength
+    """
+    Generate continuous data for a given population with correlation structure.
+    
+    For each population:
+    - A set of "common" meaningful variables (provided as common_meaningful_indices) is used.
+    - Additional unique meaningful indices are selected (if m1 > len(common_meaningful_indices)).
+    - Y is generated using the specified dataset_type for that population.
+    - Dummy variables have correlation with meaningful variables controlled by corr_strength.
+    """
+    if seed is not None:
+        np.random.seed(seed + pop_id*50)  # Different seed per population
+
+    # Determine meaningful indices for this population
+    k_common = len(common_meaningful_indices)
+    if m1 > k_common:
+        remaining = [i for i in range(m) if i not in common_meaningful_indices and i not in indices_taken]
+        unique_indices = np.random.choice(remaining, size=m1 - k_common, replace=False)
+        meaningful_indices = np.sort(np.concatenate([common_meaningful_indices, unique_indices]))
+    else:
+        meaningful_indices = np.array(common_meaningful_indices[:m1])
+    
+    # Indices for dummy variables
+    dummy_indices = np.array([i for i in range(m) if i not in meaningful_indices])
+    
+    if 'resnet' not in dataset_type:    
+        # Generate meaningful features
+        if data_distribution == "normal":
+            X_meaningful = np.random.normal(0, 1, (dataset_size, len(meaningful_indices)))
+        elif data_distribution == "uniform":
+            X_meaningful = np.random.uniform(0, 1, (dataset_size, len(meaningful_indices)))
+        else:
+            raise ValueError("Unknown data_distribution for population ", pop_id)
+        
+        A_meaningful = np.random.randn(len(meaningful_indices))
+        AX = X_meaningful.dot(A_meaningful)
+        
+        if dataset_type == "linear_regression":
+            Y = AX + noise_scale * np.random.randn(dataset_size)
+        elif dataset_type == "quadratic_regression":
+            Y = AX**2 + noise_scale * np.random.randn(dataset_size)
+        elif dataset_type == "cubic_regression":
+            Y = AX**3 + noise_scale * np.random.randn(dataset_size)
+        elif dataset_type == "sinusoidal_regression":
+            Y = np.sin(AX) + noise_scale * np.random.randn(dataset_size)
+        else:
+            raise ValueError("Unknown dataset_type for population ", pop_id)
+        
+        # Create full X
+        X = np.zeros((dataset_size, m))
+        
+        # Place the meaningful features at the specified indices
+        X[:, meaningful_indices] = X_meaningful
+        
+        # Generate dummy variables with correlation to meaningful variables
+        for i, dummy_idx in enumerate(dummy_indices):
+            # For each dummy variable, create a weighted combination of:
+            # 1. A random sample from our distribution
+            # 2. A random linear combination of meaningful variables
+            
+            # Random selection of which meaningful variables influence this dummy
+            weights = np.random.randn(len(meaningful_indices))
+            weights = weights / np.linalg.norm(weights)  # Normalize weights
+            
+            # Create the dummy variable
+            if data_distribution == "normal":
+                random_component = np.random.normal(0, 1, dataset_size)
+            elif data_distribution == "uniform":
+                random_component = np.random.uniform(0, 1, dataset_size)
+            
+            # Combine independent noise with correlated component
+            correlated_component = X_meaningful.dot(weights)
+            
+            # Mix the components according to correlation strength
+            X[:, dummy_idx] = np.sqrt(1 - corr_strength**2) * random_component + corr_strength * correlated_component
+            
+            # If using uniform distribution, transform back to uniform via probability integral transform
+            if data_distribution == "uniform":
+                # Convert to normal CDF (percentile), then to uniform
+                X[:, dummy_idx] = np.clip(stats.norm.cdf(X[:, dummy_idx]), 0.001, 0.999)
+        
+        print(f"Population {pop_id} - Meaningful indices: {meaningful_indices}")
+    else:
+        # ResNet case - handle similarly with correlation structure
+        print(f"Generating ResNet dataset for population {pop_id}")
+        A_meaningful = None
+        X_meaningful, Y = create_resnet_datasets(
+            n = dataset_size,
+            x_dist=data_distribution,
+            x_params=(0, 1),
+            noise=noise_scale,
+            x_dim=m1, input_dim=m1,
+            hidden_dims=[10, 20, 80, 20, 10],
+            num_blocks=5,
+            use_conv=False,
+            num_classes=None,
+            seed=seed + pop_id*50,
+            save = False,
+            save_path=None,
+            activation='tanh',
+            initialisation="kaiming")
+        
+        # Create full X
+        X = np.zeros((dataset_size, m))
+        
+        X_meaningful = X_meaningful.detach().cpu().numpy()
+        # Place the meaningful features
+        X[:, meaningful_indices] = X_meaningful
+        
+        # Generate dummy variables with correlation to meaningful variables
+        for i, dummy_idx in enumerate(dummy_indices):
+            weights = np.random.randn(len(meaningful_indices))
+            weights = weights / np.linalg.norm(weights)  # Normalize weights
+            
+            if data_distribution == "normal":
+                random_component = np.random.normal(0, 1, dataset_size)
+            elif data_distribution == "uniform":
+                random_component = np.random.uniform(0, 1, dataset_size)
+            
+            correlated_component = X_meaningful.dot(weights)
+            
+            X[:, dummy_idx] = np.sqrt(1 - corr_strength**2) * random_component + corr_strength * correlated_component
+            
+            if data_distribution == "uniform":
+                X[:, dummy_idx] = np.clip(stats.norm.cdf(X[:, dummy_idx]), 0.001, 0.999)
+        
+        print(f"Population {pop_id} - Meaningful indices: {meaningful_indices}")
+        Y = Y.flatten()
 
     return X, Y, A_meaningful, meaningful_indices

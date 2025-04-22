@@ -1,5 +1,5 @@
 """
-grad_desc_populations_v3.py: correlation structure in generated data
+grad_desc_populations_v3.py
 
 This script performs variable subset selection using gradient descent.
 It precomputes the conditional expectation predictions E[Y|X] and the squared functional 
@@ -23,12 +23,11 @@ import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.kernel_ridge import KernelRidge
 from sklearn.model_selection import KFold
-from sklearn.neighbors import BallTree
 import argparse
 from torch.utils.data import DataLoader
 
 # Import the data generation function from v2
-from data import generate_data_continuous, generate_data_continuous_with_corr
+from data import generate_data_continuous
 
 # Global hyperparameters and clamping constants
 CLAMP_MAX = 10.0
@@ -41,7 +40,7 @@ N_FOLDS = 5             # Number of K-folds for precomputation
 # K-fold based estimators for conditional means and squared functionals
 # =============================================================================
 
-def plugin_estimator_conditional_mean(X, Y, estimator_type="rf", n_folds=N_FOLDS):
+def plugin_estimator_conditional_mean_Kfold(X, Y, estimator_type="rf", n_folds=N_FOLDS):
     """
     Compute out-of-fold plugin predictions for E[Y|X] using K-fold CV.
     """
@@ -62,7 +61,7 @@ def plugin_estimator_conditional_mean(X, Y, estimator_type="rf", n_folds=N_FOLDS
         out_preds[test_idx] = model.predict(X_test)
     return out_preds
 
-def plugin_estimator_squared_conditional(X, Y, estimator_type="rf", n_folds=N_FOLDS):
+def plugin_estimator_squared_conditional_Kfold(X, Y, estimator_type="rf", n_folds=N_FOLDS):
     """
     Compute the plugin estimator for E[E[Y|X]^2] using K-fold CV.
     Returns a scalar computed out-of-fold.
@@ -96,17 +95,18 @@ def plugin_estimator_squared_conditional(X, Y, estimator_type="rf", n_folds=N_FO
             mu_X_all[test_idx] = model.predict(X_test)
         return np.mean(mu_X_all ** 2)
 
-def IF_estimator_conditional_mean_Kfold(X, Y, estimator_type="rf", n_folds=5, k_neighbors=100):
+def IF_estimator_conditional_mean_Kfold(X, Y, estimator_type="rf", n_folds=N_FOLDS):
+    """
+    Compute out-of-fold IF-corrected estimates for E[Y|X] using K-fold CV.
+    For each fold, predictions are corrected using a kernel-weighted average of training residuals.
+    """
     n_samples, n_features = X.shape
     out_preds = np.zeros(n_samples)
     kf = KFold(n_splits=n_folds, shuffle=True, random_state=42)
-    bandwidth = 0.1 * np.sqrt(n_features)
-
+    bandwidth = 0.1 * np.sqrt(n_features)  # heuristic for kernel bandwidth
     for train_idx, test_idx in kf.split(X):
         X_train, X_test = X[train_idx], X[test_idx]
         Y_train = Y[train_idx]
-
-        # fit your base model
         if estimator_type == "rf":
             model = RandomForestRegressor(n_estimators=100,
                                           min_samples_leaf=5,
@@ -115,28 +115,18 @@ def IF_estimator_conditional_mean_Kfold(X, Y, estimator_type="rf", n_folds=5, k_
         else:
             model = KernelRidge(kernel='rbf')
         model.fit(X_train, Y_train)
-
-        mu_test = model.predict(X_test)
         mu_train = model.predict(X_train)
+        mu_test = model.predict(X_test)
         residuals_train = Y_train - mu_train
-
-        # build BallTree on scaled X_train
-        scale = 1.0 / bandwidth
-        tree = BallTree(X_train * scale, leaf_size=40)
-
-        # query k nearest neighbors for all X_test at once
-        dist, ind = tree.query(X_test * scale, k=k_neighbors)  # (n_test, k)
-        W = np.exp(-0.5 * (dist**2))                           # Gaussian kernel
-        W /= W.sum(axis=1, keepdims=True)                     # normalize
-
-        # compute corrections vectorized over neighbors
-        corrections = np.sum(W * residuals_train[ind], axis=1)  # (n_test,)
-
-        out_preds[test_idx] = mu_test + corrections
-
+        for i, x_test in enumerate(X_test):
+            dists = np.sum((X_train - x_test)**2, axis=1)
+            weights = np.exp(-dists / (2 * bandwidth**2))
+            weights = weights / (np.sum(weights) + 1e-8)
+            correction = np.sum(weights * residuals_train)
+            out_preds[test_idx[i]] = mu_test[i] + correction
     return out_preds
 
-def IF_estimator_squared_conditional(X, Y, estimator_type="rf", n_folds=N_FOLDS):
+def IF_estimator_squared_conditional_Kfold(X, Y, estimator_type="rf", n_folds=N_FOLDS):
     """
     Compute the IF-based estimator for E[E[Y|X]^2] using K-fold CV.
     """
@@ -181,53 +171,21 @@ def IF_estimator_squared_conditional(X, Y, estimator_type="rf", n_folds=N_FOLDS)
 # =============================================================================
 # Kernel reweighting function (unchanged)
 # =============================================================================
-def estimate_conditional_expectation(
-    X_batch,             # Tensor[n_train, d]
-    S_batch,             # Tensor[n_test,  d]
-    E_Y_given_X_batch,   # Tensor[n_train]
-    alpha,               # Tensor[d]
-    clamp_min=1e-4,
-    k=1000,             
-):
+
+def estimate_conditional_expectation(X_batch, S_batch, E_Y_given_X_batch, alpha):
     """
-    Differentiable kernel‐weighted estimate of E[Y|S]:
-      W_ij ∝ exp( -½ * || (S_i - X_j) / sqrt(alpha) ||^2 )
-      E[Y|S_i] = Σ_j W_ij * E_Y_given_X_batch[j].
+    Estimate E[E[Y|X]|S] via a kernel method.
     """
-    # 1) clamp and form per‐dim inv sqrt variance
-    alpha_safe = torch.clamp(alpha, min=clamp_min)       # (d,)
-    inv_sqrt   = torch.rsqrt(alpha_safe)                # (d,)
-
-    # 2) scale features
-    Xs = X_batch * inv_sqrt                              # (n_train,d)
-    Ss = S_batch * inv_sqrt                              # (n_test, d)
-
-    # 3) pairwise squared distances
-    #    D = ||Ss[:,None,:] - Xs[None,:,:]||_2  -> (n_test,n_train)
-    D2 = torch.cdist(Ss, Xs, p=2).pow(2)                  # (n_test, n_train)
-    vals, idx = D2.topk(k, largest=False, dim=1)
-    # 4) softmax weights over training axis
-    logW = -0.5 * D2                                      # (n_test, n_train)
-    W    = torch.softmax(logW, dim=1)                     # rows sum to 1
-
-    # 5) weighted average of precomputed E[Y|X]
-    return W.matmul(E_Y_given_X_batch[idx])              # (n_test,)
-
-# def estimate_conditional_expectation(X_batch, S_batch, E_Y_given_X_batch, alpha):
-#     """
-#     Estimate E[E[Y|X]|S] via a kernel method.
-#     """
-#     X_expanded = X_batch.unsqueeze(1)  # (batch_size, 1, n_features)
-#     S_expanded = S_batch.unsqueeze(0)  # (1, batch_size, n_features)
-#     alpha_clamped = torch.clamp(alpha, min=CLAMP_MIN)
-#     alpha_expanded = alpha_clamped.unsqueeze(0).unsqueeze(0)
+    X_expanded = X_batch.unsqueeze(1)  # (batch_size, 1, n_features)
+    S_expanded = S_batch.unsqueeze(0)  # (1, batch_size, n_features)
+    alpha_clamped = torch.clamp(alpha, min=CLAMP_MIN)
+    alpha_expanded = alpha_clamped.unsqueeze(0).unsqueeze(0)
     
-#     # squared_distances = ((X_expanded - S_expanded) * torch.sqrt(1/(alpha_expanded + 1e-2)))**2
-#     squared_distances = ((X_expanded - S_expanded)**2 / (alpha_expanded + EPS)).sum(dim=2)
-#     kernel_matrix = torch.exp(-0.5 * torch.clamp(torch.sum(squared_distances, dim=2), max=100))
-#     weights = kernel_matrix / (kernel_matrix.sum(dim=0, keepdim=True) + 1e-8)
-#     E_Y_given_S = torch.mv(weights.t(), E_Y_given_X_batch)
-#     return E_Y_given_S
+    squared_distances = ((X_expanded - S_expanded) * torch.sqrt(1/(alpha_expanded + 1e-2)))**2
+    kernel_matrix = torch.exp(-0.5 * torch.clamp(torch.sum(squared_distances, dim=2), max=100))
+    weights = kernel_matrix / (kernel_matrix.sum(dim=0, keepdim=True) + 1e-8)
+    E_Y_given_S = torch.mv(weights.t(), E_Y_given_X_batch)
+    return E_Y_given_S
 
 # =============================================================================
 # Regularization penalty (unchanged)
@@ -332,9 +290,7 @@ def compute_full_batch_objective_IF_optimized(X, E_Y_given_X_pre, term1, alpha,
 def run_experiment_multi_population(pop_configs, m1, m, 
                                     dataset_size=10000,
                                     budget=None,
-                                    noise_scale=0.0, 
-                                    corr_strength=0.0,
-                                    num_epochs=30, 
+                                    noise_scale=0.0, num_epochs=30, 
                                     reg_type=None, reg_lambda=0,
                                     learning_rate=0.001,
                                     batch_size=100,
@@ -366,37 +322,22 @@ def run_experiment_multi_population(pop_configs, m1, m,
     for pop_config in pop_configs:
         pop_id = pop_config['pop_id']
         dataset_type = pop_config['dataset_type']
-        if corr_strength > 0:
-            new_X, Y, A, meaningful_indices = generate_data_continuous_with_corr(
-                pop_id=pop_id, m1=m1, m=m, 
-                dataset_type=dataset_type, 
-                dataset_size=dataset_size,
-                noise_scale=noise_scale, 
-                corr_strength=corr_strength,
-                seed=seed, 
-                common_meaningful_indices=common_meaningful_indices
-            )
-        else:
-            new_X, Y, A, meaningful_indices = generate_data_continuous(
-                pop_id=pop_id, m1=m1, m=m, 
-                dataset_type=dataset_type, 
-                dataset_size=dataset_size,
-                noise_scale=noise_scale, 
-                seed=seed, 
-                common_meaningful_indices=common_meaningful_indices
-            )
+        new_X, Y, A, meaningful_indices = generate_data_continuous(
+            pop_id=pop_id, m1=m1, m=m, 
+            dataset_type=dataset_type, 
+            dataset_size=dataset_size,
+            noise_scale=noise_scale, 
+            seed=seed, 
+            common_meaningful_indices=common_meaningful_indices
+        )
         X = torch.tensor(new_X, dtype=torch.float32)
         # Y = torch.tensor(Y, dtype=torch.float32)
-        if isinstance(Y, np.ndarray):
-            Y = torch.from_numpy(Y).float()
-        else:
-            Y = torch.tensor(Y.clone().detach(), dtype=torch.float32)
-        # Y = torch.tensor(Y.clone().detach(), dtype=torch.float32)
+        Y = torch.tensor(Y.clone().detach(), dtype=torch.float32)
         
-        # # normalizing X
-        # X_mean = X.mean(dim=0)
-        # X_std = X.std(dim=0)
-        # X = (X - X_mean) / (X_std + EPS)
+        # normalizing X
+        X_mean = X.mean(dim=0)
+        X_std = X.std(dim=0)
+        X = (X - X_mean) / (X_std + EPS)
         # Precompute predictions and term1 using the chosen estimator method
         if estimator_type == "plugin":
             # if base_model_type == "rf":
@@ -407,8 +348,8 @@ def run_experiment_multi_population(pop_configs, m1, m,
             # # Store the predictions only
             # E_Y_given_X = torch.tensor(model.predict(X.numpy()), dtype=torch.float32)
             # term1 = None  # Not used in plugin branch
-            term1 = plugin_estimator_squared_conditional(X.numpy(), Y.numpy(), estimator_type=base_model_type)
-            E_Y_given_X = torch.tensor(plugin_estimator_conditional_mean(X.numpy(), Y.numpy(), estimator_type=base_model_type), dtype=torch.float32)
+            term1 = plugin_estimator_squared_conditional_Kfold(X.numpy(), Y.numpy(), estimator_type=base_model_type)
+            E_Y_given_X = torch.tensor(plugin_estimator_conditional_mean_Kfold(X.numpy(), Y.numpy(), estimator_type=base_model_type), dtype=torch.float32)
             if verbose:
                 print(f"Precomputed term1 = {term1}")
         elif estimator_type == "if":
@@ -420,11 +361,11 @@ def run_experiment_multi_population(pop_configs, m1, m,
             #     model = KernelRidge(kernel='rbf')
             # model.fit(X.numpy(), Y.numpy())
             # E_Y_given_X = torch.tensor(model.predict(X.numpy()), dtype=torch.float32)
-            # term1 = IF_estimator_squared_conditional(X.numpy(), Y.numpy(), estimator_type=base_model_type)
+            # term1 = IF_estimator_squared_conditional_Kfold(X.numpy(), Y.numpy(), estimator_type=base_model_type)
             # if verbose:
             #     print(f"Precomputed term1 = {term1}")
-            term1 = IF_estimator_squared_conditional(X.numpy(), Y.numpy(), estimator_type=base_model_type)
-            E_Y_given_X = torch.tensor(plugin_estimator_conditional_mean(X.numpy(), Y.numpy(), estimator_type=base_model_type), dtype=torch.float32)
+            term1 = IF_estimator_squared_conditional_Kfold(X.numpy(), Y.numpy(), estimator_type=base_model_type)
+            E_Y_given_X = torch.tensor(plugin_estimator_conditional_mean_Kfold(X.numpy(), Y.numpy(), estimator_type=base_model_type), dtype=torch.float32)
         else:
             raise ValueError("estimator_type must be 'plugin' or 'if'")
         
@@ -662,7 +603,6 @@ def parse_args():
     parser.add_argument('--m', type=int, default=100, help='Total number of features')
     parser.add_argument('--dataset-size', type=int, default=10000)
     parser.add_argument('--noise-scale', type=float, default=0.1)
-    parser.add_argument('--corr-strength', type=float, default=0.0)
     parser.add_argument('--num-epochs', type=int, default=150)
     parser.add_argument('--reg-type', type=str, default='Reciprocal_L1')
     parser.add_argument('--reg-lambda', type=float, default=0.001)
@@ -705,7 +645,6 @@ def main():
         'dataset_size': args.dataset_size,
         'budget': budget,
         'noise_scale': args.noise_scale,
-        'corr_strength': args.corr_strength,
         'num_epochs': args.num_epochs,
         'reg_type': args.reg_type,
         'reg_lambda': args.reg_lambda,
@@ -728,7 +667,6 @@ def main():
         dataset_size=args.dataset_size,
         budget=budget,
         noise_scale=args.noise_scale,
-        corr_strength=args.corr_strength,
         num_epochs=args.num_epochs,
         reg_type=args.reg_type,
         reg_lambda=args.reg_lambda,

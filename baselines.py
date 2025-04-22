@@ -7,10 +7,11 @@ from sklearn.metrics import r2_score
 import json
 import os
 from copy import deepcopy
-from data import generate_data_continuous
+from data import generate_data_continuous, generate_data_continuous_with_corr
 import argparse
 
 def pooled_lasso(pop_configs, m1, m, budget, dataset_size=10000, noise_scale=0.01, 
+                 corr_strength=0.5, 
                 alpha=0.01, seed=None):
     """
     Baseline 1: Pool all populations and use Lasso regression to select variables.
@@ -53,15 +54,26 @@ def pooled_lasso(pop_configs, m1, m, budget, dataset_size=10000, noise_scale=0.0
         pop_id = pop_config['pop_id']
         dataset_type = pop_config['dataset_type']
         
-        X, Y, A, meaningful_indices = generate_data_continuous(
-            pop_id=pop_id, m1=m1, m=m, 
-            dataset_type=dataset_type, 
-            dataset_size=dataset_size,
-            noise_scale=noise_scale, 
-            seed=seed, 
-            common_meaningful_indices=common_meaningful_indices
-        )
-        
+        if corr_strength > 0:
+            X, Y, A, meaningful_indices = generate_data_continuous_with_corr(
+                pop_id=pop_id, m1=m1, m=m, 
+                dataset_type=dataset_type, 
+                dataset_size=dataset_size,
+                noise_scale=noise_scale, 
+                seed=seed, 
+                common_meaningful_indices=common_meaningful_indices,
+                corr_strength=corr_strength
+            )
+        else:
+            X, Y, A, meaningful_indices = generate_data_continuous(
+                pop_id=pop_id, m1=m1, m=m, 
+                dataset_type=dataset_type, 
+                dataset_size=dataset_size,
+                noise_scale=noise_scale, 
+                seed=seed, 
+                common_meaningful_indices=common_meaningful_indices
+            )
+            
         all_X.append(X)
         all_Y.append(Y)
         all_meaningful_indices.append(meaningful_indices)
@@ -99,6 +111,7 @@ def pooled_lasso(pop_configs, m1, m, budget, dataset_size=10000, noise_scale=0.0
     }
 
 def population_wise_regression(pop_configs, m1, m, budget, dataset_size=10000, noise_scale=0.01, 
+                               corr_strength=0.5,
                               model_type='linear', voting='frequency', seed=None):
     """
     Baseline 2: Perform regression on each population and use a voting mechanism to select variables.
@@ -142,14 +155,25 @@ def population_wise_regression(pop_configs, m1, m, budget, dataset_size=10000, n
         pop_id = pop_config['pop_id']
         dataset_type = pop_config['dataset_type']
         
-        X, Y, A, meaningful_indices = generate_data_continuous(
-            pop_id=pop_id, m1=m1, m=m, 
-            dataset_type=dataset_type, 
-            dataset_size=dataset_size,
-            noise_scale=noise_scale, 
-            seed=seed, 
-            common_meaningful_indices=common_meaningful_indices
-        )
+        if corr_strength > 0:
+            X, Y, A, meaningful_indices = generate_data_continuous_with_corr(
+                pop_id=pop_id, m1=m1, m=m, 
+                dataset_type=dataset_type, 
+                dataset_size=dataset_size,
+                noise_scale=noise_scale, 
+                seed=seed, 
+                common_meaningful_indices=common_meaningful_indices,
+                corr_strength=corr_strength
+            )
+        else:
+            X, Y, A, meaningful_indices = generate_data_continuous(
+                pop_id=pop_id, m1=m1, m=m, 
+                dataset_type=dataset_type, 
+                dataset_size=dataset_size,
+                noise_scale=noise_scale, 
+                seed=seed, 
+                common_meaningful_indices=common_meaningful_indices
+            )
         
         pop_data.append((X, Y, pop_id))
         all_meaningful_indices.append(meaningful_indices)
@@ -230,6 +254,7 @@ def population_wise_regression(pop_configs, m1, m, budget, dataset_size=10000, n
     }
 
 def mutual_information_selection(pop_configs, m1, m, budget, dataset_size=10000, noise_scale=0.01, 
+                                 corr_strength=0.5,
                                pooling='union', seed=None):
     """
     Baseline 3: Use mutual information to select variables.
@@ -271,14 +296,25 @@ def mutual_information_selection(pop_configs, m1, m, budget, dataset_size=10000,
         pop_id = pop_config['pop_id']
         dataset_type = pop_config['dataset_type']
         
-        X, Y, A, meaningful_indices = generate_data_continuous(
-            pop_id=pop_id, m1=m1, m=m, 
-            dataset_type=dataset_type, 
-            dataset_size=dataset_size,
-            noise_scale=noise_scale, 
-            seed=seed, 
-            common_meaningful_indices=common_meaningful_indices
-        )
+        if corr_strength > 0:
+            X, Y, A, meaningful_indices = generate_data_continuous_with_corr(
+                pop_id=pop_id, m1=m1, m=m, 
+                dataset_type=dataset_type, 
+                dataset_size=dataset_size,
+                noise_scale=noise_scale, 
+                seed=seed, 
+                common_meaningful_indices=common_meaningful_indices,
+                corr_strength=corr_strength
+            )
+        else:
+            X, Y, A, meaningful_indices = generate_data_continuous(
+                pop_id=pop_id, m1=m1, m=m, 
+                dataset_type=dataset_type, 
+                dataset_size=dataset_size,
+                noise_scale=noise_scale, 
+                seed=seed, 
+                common_meaningful_indices=common_meaningful_indices
+            )
         
         pop_data.append((X, Y, pop_id))
         all_meaningful_indices.append(meaningful_indices)
@@ -368,6 +404,7 @@ def mutual_information_selection(pop_configs, m1, m, budget, dataset_size=10000,
     }
 
 def stability_selection(pop_configs, m1, m, budget, dataset_size=10000, noise_scale=0.01, 
+                          corr_strength=0.5,
                        n_bootstraps=50, sample_fraction=0.75, alpha_range=None, 
                        threshold=0.7, seed=None):
     """
@@ -420,14 +457,25 @@ def stability_selection(pop_configs, m1, m, budget, dataset_size=10000, noise_sc
         pop_id = pop_config['pop_id']
         dataset_type = pop_config['dataset_type']
         
-        X, Y, A, meaningful_indices = generate_data_continuous(
-            pop_id=pop_id, m1=m1, m=m, 
-            dataset_type=dataset_type, 
-            dataset_size=dataset_size,
-            noise_scale=noise_scale, 
-            seed=seed, 
-            common_meaningful_indices=common_meaningful_indices
-        )
+        if corr_strength > 0:
+            X, Y, A, meaningful_indices = generate_data_continuous_with_corr(
+                pop_id=pop_id, m1=m1, m=m, 
+                dataset_type=dataset_type, 
+                dataset_size=dataset_size,
+                noise_scale=noise_scale, 
+                seed=seed, 
+                common_meaningful_indices=common_meaningful_indices,
+                corr_strength=corr_strength
+            )
+        else:
+            X, Y, A, meaningful_indices = generate_data_continuous(
+                pop_id=pop_id, m1=m1, m=m, 
+                dataset_type=dataset_type, 
+                dataset_size=dataset_size,
+                noise_scale=noise_scale, 
+                seed=seed, 
+                common_meaningful_indices=common_meaningful_indices
+            )
         
         all_X.append(X)
         all_Y.append(Y)
@@ -501,6 +549,7 @@ def stability_selection(pop_configs, m1, m, budget, dataset_size=10000, noise_sc
     }
 
 def group_lasso_selection(pop_configs, m1, m, budget, dataset_size=10000, noise_scale=0.01, 
+                            corr_strength=0.5,
                          alpha=0.01, seed=None):
     """
     Baseline 5: Group Lasso approach (by treating populations as groups and selecting features
@@ -546,14 +595,25 @@ def group_lasso_selection(pop_configs, m1, m, budget, dataset_size=10000, noise_
         pop_id = pop_config['pop_id']
         dataset_type = pop_config['dataset_type']
         
-        X, Y, A, meaningful_indices = generate_data_continuous(
-            pop_id=pop_id, m1=m1, m=m, 
-            dataset_type=dataset_type, 
-            dataset_size=dataset_size,
-            noise_scale=noise_scale, 
-            seed=seed, 
-            common_meaningful_indices=common_meaningful_indices
-        )
+        if corr_strength > 0:
+            X, Y, A, meaningful_indices = generate_data_continuous_with_corr(
+                pop_id=pop_id, m1=m1, m=m, 
+                dataset_type=dataset_type, 
+                dataset_size=dataset_size,
+                noise_scale=noise_scale, 
+                seed=seed, 
+                common_meaningful_indices=common_meaningful_indices,
+                corr_strength=corr_strength
+            )
+        else:
+            X, Y, A, meaningful_indices = generate_data_continuous(
+                pop_id=pop_id, m1=m1, m=m, 
+                dataset_type=dataset_type, 
+                dataset_size=dataset_size,
+                noise_scale=noise_scale, 
+                seed=seed, 
+                common_meaningful_indices=common_meaningful_indices
+            )
         
         pop_data.append((X, Y, pop_id))
         all_meaningful_indices.append(meaningful_indices)
@@ -591,6 +651,7 @@ def group_lasso_selection(pop_configs, m1, m, budget, dataset_size=10000, noise_
     }
 
 def condorcet_voting(pop_configs, m1, m, budget, dataset_size=10000, noise_scale=0.01, 
+                        corr_strength=0.5,
                     model_type='rf', seed=None):
     """
     Baseline 6: Condorcet voting method for variable selection.
@@ -632,14 +693,25 @@ def condorcet_voting(pop_configs, m1, m, budget, dataset_size=10000, noise_scale
         pop_id = pop_config['pop_id']
         dataset_type = pop_config['dataset_type']
         
-        X, Y, A, meaningful_indices = generate_data_continuous(
-            pop_id=pop_id, m1=m1, m=m, 
-            dataset_type=dataset_type, 
-            dataset_size=dataset_size,
-            noise_scale=noise_scale, 
-            seed=seed, 
-            common_meaningful_indices=common_meaningful_indices
-        )
+        if corr_strength > 0:
+            X, Y, A, meaningful_indices = generate_data_continuous_with_corr(
+                pop_id=pop_id, m1=m1, m=m, 
+                dataset_type=dataset_type, 
+                dataset_size=dataset_size,
+                noise_scale=noise_scale, 
+                seed=seed, 
+                common_meaningful_indices=common_meaningful_indices,
+                corr_strength=corr_strength
+            )
+        else:
+            X, Y, A, meaningful_indices = generate_data_continuous(
+                pop_id=pop_id, m1=m1, m=m, 
+                dataset_type=dataset_type, 
+                dataset_size=dataset_size,
+                noise_scale=noise_scale, 
+                seed=seed, 
+                common_meaningful_indices=common_meaningful_indices
+            )
         
         pop_data.append((X, Y, pop_id))
         all_meaningful_indices.append(meaningful_indices)
@@ -724,7 +796,8 @@ def convert_to_serializable(obj):
         return list(obj)
     return obj
 
-def run_all_baselines(pop_configs, m1, m, budget, dataset_size=10000, noise_scale=0.01, seed=42, save_path='./results/baselines/'):
+def run_all_baselines(pop_configs, m1, m, budget, dataset_size=10000, noise_scale=0.01, corr_strength=0.0,
+                      seed=42, save_path='./results/baselines/'):
     """
     Run all baseline methods and return/save the results.
     
@@ -752,8 +825,53 @@ def run_all_baselines(pop_configs, m1, m, budget, dataset_size=10000, noise_scal
     """
     os.makedirs(save_path, exist_ok=True)
     
-    results = {}
+    # generate dummy dataset to get population configurations
+    if seed is not None:
+        np.random.seed(seed)
     
+    # Define common meaningful indices
+    k_common = max(1, m1 // 2)
+    common_meaningful_indices = np.arange(k_common)
+    
+    # Generate data for each population
+    pop_configs_temp = []
+    all_meaningful_indices = []
+    
+    for pop_config in pop_configs:
+        pop_id = pop_config['pop_id']
+        dataset_type = pop_config['dataset_type']
+        
+        if corr_strength > 0:
+            X, Y, A, meaningful_indices = generate_data_continuous_with_corr(
+                pop_id=pop_id, m1=m1, m=m, 
+                dataset_type=dataset_type, 
+                dataset_size=dataset_size,
+                noise_scale=noise_scale, 
+                seed=seed, 
+                common_meaningful_indices=common_meaningful_indices,
+                corr_strength=corr_strength
+            )
+        else:
+            X, Y, A, meaningful_indices = generate_data_continuous(
+                pop_id=pop_id, m1=m1, m=m, 
+                dataset_type=dataset_type, 
+                dataset_size=dataset_size,
+                noise_scale=noise_scale, 
+                seed=seed, 
+                common_meaningful_indices=common_meaningful_indices
+            )
+        
+        # pop_data.append((X, Y, pop_id, meaningful_indices))
+        pop_configs_temp.append({
+            'pop_id': pop_id,
+            'dataset_type': dataset_type,
+            'meaningful_indices': meaningful_indices
+        })
+
+        all_meaningful_indices.append(meaningful_indices)
+    ########
+    results = {}
+    results['pop_configs'] = pop_configs_temp
     budget = m1//2 + len(pop_configs) * (m1//2)
     # Run all baselines
     results['pooled_lasso'] = pooled_lasso(pop_configs, m1, m, budget, dataset_size, noise_scale, alpha=0.01, seed=seed)
@@ -823,14 +941,49 @@ def summarize_results(results, save_path='./results/baselines/'):
     pandas.DataFrame
         DataFrame with summarized results
     """
+    pop_configs = results['pop_configs']
     summary = []
     
     for method_name, method_results in results.items():
+        if method_name == 'pop_configs':
+            continue
+        # print(f"Processing method: {method_name}")
+        # print(pop_configs)
+        # find min selected percentage across populations
+        min_selected_percentage = min([
+            len(set(method_results['selected_indices']) & set(pop_config['meaningful_indices'])) / len(pop_config['meaningful_indices'])
+            for pop_config in pop_configs
+        ])
+        # find max selected percentage across populations
+        max_selected_percentage = max([
+            len(set(method_results['selected_indices']) & set(pop_config['meaningful_indices'])) / len(pop_config['meaningful_indices'])
+            for pop_config in pop_configs
+        ])
+        # find mean selected percentage across populations  
+        mean_selected_percentage = np.mean([
+            len(set(method_results['selected_indices']) & set(pop_config['meaningful_indices'])) / len(pop_config['meaningful_indices'])
+            for pop_config in pop_configs
+        ])
+        # # find std selected percentage across populations
+        # std_selected_percentage = np.std([
+        #     len(set(method_results['selected_indices']) & set(pop_config['meaningful_indices'])) / len(pop_config['meaningful_indices'])
+        #     for pop_config in pop_configs
+        # ])
+        # find median selected percentage across populations
+        median_selected_percentage = np.median([
+            len(set(method_results['selected_indices']) & set(pop_config['meaningful_indices'])) / len(pop_config['meaningful_indices'])
+            for pop_config in pop_configs
+        ])
         summary.append({
             'method': method_name,
             'precision': method_results['precision'],
             'recall': method_results['recall'],
-            'f1_score': method_results['f1_score']
+            'f1_score': method_results['f1_score'],
+            'min_selected_percentage': min_selected_percentage,
+            'max_selected_percentage': max_selected_percentage,
+            'mean_selected_percentage': mean_selected_percentage,
+            # 'std_selected_percentage': std_selected_percentage,
+            'median_selected_percentage': median_selected_percentage,
         })
     
     summary_df = pd.DataFrame(summary)
@@ -909,6 +1062,7 @@ if __name__ == "__main__":
     parser.add_argument('--m', type=int, default=20, help='Total number of features')
     parser.add_argument('--dataset-size', type=int, default=1000, help='Number of samples per population')
     parser.add_argument('--noise-scale', type=float, default=1.0, help='Scale of noise in the data')
+    parser.add_argument('--corr-strength', type=float, default=0.0)
     parser.add_argument('--populations', nargs='+', default=['linear_regression', 'sinusoidal_regression'])
     parser.add_argument('--seed', type=int, default=42, help='Random seed')
     parser.add_argument('--save-path', type=str, default='./results/baselines/num_true_vars', help='Path to save results')
@@ -936,10 +1090,12 @@ if __name__ == "__main__":
         budget=budget,
         dataset_size=args.dataset_size,
         noise_scale=args.noise_scale,
+        corr_strength=args.corr_strength,
         seed=args.seed,
         save_path=args.save_path
     )
     
+    # append the pop configs to the results
     # Summarize results
     summary = summarize_results(results, save_path=args.save_path)
     print("Baseline methods summary:")

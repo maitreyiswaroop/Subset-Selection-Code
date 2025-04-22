@@ -189,6 +189,8 @@ def estimate_conditional_expectation(
     clamp_min=1e-4,
     k=1000,             
 ):
+    if k > X_batch.shape[0]:
+        k = X_batch.shape[0]
     """
     Differentiable kernel‐weighted estimate of E[Y|S]:
       W_ij ∝ exp( -½ * || (S_i - X_j) / sqrt(alpha) ||^2 )
@@ -447,6 +449,8 @@ def run_experiment_multi_population(pop_configs, m1, m,
     # Initialize alpha (the variable weight parameters)
     if alpha_init == "ones":
         alpha = torch.nn.Parameter(torch.ones(m, device=device))
+    elif alpha_init == "random_0":
+        alpha = torch.nn.Parameter(torch.zeros(m, device=device) + 0.1 * torch.randn(m, device=device))
     elif alpha_init == "random":
         alpha = torch.nn.Parameter(torch.ones(m, device=device) + 0.1 * torch.randn(m, device=device))
     elif alpha_init == "random_1":
@@ -485,6 +489,21 @@ def run_experiment_multi_population(pop_configs, m1, m,
         # Robust objective: take the maximum across populations
         robust_objective = torch.stack(epoch_objectives).max()
         
+        # find the purely IF based objective
+        pop_idx = 0
+        S_alpha = np.random.multivariate_normal(
+            mean=np.zeros(pop_data[pop_idx]['X'].shape[1]),
+            cov=np.diag(alpha.cpu().detach().numpy()),
+            size=pop_data[pop_idx]['X'].shape[0]) + pop_data[pop_idx]['X'].cpu().detach().numpy()
+        
+        term2 = torch.mean(torch.tensor(IF_estimator_squared_conditional(
+                            S_alpha,
+                            pop_data[pop_idx]['Y'].cpu().detach().numpy(),
+                            estimator_type=base_model_type,
+                            n_folds=N_FOLDS)))
+        print(f"\tPopulation {pop_idx}: IF-based objective = {term1 - term2}")
+        print(f"\tIF-based Term2 for population {pop_idx}: {term2}\n")
+
         optimizer.zero_grad()
         robust_objective.backward()
         torch.nn.utils.clip_grad_norm_([alpha], max_norm=1.0)
@@ -659,22 +678,22 @@ def compute_population_stats(selected_indices, meaningful_indices_list):
 def parse_args():
     parser = argparse.ArgumentParser(description='Multi-population variable selection')
     parser.add_argument('--m1', type=int, default=4, help='Number of meaningful features per population')
-    parser.add_argument('--m', type=int, default=100, help='Total number of features')
+    parser.add_argument('--m', type=int, default=10, help='Total number of features')
     parser.add_argument('--dataset-size', type=int, default=10000)
     parser.add_argument('--noise-scale', type=float, default=0.1)
     parser.add_argument('--corr-strength', type=float, default=0.0)
-    parser.add_argument('--num-epochs', type=int, default=150)
-    parser.add_argument('--reg-type', type=str, default='Reciprocal_L1')
-    parser.add_argument('--reg-lambda', type=float, default=0.001)
+    parser.add_argument('--num-epochs', type=int, default=10)
+    parser.add_argument('--reg-type', type=str, default='None')
+    parser.add_argument('--reg-lambda', type=float, default=0.0)
     parser.add_argument('--learning-rate', type=float, default=0.05)
-    parser.add_argument('--batch-size', type=int, default=256)
+    parser.add_argument('--batch-size', type=int, default=500)
     parser.add_argument('--optimizer-type', type=str, default='sgd')
     parser.add_argument('--seed', type=int, default=17)
     parser.add_argument('--patience', type=int, default=10)
-    parser.add_argument('--alpha-init', type=str, default='random')
+    parser.add_argument('--alpha-init', type=str, default='random_1')
     parser.add_argument('--estimator-type', type=str, default='plugin', choices=['plugin', 'if'])
     parser.add_argument('--base-model-type', type=str, default='rf', choices=['rf', 'krr'])
-    parser.add_argument('--populations', nargs='+', default=['linear_regression', 'sinusoidal_regression'])
+    parser.add_argument('--populations', nargs='+', default=['linear_regression'])
     parser.add_argument('--param-freezing', action='store_true',
                         help='Enable parameter freezing for alpha values below threshold')
     parser.add_argument('--save-path', type=str, default='./results/multi_population/')

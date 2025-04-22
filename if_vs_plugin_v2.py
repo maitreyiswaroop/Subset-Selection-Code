@@ -7,6 +7,8 @@ from sklearn.kernel_ridge import KernelRidge
 from sklearn.model_selection import KFold
 import os
 import argparse
+from scipy.special import softmax
+from sklearn.neighbors import BallTree
 
 # --- Previously defined functions ---
 
@@ -197,132 +199,91 @@ def closed_form(alpha, A):
     """
     return np.sum((A**2 * alpha) / (1 + alpha))
 
-def estimate_conditional_expectation_numpy(X_batch, S_batch, E_Y_given_X_batch, alpha, 
-                                                      CLAMP_MIN=1e-4, max_chunk_train=5000, max_chunk_test=5000):
-    """
-    Estimate E[E[Y|X]|S] via a Gaussian kernel method for continuous data using NumPy,
-    processing both X_batch and S_batch in blocks to control memory usage.
-    
-    Instead of computing the full (n_train x n_test) kernel matrix, we divide the training
-    (X_batch) into chunks and the test set (S_batch) into chunks. For each block,
-    we compute the kernel values and accumulate two measures:
-      - Numerator: sum_{i in block} kernel(i,j)*E_Y_given_X_batch[i]
-      - Denom: sum_{i in block} kernel(i,j)
-    The final output for each test sample j is then given by: numerator[j] / denominator[j].
-    
-    Parameters:
-        X_batch : np.ndarray
-            Input training features, shape (n_samples, n_features).
-        S_batch : np.ndarray
-            Test (or smoothed) features, shape (n_samples, n_features). 
-            (Often X_batch and S_batch have the same number of rows.)
-        E_Y_given_X_batch : np.ndarray
-            Precomputed estimates for each row in X_batch, shape (n_samples,).
-        alpha : np.ndarray
-            Smoothing parameters for each feature, shape (n_features,).
-        CLAMP_MIN : float, optional
-            Minimum allowed value for alpha (default is 1e-4).
-        max_chunk_train : int, optional
-            Maximum number of training samples to process in one block.
-        max_chunk_test : int, optional
-            Maximum number of test samples to process in one block.
-    
-    Returns:
-        E_Y_given_S : np.ndarray
-            Estimated conditional expectation from S, shape (n_samples,).
-    """
-    n_train = X_batch.shape[0]
-    n_test = S_batch.shape[0]
-    
-    # Precompute the sqrt factor using the clamped alpha.
-    alpha_clamped = np.maximum(alpha, CLAMP_MIN)  # shape: (n_features,)
-    # We'll use broadcasting so that sqrt_factor has shape (1,1,n_features)
-    sqrt_factor = np.sqrt(1.0 / (alpha_clamped[np.newaxis, np.newaxis, :] + 1e-2))
-    
-    # Initialize arrays to accumulate numerator and denominator for each test sample.
-    numerator = np.zeros(n_test, dtype=np.float64)
-    denominator = np.zeros(n_test, dtype=np.float64)
-    
-    # Process the test samples in chunks.
-    for j_start in range(0, n_test, max_chunk_test):
-        j_end = min(n_test, j_start + max_chunk_test)
-        # S-test block: shape (chunk_test, n_features)
-        S_chunk = S_batch[j_start:j_end]
-        # Expand S_chunk: shape (1, chunk_test, n_features)
-        S_chunk_expanded = S_chunk[np.newaxis, :, :]
-        
-        # For this S_chunk, accumulate contributions from all training samples in blocks.
-        # Initialize temporary arrays for this S_chunk.
-        num_chunk = np.zeros(j_end - j_start, dtype=np.float64)
-        den_chunk = np.zeros(j_end - j_start, dtype=np.float64)
-        
-        for i_start in range(0, n_train, max_chunk_train):
-            i_end = min(n_train, i_start + max_chunk_train)
-            # Training block: shape (chunk_train, n_features)
-            X_chunk = X_batch[i_start:i_end]
-            # Corresponding E_Y_given_X for this training block
-            E_chunk = E_Y_given_X_batch[i_start:i_end]
-            # Expand X_chunk: shape (chunk_train, 1, n_features)
-            X_chunk_expanded = X_chunk[:, np.newaxis, :]
-            
-            # Compute differences: shape (chunk_train, chunk_test, n_features)
-            diff = X_chunk_expanded - S_chunk_expanded
-            # Scale the differences
-            scaled_diff = diff * sqrt_factor  # broadcasted multiplication
-            # Compute squared distances over features: shape (chunk_train, chunk_test)
-            squared_distances = np.sum(scaled_diff**2, axis=2)
-            # Clip distances to avoid numerical issues
-            clamped_sum = np.clip(squared_distances, None, 100)
-            # Compute the Gaussian kernel: shape (chunk_train, chunk_test)
-            kernel_block = np.exp(-0.5 * clamped_sum)
-            
-            # Instead of pre-normalizing columns, accumulate raw sums.
-            # For each test sample in the block, accumulate:
-            # numerator += sum_{i in train_block} kernel(i,j)*E_chunk[i]
-            # denominator += sum_{i in train_block} kernel(i,j)
-            num_chunk += np.dot(kernel_block.T, E_chunk)
-            den_chunk += np.sum(kernel_block, axis=0)
-        
-        # Final normalized estimates for the test chunk.
-        # Avoid division by zero with a small epsilon.
-        epsilon = 1e-8
-        numerator[j_start:j_end] = num_chunk
-        denominator[j_start:j_end] = den_chunk + epsilon
-    
-    # Compute output
-    E_Y_given_S = numerator / denominator
-    return E_Y_given_S
+def estimate_conditional_with_knn(
+    X_batch, S_batch, E_Y_given_X_batch, alpha, k=100, 
+    CLAMP_MIN=1e-4, bw_scale=1.0
+):
+    # scale features by alpha
+    alpha_safe   = np.maximum(alpha, CLAMP_MIN)*bw_scale
+    inv_sqrt_var = 1/np.sqrt(alpha_safe)
+    X_scaled = X_batch * inv_sqrt_var   # (n_train, d)
+    S_scaled = S_batch * inv_sqrt_var   # (n_test,  d)
 
-def IF_estimator_conditional_mean_Kfold(X, Y, estimator_type="rf", n_folds=5):
-    """
-    Compute out-of-fold IF-corrected estimates for E[Y|X] using K-fold CV.
-    For each fold, predictions are corrected using a kernel-weighted average of training residuals.
-    """
-    n_samples, n_features = X.shape
-    out_preds = np.zeros(n_samples)
+    tree = BallTree(X_scaled, leaf_size=40)
+    dist, ind = tree.query(S_scaled, k=k)      # (n_test, k)
+    # Gaussian weights
+    W = np.exp(-0.5 * dist**2)                 # (n_test, k)
+    W /= W.sum(axis=1, keepdims=True)          # normalize
+    # gather E_Y for neighbors and do weighted average
+    neighbor_preds = E_Y_given_X_batch[ind]    # (n_test, k)
+    return (W * neighbor_preds).sum(axis=1)    # (n_test,)
+
+def estimate_conditional_kernel_oof(
+    X_batch, S_batch, E_Y_X, alpha, n_folds=5, **kw
+):
+    oof = np.zeros(len(S_batch))
     kf = KFold(n_splits=n_folds, shuffle=True, random_state=42)
-    bandwidth = 0.1 * np.sqrt(n_features)  # heuristic for kernel bandwidth
-    for train_idx, test_idx in kf.split(X):
-        X_train, X_test = X[train_idx], X[test_idx]
-        Y_train = Y[train_idx]
-        if estimator_type == "rf":
-            model = RandomForestRegressor(n_estimators=100,
-                                          min_samples_leaf=5,
-                                          n_jobs=-1,
-                                          random_state=42)
-        else:
-            model = KernelRidge(kernel='rbf')
-        model.fit(X_train, Y_train)
-        mu_train = model.predict(X_train)
-        mu_test = model.predict(X_test)
-        residuals_train = Y_train - mu_train
-        for i, x_test in enumerate(X_test):
-            dists = np.sum((X_train - x_test)**2, axis=1)
-            weights = np.exp(-dists / (2 * bandwidth**2))
-            weights = weights / (np.sum(weights) + 1e-8)
-            correction = np.sum(weights * residuals_train)
-            out_preds[test_idx[i]] = mu_test[i] + correction
-    return out_preds
+    for tr_idx, te_idx in kf.split(S_batch):
+        # use all X_batch (or optionally X_batch[tr_idx] only) 
+        # to estimate for S_batch[te_idx]
+        oof[te_idx] = estimate_conditional_with_knn(
+            X_batch, S_batch[te_idx], E_Y_X, alpha, **kw
+        )
+    return oof
+
+def estimate_conditional_expectation_numpy(
+    X_batch,       # should be your full training X of shape (n_train, d)
+    S_batch,       # the noisy obs of shape        (n_test,  d)
+    E_Y_given_X_batch,  # shape (n_train,)
+    alpha,         # shape (d,)
+    bw_scale=1.0,  # global bandwidth multiplier
+    CLAMP_MIN=1e-4,
+    max_chunk_train=5000,
+    max_chunk_test=5000,
+):
+    n_train, d = X_batch.shape
+    n_test     = S_batch.shape[0]
+
+    # 1) clamp & scale alpha
+    alpha_safe   = np.maximum(alpha, CLAMP_MIN)*bw_scale   # (d,)
+    # print("alpha_safe: ", alpha_safe)
+    inv_sqrt_var = 1.0 / np.sqrt(alpha_safe)[None, None, :]  # (1,1,d)
+
+    numerator   = np.zeros(n_test, dtype=float)
+    denominator = np.zeros(n_test, dtype=float)
+
+    for j0 in range(0, n_test, max_chunk_test):
+        j1        = min(n_test, j0 + max_chunk_test)
+        S_chunk   = S_batch[j0:j1]                         # (cj, d)
+        S_exp     = S_chunk[None,:,:] * inv_sqrt_var      # (1, cj, d)
+
+        num_c = np.zeros(j1-j0)
+        den_c = np.zeros(j1-j0)
+
+        for i0 in range(0, n_train, max_chunk_train):
+            i1      = min(n_train, i0 + max_chunk_train)
+            X_chunk = X_batch[i0:i1]                       # (ci, d)
+            E_chunk = E_Y_given_X_batch[i0:i1]             # (ci,)
+
+            X_exp   = X_chunk[:,None,:] * inv_sqrt_var     # (ci,1,d)
+            D2      = np.sum((X_exp - S_exp)**2, axis=2)   # (ci,cj)
+            D2      = np.clip(D2, None, 10000)
+
+            # stable normalization via softmax over axis=0 (the train axis)
+            logW    = -0.5 * D2                            # (ci, cj)
+            W       = softmax(logW, axis=0)               # (ci, cj)
+            # without softmax         
+            # W       = np.exp(-0.5 * D2)                   # (ci, cj)
+            # W       = W / W.sum(axis=0, keepdims=True)
+
+            # accumulate
+            num_c  += W.T.dot(E_chunk)                     # (cj,)
+            den_c  += W.sum(axis=0)                        # (cj,)
+
+        numerator  [j0:j1] = num_c
+        denominator[j0:j1] = den_c + 1e-12
+
+    return numerator / denominator
 
 def plugin_estimator_conditional_mean_Kfold(X, Y, estimator_type="rf", n_folds=5):
     """
@@ -346,6 +307,46 @@ def plugin_estimator_conditional_mean_Kfold(X, Y, estimator_type="rf", n_folds=5
         out_preds[test_idx] = mu_test
     return out_preds
 
+def IF_estimator_conditional_mean_Kfold(X, Y, estimator_type="rf", n_folds=5, k_neighbors=100):
+    n_samples, n_features = X.shape
+    out_preds = np.zeros(n_samples)
+    kf = KFold(n_splits=n_folds, shuffle=True, random_state=42)
+    bandwidth = 0.1 * np.sqrt(n_features)
+
+    for train_idx, test_idx in kf.split(X):
+        X_train, X_test = X[train_idx], X[test_idx]
+        Y_train = Y[train_idx]
+
+        # fit your base model
+        if estimator_type == "rf":
+            model = RandomForestRegressor(n_estimators=100,
+                                          min_samples_leaf=5,
+                                          n_jobs=-1,
+                                          random_state=42)
+        else:
+            model = KernelRidge(kernel='rbf')
+        model.fit(X_train, Y_train)
+
+        mu_test = model.predict(X_test)
+        mu_train = model.predict(X_train)
+        residuals_train = Y_train - mu_train
+
+        # build BallTree on scaled X_train
+        scale = 1.0 / bandwidth
+        tree = BallTree(X_train * scale, leaf_size=40)
+
+        # query k nearest neighbors for all X_test at once
+        dist, ind = tree.query(X_test * scale, k=k_neighbors)  # (n_test, k)
+        W = np.exp(-0.5 * (dist**2))                           # Gaussian kernel
+        W /= W.sum(axis=1, keepdims=True)                     # normalize
+
+        # compute corrections vectorized over neighbors
+        corrections = np.sum(W * residuals_train[ind], axis=1)  # (n_test,)
+
+        out_preds[test_idx] = mu_test + corrections
+
+    return out_preds
+
 def main():
     parser = argparse.ArgumentParser(description="Compare IF vs Plugin Estimators")
     parser.add_argument('--seed', type=int, default=42, help='Random seed for reproducibility')
@@ -362,9 +363,13 @@ def main():
     # Generate Y = AX + eps, where eps ~ N(0, 1)
     eps = np.random.normal(0, 1, size=N_large)
     Y_large = X_large @ A + eps
-    alpha = np.random.uniform(0.1, 1.0, size=X_large.shape[1])
+    alpha = np.random.uniform(0.0, 0.1, size=X_large.shape[1])
     print("\tAlpha values: ", alpha)
     print("\tA values: ", A)
+
+    # scale X to zero mean and unit variance
+    X_large = X_large - np.mean(X_large, axis=0)
+    X_large = X_large / np.std(X_large, axis=0)
     cov_matrix = np.diag(alpha)
     S_alpha = np.random.multivariate_normal(
         mean=np.zeros(X_large.shape[1]),
@@ -374,12 +379,13 @@ def main():
     true_functional = closed_form(alpha, A)
     true_term_1 = np.sum(A**2)
     true_term_2 = np.sum(A**2) - true_functional
-    print(f"True functional value (E[E[Y|X]^2] - E[E[Y|S(alpha)]^2]): {true_functional}")
+    # print(f"True functional value (E[E[Y|X]^2] - E[E[Y|S(alpha)]^2]): {true_functional}")
+    print(f"\nTrue functional objective: {true_functional}")
     print("True term 1: ", true_term_1)
     print("True term 2: ", true_term_2)
 
     # 3. Loop over different sample sizes and compute estimates.
-    sample_sizes = [1000, 10000, 50000, 100000, 500000]#, 1000000]
+    sample_sizes = [1000, 10000, 50000, 100000]#, 500000, 1000000]
     plugin_estimates_term1 = []
     plugin_estimates_term2 = []
     plugin_estimates_objective = []
@@ -395,6 +401,7 @@ def main():
     IF_estimates_objective_plugin = []
 
     for n in sample_sizes:
+        print('-'*50)
         print(f"\tSample size: {n}")
         X_sub = X_large[:n]
         Y_sub = Y_large[:n]
@@ -414,7 +421,6 @@ def main():
         # term 1 is same as above
         IF_estimates_term1_kernel.append(if_est)
 
-
         # TERM 2
         # Plugin estimator for sub-sample: fit a model and compute mean(mu(S_alpha)^2)
         plugin_est2 = plugin_estimator_squared_conditional(S_sub, Y_sub, estimator_type="rf")
@@ -425,12 +431,12 @@ def main():
         IF_estimates_term2.append(if_est2)
 
         # term 2 using kernel method
-        E_Y_X = IF_estimator_conditional_mean_Kfold(X_sub, Y_sub, estimator_type="rf", n_folds=5)
+        E_Y_X = IF_estimator_conditional_mean_Kfold(X_sub, Y_sub, estimator_type="rf", n_folds=10)
         E_Y_S_alpha = estimate_conditional_expectation_numpy(X_sub, S_sub, E_Y_X, alpha)
         IF_estimates_term2_kernel.append(np.mean(E_Y_S_alpha ** 2))
 
-        # term 2 using plugin and kernel method
-        E_Y_X = plugin_estimator_conditional_mean_Kfold(X_sub, Y_sub, estimator_type="rf", n_folds=5)
+        # # term 2 using plugin and kernel method
+        E_Y_X = plugin_estimator_conditional_mean_Kfold(X_sub, Y_sub, estimator_type="rf", n_folds=10)
         E_Y_S_alpha = estimate_conditional_expectation_numpy(X_sub, S_sub, E_Y_X, alpha)
         IF_estimates_term2_plugin.append(np.mean(E_Y_S_alpha ** 2))
         print(f"\tTerm 2: {n}, Plugin estimate: {plugin_est2}, IF estimate: {if_est2}, IF-Kernel: {IF_estimates_term2_kernel[-1]}, IF-Plugin: {IF_estimates_term2_plugin[-1]}")
@@ -466,6 +472,7 @@ def main():
     plt.plot(sample_sizes, plugin_estimates_term2, marker='o', label='Plugin Estimate (Term 2)')
     plt.plot(sample_sizes, IF_estimates_term2, marker='s', label='IF-based Estimate (Term 2)')
     plt.plot(sample_sizes, IF_estimates_term2_kernel, marker='^', label='IF-based Kernel Estimate (Term 2)')
+    plt.plot(sample_sizes, IF_estimates_term2_plugin, marker='v', label='IF-based Plugin Estimate (Term 2)')
     plt.xscale('log')
     plt.xlabel("Sample Size (log scale)")
     plt.ylabel("Estimate of Term 2")
@@ -479,6 +486,7 @@ def main():
     plt.plot(sample_sizes, plugin_estimates_objective, marker='o', label='Plugin Objective Estimate')
     plt.plot(sample_sizes, IF_estimates_objective, marker='s', label='IF-based Objective Estimate')
     plt.plot(sample_sizes, IF_estimates_objective_kernel, marker='^', label='IF-based Kernel Objective Estimate')
+    plt.plot(sample_sizes, IF_estimates_objective_plugin, marker='v', label='IF-based Plugin Objective Estimate')
     plt.xscale('log')
     plt.xlabel("Sample Size (log scale)")
     plt.ylabel("Objective Estimate")
