@@ -9,18 +9,18 @@
 command -v python3 >/dev/null 2>&1 || { echo >&2 "python3 is not installed. Exiting."; exit 1; }
 
 # Path to the Python script
-SCRIPT="grad_desc_populations_v3.py"
+SCRIPT="grad_desc_populations_v4.py"
 
 PARAMS="--m1 4 \
 --m 20 \
---dataset-size 1000 \
+--dataset-size 5000 \
 --noise-scale 0.1 \
 --corr-strength 0 \
---num-epochs 200 \
+--num-epochs 50 \
 --reg-type Reciprocal_L1 \
 --reg-lambda 0.05 \
---learning-rate 0.01 \
---batch-size 1000 \
+--learning-rate 0.1 \
+--batch-size 5000 \
 --optimizer-type sgd \
 --seed 17 \
 --patience 10 \

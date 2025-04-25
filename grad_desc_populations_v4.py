@@ -1,5 +1,5 @@
 """
-grad_desc_populations_v3.py: correlation structure in generated data
+grad_desc_populations_v4.py: correlation structure in generated data
 
 This script performs variable subset selection using gradient descent.
 It precomputes the conditional expectation predictions E[Y|X] and the squared functional 
@@ -29,7 +29,9 @@ from torch.utils.data import DataLoader
 
 # Import the data generation function from v2
 from data import generate_data_continuous, generate_data_continuous_with_corr
-
+from tune_estimator import find_best_estimator
+from estimators import *
+import re
 # Global hyperparameters and clamping constants
 CLAMP_MAX = 10.0
 CLAMP_MIN = 1e-4
@@ -38,252 +40,7 @@ FREEZE_THRESHOLD = 0.1  # Threshold below which alpha values are frozen
 N_FOLDS = 5             # Number of K-folds for precomputation
 
 # =============================================================================
-# K-fold based estimators for conditional means and squared functionals
-# =============================================================================
-
-def plugin_estimator_conditional_mean(X, Y, estimator_type="rf", n_folds=N_FOLDS):
-    """
-    Compute out-of-fold plugin predictions for E[Y|X] using K-fold CV.
-    """
-    n_samples = X.shape[0]
-    out_preds = np.zeros(n_samples)
-    kf = KFold(n_splits=n_folds, shuffle=True, random_state=42)
-    for train_idx, test_idx in kf.split(X):
-        X_train, X_test = X[train_idx], X[test_idx]
-        Y_train = Y[train_idx]
-        if estimator_type == "rf":
-            model = RandomForestRegressor(n_estimators=100,
-                                          min_samples_leaf=5,
-                                          n_jobs=-1,
-                                          random_state=42)
-        else:
-            model = KernelRidge(kernel='rbf')
-        model.fit(X_train, Y_train)
-        out_preds[test_idx] = model.predict(X_test)
-    return out_preds
-
-def plugin_estimator_squared_conditional(X, Y, estimator_type="rf", n_folds=N_FOLDS):
-    """
-    Compute the plugin estimator for E[E[Y|X]^2] using K-fold CV.
-    Returns a scalar computed out-of-fold.
-    """
-    n_samples = X.shape[0]
-    if n_folds == 1:
-        if estimator_type == "rf":
-            model = RandomForestRegressor(n_estimators=100,
-                                          min_samples_leaf=5,
-                                          n_jobs=-1,
-                                          random_state=42)
-        else:
-            model = KernelRidge(kernel='rbf')
-        model.fit(X, Y)
-        mu_X = model.predict(X)
-        return np.mean(mu_X ** 2)
-    else:
-        mu_X_all = np.zeros(n_samples)
-        kf = KFold(n_splits=n_folds, shuffle=True, random_state=42)
-        for train_idx, test_idx in kf.split(X):
-            X_train, X_test = X[train_idx], X[test_idx]
-            Y_train = Y[train_idx]
-            if estimator_type == "rf":
-                model = RandomForestRegressor(n_estimators=100,
-                                              min_samples_leaf=5,
-                                              n_jobs=-1,
-                                              random_state=42)
-            else:
-                model = KernelRidge(kernel='rbf')
-            model.fit(X_train, Y_train)
-            mu_X_all[test_idx] = model.predict(X_test)
-        return np.mean(mu_X_all ** 2)
-
-def IF_estimator_conditional_mean_Kfold(X, Y, estimator_type="rf", n_folds=5, k_neighbors=100):
-    n_samples, n_features = X.shape
-    out_preds = np.zeros(n_samples)
-    kf = KFold(n_splits=n_folds, shuffle=True, random_state=42)
-    bandwidth = 0.1 * np.sqrt(n_features)
-
-    for train_idx, test_idx in kf.split(X):
-        X_train, X_test = X[train_idx], X[test_idx]
-        Y_train = Y[train_idx]
-
-        # fit your base model
-        if estimator_type == "rf":
-            model = RandomForestRegressor(n_estimators=100,
-                                          min_samples_leaf=5,
-                                          n_jobs=-1,
-                                          random_state=42)
-        else:
-            model = KernelRidge(kernel='rbf')
-        model.fit(X_train, Y_train)
-
-        mu_test = model.predict(X_test)
-        mu_train = model.predict(X_train)
-        residuals_train = Y_train - mu_train
-
-        # build BallTree on scaled X_train
-        scale = 1.0 / bandwidth
-        tree = BallTree(X_train * scale, leaf_size=40)
-
-        # query k nearest neighbors for all X_test at once
-        dist, ind = tree.query(X_test * scale, k=k_neighbors)  # (n_test, k)
-        W = np.exp(-0.5 * (dist**2))                           # Gaussian kernel
-        W /= W.sum(axis=1, keepdims=True)                     # normalize
-
-        # compute corrections vectorized over neighbors
-        corrections = np.sum(W * residuals_train[ind], axis=1)  # (n_test,)
-
-        out_preds[test_idx] = mu_test + corrections
-
-    return out_preds
-
-def IF_estimator_squared_conditional(X, Y, estimator_type="rf", n_folds=N_FOLDS):
-    """
-    Compute the IF-based estimator for E[E[Y|X]^2] using K-fold CV.
-    """
-    n_samples = X.shape[0]
-    if n_folds == 1:
-        if estimator_type == "rf":
-            model = RandomForestRegressor(n_estimators=100,
-                                          min_samples_leaf=5,
-                                          n_jobs=-1,
-                                          random_state=42)
-        else:
-            model = KernelRidge(kernel='rbf')
-        model.fit(X, Y)
-        mu_X = model.predict(X)
-        plugin_estimate = np.mean(mu_X ** 2)
-        residuals = Y - mu_X
-        correction_term = 2 * np.mean(residuals * mu_X)
-        return plugin_estimate + correction_term
-    else:
-        plugin_terms = []
-        correction_terms = []
-        kf = KFold(n_splits=n_folds, shuffle=True, random_state=42)
-        for train_idx, test_idx in kf.split(X):
-            X_train, X_test = X[train_idx], X[test_idx]
-            Y_train = Y[train_idx]
-            if estimator_type == "rf":
-                model = RandomForestRegressor(n_estimators=100,
-                                              min_samples_leaf=5,
-                                              n_jobs=-1,
-                                              random_state=42)
-            else:
-                model = KernelRidge(kernel='rbf')
-            model.fit(X_train, Y_train)
-            mu_X_test = model.predict(X_test)
-            plugin_terms.append(np.mean(mu_X_test ** 2))
-            residuals_test = Y[test_idx] - mu_X_test
-            correction_terms.append(2 * np.mean(residuals_test * mu_X_test))
-        plugin_estimate = np.mean(plugin_terms)
-        correction_term = np.mean(correction_terms)
-        return plugin_estimate + correction_term
-
-# =============================================================================
-# Kernel reweighting function (unchanged)
-# =============================================================================
-def estimate_conditional_expectation(
-    X_batch,             # Tensor[n_train, d]
-    S_batch,             # Tensor[n_test,  d]
-    E_Y_given_X_batch,   # Tensor[n_train]
-    alpha,               # Tensor[d]
-    clamp_min=1e-4,
-    k=1000,             
-):
-    """
-    Differentiable kernel-weighted estimate of E[Y|S]:
-      W_ij ∝ exp( -½ * || (S_i - X_j) / sqrt(alpha) ||^2 )
-      E[Y|S_i] = Σ_j W_ij * E_Y_given_X_batch[j].
-    """
-    # 1) clamp and form per-dim inv sqrt variance
-    alpha_safe = torch.clamp(alpha, min=clamp_min)       # (d,)
-    inv_sqrt   = torch.rsqrt(alpha_safe)                # (d,)
-
-    # 2) scale features
-    Xs = X_batch * inv_sqrt                              # (n_train,d)
-    Ss = S_batch * inv_sqrt                              # (n_test, d)
-
-    # 3) pairwise squared distances
-    #    D = ||Ss[:,None,:] - Xs[None,:,:]||_2  -> (n_test,n_train)
-    D2 = torch.cdist(Ss, Xs, p=2).pow(2)                  # (n_test, n_train)
-    vals, idx = D2.topk(k, largest=False, dim=1)
-    # 4) softmax weights over training axis
-    logW = -0.5 * D2                                      # (n_test, n_train)
-    W    = torch.softmax(logW, dim=1)                     # rows sum to 1
-
-    # 5) weighted average of precomputed E[Y|X]
-    return W.matmul(E_Y_given_X_batch[idx])              # (n_test,)
-
-def estimate_conditional_with_knn_torch(
-    X_batch: torch.Tensor,           # (n_train, d)
-    S_batch: torch.Tensor,           # (n_test,  d)
-    E_Y_X: torch.Tensor,             # (n_train,)
-    alpha: torch.Tensor,             # (d,)
-    k: int = 100,
-    clamp_min: float = 1e-4
-) -> torch.Tensor:                   # returns (n_test,)
-    # 1) clamp & form per-dim inv sqrt variance
-    alpha_safe = torch.clamp(alpha, min=clamp_min)    # (d,)
-    inv_sqrt   = torch.rsqrt(alpha_safe)              # (d,)
-
-    # 2) scale features
-    Xs = X_batch * inv_sqrt                           # (n_train, d)
-    Ss = S_batch * inv_sqrt                           # (n_test,  d)
-
-    # 3) full pairwise squared distances (differentiable w.r.t. alpha)
-    D2 = torch.cdist(Ss, Xs, p=2).pow(2)               # (n_test, n_train)
-
-    # 4) find k-nearest neighbors (indices only, no grads)
-    with torch.no_grad():
-        _, idx = D2.topk(k, dim=1, largest=False)     # idx: (n_test, k)
-
-    # 5) gather the squared distances for those neighbors (grad flows through D2)
-    D2_knn = D2.gather(1, idx)                        # (n_test, k)
-
-    # 6) compute Gaussian weights and normalize
-    W = torch.softmax(-0.5 * D2_knn, dim=1)           # (n_test, k)
-
-    # 7) gather the precomputed E[Y|X] for neighbors and weight-average
-    neigh = E_Y_X[idx]                                # (n_test, k)
-    return (W * neigh).sum(dim=1)                     # (n_test,)
-
-def estimate_conditional_kernel_oof_torch(
-    X_batch: torch.Tensor,
-    S_batch: torch.Tensor,
-    E_Y_X: torch.Tensor,
-    alpha: torch.Tensor,
-    n_folds: int = 5,
-    k: int = 100,
-    **kw
-) -> torch.Tensor:
-    """
-    Out-of-fold kNN-kernel estimates for E[Y|S].
-    """
-    n_test = S_batch.size(0)
-    oof = torch.zeros(n_test, device=X_batch.device)
-    kf  = KFold(n_splits=n_folds, shuffle=True, random_state=42)
-    for tr_idx, te_idx in kf.split(S_batch):
-        oof[te_idx] = estimate_conditional_with_knn_torch(
-            X_batch, S_batch[te_idx], E_Y_X, alpha, k=k, **kw
-        )
-    return oof
-# def estimate_conditional_expectation(X_batch, S_batch, E_Y_given_X_batch, alpha):
-#     """
-#     Estimate E[E[Y|X]|S] via a kernel method.
-#     """
-#     X_expanded = X_batch.unsqueeze(1)  # (batch_size, 1, n_features)
-#     S_expanded = S_batch.unsqueeze(0)  # (1, batch_size, n_features)
-#     alpha_clamped = torch.clamp(alpha, min=CLAMP_MIN)
-#     alpha_expanded = alpha_clamped.unsqueeze(0).unsqueeze(0)
-    
-#     # squared_distances = ((X_expanded - S_expanded) * torch.sqrt(1/(alpha_expanded + 1e-2)))**2
-#     squared_distances = ((X_expanded - S_expanded)**2 / (alpha_expanded + EPS)).sum(dim=2)
-#     kernel_matrix = torch.exp(-0.5 * torch.clamp(torch.sum(squared_distances, dim=2), max=100))
-#     weights = kernel_matrix / (kernel_matrix.sum(dim=0, keepdim=True) + 1e-8)
-#     E_Y_given_S = torch.mv(weights.t(), E_Y_given_X_batch)
-#     return E_Y_given_S
-
-# =============================================================================
-# Regularization penalty (unchanged)
+# Regularization penalty
 # =============================================================================
 
 def compute_reg_penalty(alpha, reg_type, reg_lambda, epsilon=1e-8):
@@ -337,7 +94,8 @@ def compute_full_batch_objective(X, E_Y_given_X, term1,
         
         S_alpha = X_chunk + torch.randn_like(X_chunk) * torch.sqrt(alpha)
         # E_Y_given_S = estimate_conditional_expectation(X_chunk, S_alpha, E_Y_given_X_chunk, alpha)
-        E_Y_given_S = estimate_conditional_kernel_oof_torch(X_chunk, S_alpha, E_Y_given_X_chunk, alpha)
+        # E_Y_given_S = estimate_conditional_kernel_oof(X_chunk, S_alpha, E_Y_given_X_chunk, alpha)
+        E_Y_given_S = estimate_conditional_keops(X_chunk, S_alpha, E_Y_given_X_chunk, alpha)
         # chunk_obj = torch.mean(E_Y_given_X_chunk**2) - torch.mean(E_Y_given_S**2)
         # total_obj += chunk_obj * (end_idx - start_idx) / batch_size
         chunk_obj = torch.mean(E_Y_given_S**2)
@@ -373,7 +131,8 @@ def compute_full_batch_objective_IF_optimized(X, E_Y_given_X_pre, term1, alpha,
         
         S_alpha = X_chunk + torch.randn_like(X_chunk) * torch.sqrt(alpha)
         # E_Y_given_S = estimate_conditional_expectation(X_chunk, S_alpha, E_Y_given_X_chunk, alpha)
-        E_Y_given_S = estimate_conditional_kernel_oof_torch(X_chunk, S_alpha, E_Y_given_X_chunk, alpha)
+        # E_Y_given_S = estimate_conditional_kernel_oof(X_chunk, S_alpha, E_Y_given_X_chunk, alpha)
+        E_Y_given_S = estimate_conditional_keops(X_chunk, S_alpha, E_Y_given_X_chunk, alpha)
         chunk_term2 = torch.mean(E_Y_given_S**2)
         total_term2 += chunk_term2 * (end_idx - start_idx) / batch_size
     
@@ -384,39 +143,21 @@ def compute_full_batch_objective_IF_optimized(X, E_Y_given_X_pre, term1, alpha,
 # Experiment runner for multi-population variable selection
 # =============================================================================
 
-def run_experiment_multi_population(pop_configs, m1, m, 
-                                    dataset_size=10000,
-                                    budget=None,
-                                    noise_scale=0.0, 
-                                    corr_strength=0.0,
-                                    num_epochs=30, 
-                                    reg_type=None, reg_lambda=0,
-                                    learning_rate=0.001,
-                                    batch_size=100,
-                                    optimizer_type='sgd', seed=None, 
-                                    alpha_init="random", 
-                                    early_stopping_patience=3,
-                                    save_path='./results/multi_population/',
-                                    estimator_type="plugin",  # "plugin" or "if"
-                                    base_model_type="rf",     # "rf" or "krr"
-                                    looped=False,
-                                    param_freezing=True,
-                                    verbose=False):
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    os.makedirs(save_path, exist_ok=True)
-    
-    if seed is not None:
-        np.random.seed(seed)
-        torch.manual_seed(seed)
-    
-    if budget is None:
-        budget = 2*m1
-    print(f"Budget for variable selection: {budget}")
-    # Define common meaningful indices (as in v2)
+def get_pop_data(pop_configs, m1, m, 
+                  dataset_size=10000,
+                  noise_scale=0.0, 
+                  corr_strength=0.0,
+                  common_meaningful_indices=None,
+                  estimator_type="plugin",
+                  device="cpu",
+                  base_model_type="rf",
+                  batch_size=10000,
+                  seed=None):
+    """
+    Generate datasets for each population based on the provided configurations.
+    """
     k_common = max(1, m1 // 2)
     common_meaningful_indices = np.arange(k_common)
-    
-    # Generate datasets for each population
     pop_data = []
     for pop_config in pop_configs:
         pop_id = pop_config['pop_id']
@@ -428,7 +169,7 @@ def run_experiment_multi_population(pop_configs, m1, m,
                 dataset_size=dataset_size,
                 noise_scale=noise_scale, 
                 corr_strength=corr_strength,
-                seed=seed, 
+                seed=seed,
                 common_meaningful_indices=common_meaningful_indices
             )
         else:
@@ -437,47 +178,16 @@ def run_experiment_multi_population(pop_configs, m1, m,
                 dataset_type=dataset_type, 
                 dataset_size=dataset_size,
                 noise_scale=noise_scale, 
-                seed=seed, 
+                seed=seed,
                 common_meaningful_indices=common_meaningful_indices
             )
-        X = torch.tensor(new_X, dtype=torch.float32)
-        # Y = torch.tensor(Y, dtype=torch.float32)
-        if isinstance(Y, np.ndarray):
-            Y = torch.from_numpy(Y).float()
-        else:
-            Y = torch.tensor(Y.clone().detach(), dtype=torch.float32)
-        # Y = torch.tensor(Y.clone().detach(), dtype=torch.float32)
+        X = torch.tensor(new_X, dtype=torch.float32) if isinstance(new_X, np.ndarray) else new_X.float()
+        Y = torch.tensor(Y, dtype=torch.float32) if isinstance(Y, np.ndarray) else Y.float()
         
-        # # normalizing X
-        # X_mean = X.mean(dim=0)
-        # X_std = X.std(dim=0)
-        # X = (X - X_mean) / (X_std + EPS)
-        # Precompute predictions and term1 using the chosen estimator method
         if estimator_type == "plugin":
-            # if base_model_type == "rf":
-            #     model = RandomForestRegressor(n_estimators=100, min_samples_leaf=5, n_jobs=-1, random_state=42)
-            # else:
-            #     model = KernelRidge(kernel='rbf')
-            # model.fit(X.numpy(), Y.numpy())
-            # # Store the predictions only
-            # E_Y_given_X = torch.tensor(model.predict(X.numpy()), dtype=torch.float32)
-            # term1 = None  # Not used in plugin branch
             term1 = plugin_estimator_squared_conditional(X.numpy(), Y.numpy(), estimator_type=base_model_type)
             E_Y_given_X = torch.tensor(plugin_estimator_conditional_mean(X.numpy(), Y.numpy(), estimator_type=base_model_type), dtype=torch.float32)
-            if verbose:
-                print(f"Precomputed term1 = {term1}")
         elif estimator_type == "if":
-            # if verbose:
-            #     print(f"Precomputing IF predictions and term1 for population {pop_id}...")
-            # if base_model_type == "rf":
-            #     model = RandomForestRegressor(n_estimators=100, min_samples_leaf=5, n_jobs=-1, random_state=42)
-            # else:
-            #     model = KernelRidge(kernel='rbf')
-            # model.fit(X.numpy(), Y.numpy())
-            # E_Y_given_X = torch.tensor(model.predict(X.numpy()), dtype=torch.float32)
-            # term1 = IF_estimator_squared_conditional(X.numpy(), Y.numpy(), estimator_type=base_model_type)
-            # if verbose:
-            #     print(f"Precomputed term1 = {term1}")
             term1 = IF_estimator_squared_conditional(X.numpy(), Y.numpy(), estimator_type=base_model_type)
             E_Y_given_X = torch.tensor(plugin_estimator_conditional_mean(X.numpy(), Y.numpy(), estimator_type=base_model_type), dtype=torch.float32)
         else:
@@ -495,24 +205,74 @@ def run_experiment_multi_population(pop_configs, m1, m,
             'meaningful_indices': meaningful_indices,
             'term1': term1
         })
-    
-    # Optionally visualize population covariances (if desired)
-    # (e.g., via plot_population_covariances(pop_data, save_path, meaningful_indices))
-    
-    # Initialize alpha (the variable weight parameters)
-    if alpha_init == "ones":
-        alpha = torch.nn.Parameter(torch.ones(m, device=device))
+    return pop_data
+
+def init_alpha(m, alpha_init="random", noise = 0.1, 
+               device="cpu"):
+    """
+    Initialize the alpha parameter based on the specified initialization method.
+    """
+    if re.match(r"random_\d+", alpha_init):
+        k = int(alpha_init.split('_')[1])
+        return torch.nn.Parameter(k * torch.ones(m, device=device) + noise * torch.randn(m, device=device))
+    elif alpha_init == "ones":
+        return torch.nn.Parameter(torch.ones(m, device=device))
     elif alpha_init == "random":
-        alpha = torch.nn.Parameter(torch.ones(m, device=device) + 0.1 * torch.randn(m, device=device))
-    elif alpha_init == "random_1":
-        alpha = torch.nn.Parameter(torch.ones(m, device=device) + 0.1 * torch.randn(m, device=device))
-    elif alpha_init == "random_2":
-        alpha = torch.nn.Parameter(2*torch.ones(m, device=device) + 0.1 * torch.randn(m, device=device))
-    elif alpha_init == "random_5":
-        alpha = torch.nn.Parameter(5*torch.ones(m, device=device) + 0.1 * torch.randn(m, device=device))
+        return torch.nn.Parameter(torch.ones(m, device=device) + noise * torch.randn(m, device=device))
     else:
         raise ValueError("alpha_init must be 'ones' or 'random'")
     
+def run_experiment_multi_population(pop_configs, m1, m, 
+                                    dataset_size=5000,
+                                    budget=None,
+                                    noise_scale=0.0, 
+                                    corr_strength=0.0,
+                                    num_epochs=30, 
+                                    reg_type=None, reg_lambda=0,
+                                    learning_rate=0.001,
+                                    batch_size=10000,
+                                    optimizer_type='sgd', seed=None, 
+                                    alpha_init="random", 
+                                    early_stopping_patience=3,
+                                    save_path='./results/multi_population/',
+                                    estimator_type="plugin",  # "plugin" or "if"
+                                    base_model_type="rf",     # "rf" or "krr"
+                                    looped=False,
+                                    param_freezing=True,
+                                    verbose=False):
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    batch_size = min(batch_size, dataset_size)
+    os.makedirs(save_path, exist_ok=True)
+    
+    if seed is not None:
+        np.random.seed(seed)
+        torch.manual_seed(seed)
+    else:
+        seed = np.random.randint(0, 10000)
+    print(f"Using seed: {seed}")
+    
+    if budget is None:
+        budget = 2*m1
+    print(f"Budget for variable selection: {budget}")
+    # Define common meaningful indices (as in v2)
+    k_common = max(1, m1 // 2)
+    common_meaningful_indices = np.arange(k_common)
+    # Generate datasets for each population
+    pop_data = get_pop_data(
+        pop_configs=pop_configs, 
+        m1=m1, m=m, 
+        dataset_size=dataset_size,
+        noise_scale=noise_scale, 
+        corr_strength=corr_strength,
+        common_meaningful_indices=common_meaningful_indices,
+        estimator_type=estimator_type,
+        device=device,
+        base_model_type=base_model_type,
+        batch_size=batch_size,
+        seed=seed
+    )
+    # Initialize alpha (the variable weight parameters)
+    alpha = init_alpha(m, alpha_init=alpha_init, noise=0.1, device=device)
     optimizer = (optim.Adam([alpha], lr=learning_rate)
                 if optimizer_type=='adam'
                 else optim.SGD([alpha], lr=learning_rate, momentum=0.9, nesterov=True))
@@ -582,6 +342,21 @@ def run_experiment_multi_population(pop_configs, m1, m,
             print("Early stopping")
             break
     
+    # post-processing, also seeing how the estimator performs
+    if verbose:
+        # selecting 10 random alphas from the history
+        random_indices = np.random.choice(len(alpha_history), size=min(10, len(alpha_history)), replace=False)
+        alpha_lists = [alpha_history[i] for i in random_indices]
+        alpha_lists = sorted(alpha_lists, key=lambda x: np.max(x))
+        # save the alphas used here
+        np.save(os.path.join(save_path, "testing_alpha_history.npy"), alpha_lists)
+        for pop in pop_data:
+            test_estimator(seeds=[seed],
+                           alpha_lists=[alpha_history[i] for i in random_indices],
+                           X=pop['X'], Y=pop['Y'],
+                           save_path = os.path.join(save_path, f"estimator_test_{pop['pop_id']}.png")
+            )
+                       
     # (Optional) Save diagnostics, for example plotting the objective history
     if verbose:
         plt.figure(figsize=(10, 6))

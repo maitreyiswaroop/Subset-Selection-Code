@@ -9,7 +9,11 @@ import os
 import argparse
 from scipy.special import softmax
 from sklearn.neighbors import BallTree
+import torch
+from torch import Tensor
 
+ALPHA_MAX = 1.0 
+ALPHA_MAX_STR = str(ALPHA_MAX).replace('.', '') if ALPHA_MAX < 1 else str(int(ALPHA_MAX))
 # --- Previously defined functions ---
 
 def plugin_estimator(X, Y, estimator_type="rf"):
@@ -200,23 +204,62 @@ def closed_form(alpha, A):
     return np.sum((A**2 * alpha) / (1 + alpha))
 
 def estimate_conditional_with_knn(
-    X_batch, S_batch, E_Y_given_X_batch, alpha, k=100, 
+    X_batch, S_batch, E_Y_given_X_batch, alpha, k=50, 
     CLAMP_MIN=1e-4, bw_scale=1.0
 ):
     # scale features by alpha
     alpha_safe   = np.maximum(alpha, CLAMP_MIN)*bw_scale
-    inv_sqrt_var = 1/np.sqrt(alpha_safe)
+    # alpha_safe = alpha
+    inv_sqrt_var = 1.0/np.sqrt(alpha_safe)
     X_scaled = X_batch * inv_sqrt_var   # (n_train, d)
     S_scaled = S_batch * inv_sqrt_var   # (n_test,  d)
 
     tree = BallTree(X_scaled, leaf_size=40)
     dist, ind = tree.query(S_scaled, k=k)      # (n_test, k)
     # Gaussian weights
-    W = np.exp(-0.5 * dist**2)                 # (n_test, k)
-    W /= W.sum(axis=1, keepdims=True)          # normalize
+    logW = -0.5 * dist**2                     # (n_test, k)
+    W = softmax(logW, axis=1)                 # (n_test, k)
     # gather E_Y for neighbors and do weighted average
     neighbor_preds = E_Y_given_X_batch[ind]    # (n_test, k)
     return (W * neighbor_preds).sum(axis=1)    # (n_test,)
+
+def estimate_conditional_keops(
+    X: Tensor,           # (n_train,d)
+    S: Tensor,           # (n_test, d)
+    E_Y_X: Tensor,         # (n_train,)
+    alpha: Tensor,       # (d,)
+    clamp_min=1e-4
+):
+    # 1) clamp & per‐dim inv sqrt
+    a = torch.clamp(alpha, min=clamp_min)
+    inv = torch.rsqrt(a)[None, None, :]             # (1,1,d)
+    # 2) scale into Mahalanobis space
+    Xs = X[None, :, :] * inv                        # (1,n_train,d)
+    Ss = S[:, None, :] * inv                        # (n_test,1,d)
+    if X.shape[0] > 10000:
+        # using the ball tree method for large datasets;
+        X_scaled = Xs.squeeze(0).numpy() 
+        S_scaled = Ss.squeeze(1).numpy()
+        k = min(10000, X_scaled.shape[0])
+        tree = BallTree(X_scaled, leaf_size=40)
+        dist, ind = tree.query(S_scaled, k=k)    # (n_test, k)
+        # Gaussian weights
+        logW_np = -0.5 * dist**2   
+        logW = torch.from_numpy(logW_np).to(X.device)                       # (n_test, k)
+        W = torch.softmax(logW, axis=1)                     # (n_test, k)
+        # gather E_Y for neighbors and do weighted average
+        neighbor_preds = E_Y_X[ind]                   # (n_test, k)
+        return (W * neighbor_preds).sum(axis=1)       # (n_test,)
+    else:
+        # 3) pairwise squared distances
+        D2 = torch.sum((Ss - Xs)**2, dim=-1)       # (n_test,n_train)
+        # 4) Gaussian weights
+        # W_unnorm = torch.exp(-0.5 * D2)            # (n_test,n_train)
+        # W = W_unnorm / W_unnorm.sum(dim=1, keepdim=True)
+        logW = -0.5 * D2                            # (n_test,n_train)
+        W = torch.softmax(logW, axis=1)               # (n_test,n_train)
+        # 5) weighted sum
+        return (W @ E_Y_X)  
 
 def estimate_conditional_kernel_oof(
     X_batch, S_batch, E_Y_X, alpha, n_folds=5, **kw
@@ -337,8 +380,10 @@ def IF_estimator_conditional_mean_Kfold(X, Y, estimator_type="rf", n_folds=5, k_
 
         # query k nearest neighbors for all X_test at once
         dist, ind = tree.query(X_test * scale, k=k_neighbors)  # (n_test, k)
-        W = np.exp(-0.5 * (dist**2))                           # Gaussian kernel
-        W /= W.sum(axis=1, keepdims=True)                     # normalize
+        logW = -0.5 * (dist**2)  # (n_test, k)
+        W = softmax(logW, axis=1)
+        # W = np.exp(-0.5 * (dist**2))                           # Gaussian kernel
+        # W /= W.sum(axis=1, keepdims=True)                     # normalize
 
         # compute corrections vectorized over neighbors
         corrections = np.sum(W * residuals_train[ind], axis=1)  # (n_test,)
@@ -349,6 +394,7 @@ def IF_estimator_conditional_mean_Kfold(X, Y, estimator_type="rf", n_folds=5, k_
 
 def main():
     parser = argparse.ArgumentParser(description="Compare IF vs Plugin Estimators")
+    parser.add_argument('--X-distribution', type=str, default='normal', choices=['normal', 'uniform', 'bernoulli'], help='Distribution type for X features') 
     parser.add_argument('--seed', type=int, default=42, help='Random seed for reproducibility')
     args = parser.parse_args()
     seed = args.seed
@@ -363,7 +409,7 @@ def main():
     # Generate Y = AX + eps, where eps ~ N(0, 1)
     eps = np.random.normal(0, 1, size=N_large)
     Y_large = X_large @ A + eps
-    alpha = np.random.uniform(0.0, 0.1, size=X_large.shape[1])
+    alpha = np.random.uniform(0.0, ALPHA_MAX, size=X_large.shape[1])
     print("\tAlpha values: ", alpha)
     print("\tA values: ", A)
 
@@ -385,7 +431,7 @@ def main():
     print("True term 2: ", true_term_2)
 
     # 3. Loop over different sample sizes and compute estimates.
-    sample_sizes = [1000, 10000, 50000, 100000]#, 500000, 1000000]
+    sample_sizes = [1000, 10000, 25000, 50000]#, 100000]#, 500000, 1000000]
     plugin_estimates_term1 = []
     plugin_estimates_term2 = []
     plugin_estimates_objective = []
@@ -432,12 +478,26 @@ def main():
 
         # term 2 using kernel method
         E_Y_X = IF_estimator_conditional_mean_Kfold(X_sub, Y_sub, estimator_type="rf", n_folds=10)
-        E_Y_S_alpha = estimate_conditional_expectation_numpy(X_sub, S_sub, E_Y_X, alpha)
+        # E_Y_S_alpha = estimate_conditional_expectation_numpy(X_sub, S_sub, E_Y_X, alpha)
+        # E_Y_S_alpha = estimate_conditional_kernel_oof(X_sub, S_sub, E_Y_X, alpha, n_folds=10)
+        # E_Y_S_alpha = estimate_conditional_with_knn(
+        #     X_sub, S_sub, E_Y_X, alpha, k=50, bw_scale=1.0
+        # )
+        E_Y_S_alpha = estimate_conditional_keops(
+            Tensor(X_sub), Tensor(S_sub), Tensor(E_Y_X), Tensor(alpha)
+        ).numpy()
         IF_estimates_term2_kernel.append(np.mean(E_Y_S_alpha ** 2))
 
         # # term 2 using plugin and kernel method
         E_Y_X = plugin_estimator_conditional_mean_Kfold(X_sub, Y_sub, estimator_type="rf", n_folds=10)
-        E_Y_S_alpha = estimate_conditional_expectation_numpy(X_sub, S_sub, E_Y_X, alpha)
+        # E_Y_S_alpha = estimate_conditional_expectation_numpy(X_sub, S_sub, E_Y_X, alpha)
+        # E_Y_S_alpha = estimate_conditional_kernel_oof(X_sub, S_sub, E_Y_X, alpha, n_folds=10)
+        # E_Y_S_alpha = estimate_conditional_with_knn(
+        #     X_sub, S_sub, E_Y_X, alpha, k=50, bw_scale=1.0
+        # )
+        E_Y_S_alpha = estimate_conditional_keops(
+            Tensor(X_sub), Tensor(S_sub), Tensor(E_Y_X), Tensor(alpha)
+        ).numpy()
         IF_estimates_term2_plugin.append(np.mean(E_Y_S_alpha ** 2))
         print(f"\tTerm 2: {n}, Plugin estimate: {plugin_est2}, IF estimate: {if_est2}, IF-Kernel: {IF_estimates_term2_kernel[-1]}, IF-Plugin: {IF_estimates_term2_plugin[-1]}")
 
@@ -452,7 +512,7 @@ def main():
 
     # 4. Plot the estimates vs sample size
     plt.figure(figsize=(10, 15))
-
+    plt.suptitle(f"IF vs Plugin Estimators Comparison (Seed: {seed}, Alpha Max: {ALPHA_MAX})", fontsize=16)
     # Plot for Term 1
     plt.subplot(3, 1, 1)
     plt.axhline(y=true_term_1, color='black', linestyle='--', label='True Term 1 (1e6)')
@@ -495,7 +555,7 @@ def main():
     plt.grid(True)
 
     plt.tight_layout()
-    plt.savefig(f"./results/if_vs_plugin/if_vs_plugin_comparison_seed_{seed}.png")
+    plt.savefig(f"./results/if_vs_plugin/if_vs_plugin_comparison_seed_{seed}_{ALPHA_MAX_STR}.png")
     plt.close()
 
     # clear everything post experiment for memory management
