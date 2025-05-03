@@ -1,0 +1,7 @@
+{
+    "learning_rate": 0.004493785920816759,
+    "optimizer_type": "sgd",
+    "penalty_type": "Exponential",
+    "penalty_lambda": 0.008414931839852416,
+    "N_grad_samples": 50
+}

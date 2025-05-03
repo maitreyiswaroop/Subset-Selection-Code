@@ -1,0 +1,5 @@
+Running grad_desc_populations_v3.py with the following parameters:
+Using the OOF function
+--m1 4 --m 20 --dataset-size 5000 --noise-scale 0.1 --corr-strength 0 --num-epochs 50 --reg-type Reciprocal_L1 --reg-lambda 0.05 --learning-rate 0.1 --batch-size 5000 --optimizer-type sgd --seed 17 --patience 10 --alpha-init random_5 --estimator-type plugin --base-model-type rf --populations resnet cubic_regression cubic_regression --param-freezing
+/var/spool/slurmd/job4662177/slurm_script: line 44: 3437688 Killed                  python $SCRIPT $PARAMS
+slurmstepd: error: Detected 1 oom_kill event in StepId=4662177.batch. Some of the step tasks have been OOM Killed.

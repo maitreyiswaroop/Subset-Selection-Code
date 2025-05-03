@@ -1,10 +1,10 @@
 #!/bin/bash
-#SBATCH --job-name="v5_gd_pops"
-#SBATCH --output=/data/user_data/mswaroop/Subset-Selection-Code/logs/v5_gd_pops_%j.out
-#SBATCH --error=/data/user_data/mswaroop/Subset-Selection-Code/logs/v5_gd_pops_%j.err
+#SBATCH --job-name="v5_tune_gd_pops"
+#SBATCH --output=/data/user_data/mswaroop/Subset-Selection-Code/logs/v5_tune_gd_pops_%j.out
+#SBATCH --error=/data/user_data/mswaroop/Subset-Selection-Code/logs/v5_tune_gd_pops_%j.err
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=2
-#SBATCH --time=1:00:00
+#SBATCH --time=10:00:00
 #SBATCH --mem=32G
 #SBATCH --partition=debug
 # run_experiment.sh
@@ -21,26 +21,28 @@ source /home/$USER/miniconda/etc/profile.d/conda.sh
 conda activate venv 
 
 # Path to the Python script
-SCRIPT="grad_desc_populations_v5.py"
+SCRIPT="gd_pops_tune_v5.py"
 
-PARAMS="--m1 4 \
+PARAMS="--n-trials 50 \
+--study-name gd_pops_v5_tuning \
+--storage sqlite:///tuning.db \
+--base-save-path ./results_v5_tuning/ \
+--m1 4 \
 --m 20 \
 --dataset-size 5000 \
 --noise-scale 0.1 \
---corr-strength 0 \
+--corr-strength 0.0 \
 --populations cubic_regression cubic_regression cubic_regression \
 --num-epochs 100 \
---penalty-type Reciprocal_L1 \
---penalty-lambda 0.001 \
---learning-rate 0.1 \
 --batch-size 5000 \
---optimizer-type adam \
---alpha-init random_2 \
---seed 17 \
---patience 30 \
+--alpha-init random_1 \
+--patience 10 \
+--param-freezing \
+--use-baseline \
 --estimator-type if \
 --base-model-type rf \
---param-freezing"
+--objective-value-estimator if \
+--seed 42"
 
 echo "Running grad_desc_populations_v3.py with the following parameters:"
 echo "Using the OOF function"

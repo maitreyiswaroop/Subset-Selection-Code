@@ -1,0 +1,218 @@
+Running grad_desc_populations_v3.py with the following parameters:
+Using the OOF function
+--n-trials 50 --study-name gd_pops_v5_tuning --storage sqlite:///tuning.db --base-save-path ./results_v5_tuning/ --m1 4 --m 20 --dataset-size 5000 --noise-scale 0.1 --corr-strength 0.0 --populations cubic_regression cubic_regression cubic_regression --num-epochs 100 --batch-size 5000 --alpha-init random_1 --patience 10 --param-freezing --use-baseline --estimator-type if --base-model-type rf --objective-value-estimator if --seed 42
+Successfully imported from grad_desc_populations_v5.py
+Starting Optuna study 'gd_pops_v5_tuning' with 50 trials...
+
+--- Trial 0 ---
+  Params: lr=0.00449, opt=sgd, pen_type=Exponential, pen_lambda=0.008415, N_grad=50
+Error during trial 0: run_experiment_multi_population() got an unexpected keyword argument 'populations'
+
+--- Trial 1 ---
+  Params: lr=0.00027, opt=adam, pen_type=Reciprocal_L1, pen_lambda=0.008679, N_grad=10
+Error during trial 1: run_experiment_multi_population() got an unexpected keyword argument 'populations'
+
+--- Trial 2 ---
+  Params: lr=0.00188, opt=adam, pen_type=None, pen_lambda=0.000768, N_grad=10
+Error during trial 2: run_experiment_multi_population() got an unexpected keyword argument 'populations'
+
+--- Trial 3 ---
+  Params: lr=0.00872, opt=sgd, pen_type=Exponential, pen_lambda=0.000154, N_grad=25
+Error during trial 3: run_experiment_multi_population() got an unexpected keyword argument 'populations'
+
+--- Trial 4 ---
+  Params: lr=0.00499, opt=sgd, pen_type=Quadratic_Barrier, pen_lambda=0.000264, N_grad=75
+Error during trial 4: run_experiment_multi_population() got an unexpected keyword argument 'populations'
+
+--- Trial 5 ---
+  Params: lr=0.00031, opt=sgd, pen_type=Exponential, pen_lambda=0.001306, N_grad=10
+Error during trial 5: run_experiment_multi_population() got an unexpected keyword argument 'populations'
+
+--- Trial 6 ---
+  Params: lr=0.00197, opt=sgd, pen_type=None, pen_lambda=0.000015, N_grad=10
+Error during trial 6: run_experiment_multi_population() got an unexpected keyword argument 'populations'
+
+--- Trial 7 ---
+  Params: lr=0.00319, opt=adam, pen_type=None, pen_lambda=0.010814, N_grad=25
+Error during trial 7: run_experiment_multi_population() got an unexpected keyword argument 'populations'
+
+--- Trial 8 ---
+  Params: lr=0.00061, opt=adam, pen_type=Reciprocal_L1, pen_lambda=0.000006, N_grad=10
+Error during trial 8: run_experiment_multi_population() got an unexpected keyword argument 'populations'
+
+--- Trial 9 ---
+  Params: lr=0.00237, opt=sgd, pen_type=Reciprocal_L1, pen_lambda=0.050358, N_grad=50
+Error during trial 9: run_experiment_multi_population() got an unexpected keyword argument 'populations'
+
+--- Trial 10 ---
+  Params: lr=0.07188, opt=sgd, pen_type=Exponential, pen_lambda=0.000001, N_grad=50
+Error during trial 10: run_experiment_multi_population() got an unexpected keyword argument 'populations'
+
+--- Trial 11 ---
+  Params: lr=0.00011, opt=adam, pen_type=Reciprocal_L1, pen_lambda=0.010279, N_grad=50
+Error during trial 11: run_experiment_multi_population() got an unexpected keyword argument 'populations'
+
+--- Trial 12 ---
+  Params: lr=0.01897, opt=adam, pen_type=Quadratic_Barrier, pen_lambda=0.090023, N_grad=75
+Error during trial 12: run_experiment_multi_population() got an unexpected keyword argument 'populations'
+
+--- Trial 13 ---
+  Params: lr=0.00074, opt=adam, pen_type=Reciprocal_L1, pen_lambda=0.005184, N_grad=50
+Error during trial 13: run_experiment_multi_population() got an unexpected keyword argument 'populations'
+
+--- Trial 14 ---
+  Params: lr=0.01984, opt=sgd, pen_type=Exponential, pen_lambda=0.002560, N_grad=10
+Error during trial 14: run_experiment_multi_population() got an unexpected keyword argument 'populations'
+
+--- Trial 15 ---
+  Params: lr=0.00011, opt=adam, pen_type=Reciprocal_L1, pen_lambda=0.043620, N_grad=50
+Error during trial 15: run_experiment_multi_population() got an unexpected keyword argument 'populations'
+
+--- Trial 16 ---
+  Params: lr=0.00087, opt=adam, pen_type=Exponential, pen_lambda=0.000069, N_grad=75
+Error during trial 16: run_experiment_multi_population() got an unexpected keyword argument 'populations'
+
+--- Trial 17 ---
+  Params: lr=0.01002, opt=sgd, pen_type=Quadratic_Barrier, pen_lambda=0.018565, N_grad=25
+Error during trial 17: run_experiment_multi_population() got an unexpected keyword argument 'populations'
+
+--- Trial 18 ---
+  Params: lr=0.00035, opt=sgd, pen_type=Reciprocal_L1, pen_lambda=0.000767, N_grad=10
+Error during trial 18: run_experiment_multi_population() got an unexpected keyword argument 'populations'
+
+--- Trial 19 ---
+  Params: lr=0.07243, opt=adam, pen_type=Exponential, pen_lambda=0.005306, N_grad=50
+Error during trial 19: run_experiment_multi_population() got an unexpected keyword argument 'populations'
+
+--- Trial 20 ---
+  Params: lr=0.00023, opt=adam, pen_type=Exponential, pen_lambda=0.023818, N_grad=50
+Error during trial 20: run_experiment_multi_population() got an unexpected keyword argument 'populations'
+
+--- Trial 21 ---
+  Params: lr=0.00141, opt=adam, pen_type=None, pen_lambda=0.000810, N_grad=10
+Error during trial 21: run_experiment_multi_population() got an unexpected keyword argument 'populations'
+
+--- Trial 22 ---
+  Params: lr=0.00486, opt=adam, pen_type=None, pen_lambda=0.002178, N_grad=10
+Error during trial 22: run_experiment_multi_population() got an unexpected keyword argument 'populations'
+
+--- Trial 23 ---
+  Params: lr=0.00116, opt=adam, pen_type=None, pen_lambda=0.000444, N_grad=10
+Error during trial 23: run_experiment_multi_population() got an unexpected keyword argument 'populations'
+
+--- Trial 24 ---
+  Params: lr=0.02570, opt=adam, pen_type=None, pen_lambda=0.004418, N_grad=10
+Error during trial 24: run_experiment_multi_population() got an unexpected keyword argument 'populations'
+
+--- Trial 25 ---
+  Params: lr=0.00425, opt=adam, pen_type=None, pen_lambda=0.000117, N_grad=10
+Error during trial 25: run_experiment_multi_population() got an unexpected keyword argument 'populations'
+
+--- Trial 26 ---
+  Params: lr=0.00905, opt=sgd, pen_type=Reciprocal_L1, pen_lambda=0.000041, N_grad=75
+Error during trial 26: run_experiment_multi_population() got an unexpected keyword argument 'populations'
+
+--- Trial 27 ---
+  Params: lr=0.00043, opt=adam, pen_type=Quadratic_Barrier, pen_lambda=0.001787, N_grad=25
+Error during trial 27: run_experiment_multi_population() got an unexpected keyword argument 'populations'
+
+--- Trial 28 ---
+  Params: lr=0.00020, opt=sgd, pen_type=Exponential, pen_lambda=0.012288, N_grad=10
+Error during trial 28: run_experiment_multi_population() got an unexpected keyword argument 'populations'
+
+--- Trial 29 ---
+  Params: lr=0.00165, opt=sgd, pen_type=None, pen_lambda=0.000311, N_grad=25
+Error during trial 29: run_experiment_multi_population() got an unexpected keyword argument 'populations'
+
+--- Trial 30 ---
+  Params: lr=0.00684, opt=adam, pen_type=Reciprocal_L1, pen_lambda=0.004127, N_grad=50
+Error during trial 30: run_experiment_multi_population() got an unexpected keyword argument 'populations'
+
+--- Trial 31 ---
+  Params: lr=0.01131, opt=sgd, pen_type=Exponential, pen_lambda=0.000154, N_grad=25
+Error during trial 31: run_experiment_multi_population() got an unexpected keyword argument 'populations'
+
+--- Trial 32 ---
+  Params: lr=0.00652, opt=sgd, pen_type=Exponential, pen_lambda=0.000596, N_grad=25
+Error during trial 32: run_experiment_multi_population() got an unexpected keyword argument 'populations'
+
+--- Trial 33 ---
+  Params: lr=0.00286, opt=sgd, pen_type=Exponential, pen_lambda=0.000026, N_grad=25
+Error during trial 33: run_experiment_multi_population() got an unexpected keyword argument 'populations'
+
+--- Trial 34 ---
+  Params: lr=0.04405, opt=sgd, pen_type=Exponential, pen_lambda=0.000138, N_grad=75
+Error during trial 34: run_experiment_multi_population() got an unexpected keyword argument 'populations'
+
+--- Trial 35 ---
+  Params: lr=0.00341, opt=sgd, pen_type=Quadratic_Barrier, pen_lambda=0.001228, N_grad=10
+Error during trial 35: run_experiment_multi_population() got an unexpected keyword argument 'populations'
+
+--- Trial 36 ---
+  Params: lr=0.00217, opt=sgd, pen_type=Exponential, pen_lambda=0.008327, N_grad=25
+Error during trial 36: run_experiment_multi_population() got an unexpected keyword argument 'populations'
+
+--- Trial 37 ---
+  Params: lr=0.00052, opt=sgd, pen_type=None, pen_lambda=0.000008, N_grad=10
+Error during trial 37: run_experiment_multi_population() got an unexpected keyword argument 'populations'
+
+--- Trial 38 ---
+  Params: lr=0.01403, opt=adam, pen_type=Reciprocal_L1, pen_lambda=0.000240, N_grad=10
+Error during trial 38: run_experiment_multi_population() got an unexpected keyword argument 'populations'
+
+--- Trial 39 ---
+  Params: lr=0.03407, opt=sgd, pen_type=Exponential, pen_lambda=0.026749, N_grad=50
+Error during trial 39: run_experiment_multi_population() got an unexpected keyword argument 'populations'
+
+--- Trial 40 ---
+  Params: lr=0.00105, opt=adam, pen_type=None, pen_lambda=0.000001, N_grad=25
+Error during trial 40: run_experiment_multi_population() got an unexpected keyword argument 'populations'
+
+--- Trial 41 ---
+  Params: lr=0.00620, opt=sgd, pen_type=Quadratic_Barrier, pen_lambda=0.000088, N_grad=75
+Error during trial 41: run_experiment_multi_population() got an unexpected keyword argument 'populations'
+
+--- Trial 42 ---
+  Params: lr=0.00276, opt=sgd, pen_type=Quadratic_Barrier, pen_lambda=0.000292, N_grad=75
+Error during trial 42: run_experiment_multi_population() got an unexpected keyword argument 'populations'
+
+--- Trial 43 ---
+  Params: lr=0.00391, opt=sgd, pen_type=Quadratic_Barrier, pen_lambda=0.000054, N_grad=75
+Error during trial 43: run_experiment_multi_population() got an unexpected keyword argument 'populations'
+
+--- Trial 44 ---
+  Params: lr=0.01465, opt=sgd, pen_type=Reciprocal_L1, pen_lambda=0.057112, N_grad=75
+Error during trial 44: run_experiment_multi_population() got an unexpected keyword argument 'populations'
+
+--- Trial 45 ---
+  Params: lr=0.00198, opt=sgd, pen_type=Exponential, pen_lambda=0.001185, N_grad=50
+Error during trial 45: run_experiment_multi_population() got an unexpected keyword argument 'populations'
+
+--- Trial 46 ---
+  Params: lr=0.00015, opt=adam, pen_type=Quadratic_Barrier, pen_lambda=0.000517, N_grad=10
+Error during trial 46: run_experiment_multi_population() got an unexpected keyword argument 'populations'
+
+--- Trial 47 ---
+  Params: lr=0.00825, opt=sgd, pen_type=Reciprocal_L1, pen_lambda=0.002849, N_grad=50
+Error during trial 47: run_experiment_multi_population() got an unexpected keyword argument 'populations'
+
+--- Trial 48 ---
+  Params: lr=0.00550, opt=adam, pen_type=Quadratic_Barrier, pen_lambda=0.000013, N_grad=75
+Error during trial 48: run_experiment_multi_population() got an unexpected keyword argument 'populations'
+
+--- Trial 49 ---
+  Params: lr=0.00085, opt=sgd, pen_type=Exponential, pen_lambda=0.000210, N_grad=50
+Error during trial 49: run_experiment_multi_population() got an unexpected keyword argument 'populations'
+
+--- Tuning Finished ---
+Number of finished trials: 50
+Best trial number: 0
+Best F1 Score: 0.0000
+Best hyperparameters:
+  learning_rate: 0.004493785920816759
+  optimizer_type: sgd
+  penalty_type: Exponential
+  penalty_lambda: 0.008414931839852416
+  N_grad_samples: 50
+Best parameters saved to: ./results_v5_tuning/best_params.json
+Study results are stored in: sqlite:///tuning.db
