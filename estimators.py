@@ -151,6 +151,12 @@ def IF_estimator_squared_conditional(X, Y, estimator_type="rf", n_folds=N_FOLDS)
     """
     Compute the IF-based estimator for E[E[Y|X]^2] using K-fold CV.
     """
+    # if someone passed in torch Tensors, convert to NumPy for np.mean calls
+    if isinstance(X, Tensor):
+        X = X.detach().cpu().numpy()
+    if isinstance(Y, Tensor):
+        Y = Y.detach().cpu().numpy()
+
     if n_folds == 1:
         if estimator_type == "rf":
             model = RandomForestRegressor(n_estimators=100,
@@ -325,7 +331,7 @@ def test_estimator(seeds, alpha_lists, X, Y, save_path=None):
                 'if_plugin': [], 'if_if': []
             },
         }
-        for a in len(alpha_lists)
+        for a in range(len(alpha_lists))
     }
 
     for seed_idx, seed in enumerate(seeds):
@@ -334,10 +340,16 @@ def test_estimator(seeds, alpha_lists, X, Y, save_path=None):
         torch.manual_seed(seed) # Also seed torch if using GPU later potentially
 
         for i, alpha in enumerate(alpha_lists):
-            print(f"\tMax alpha: {np.max(alpha):.4f}; Min alpha: {np.min(alpha):.4f}")       
-            # --- Subsample Data ---
-            X_sub = X
-            Y_sub = Y
+            print(f"\tMax alpha: {np.max(alpha):.4f}; Min alpha: {np.min(alpha):.4f}")
+            # --- Subsample Data (ensure NumPy arrays for sklearn/NumPy routines) ---
+            if isinstance(X, Tensor):
+                X_sub = X.detach().cpu().numpy()
+            else:
+                X_sub = X
+            if isinstance(Y, Tensor):
+                Y_sub = Y.detach().cpu().numpy()
+            else:
+                Y_sub = Y
 
             # --- Generate S (Noisy Features) ---
             # Ensure alpha are positive for generating noise
@@ -350,9 +362,9 @@ def test_estimator(seeds, alpha_lists, X, Y, save_path=None):
 
             # --- Convert relevant data to Tensors ---
             # Pass alpha (not std dev) to torch functions
-            X_sub_t = torch.from_numpy(X_sub).float()
-            S_sub_t = torch.from_numpy(S_sub).float()
-            alpha_t = torch.from_numpy(alpha).float()
+            X_sub_t = torch.from_numpy(X_sub).float() if not isinstance(X_sub, Tensor) else X_sub
+            S_sub_t = torch.from_numpy(S_sub).float() if not isinstance(S_sub, Tensor) else S_sub
+            alpha_t = torch.from_numpy(alpha).float() if not isinstance(alpha, Tensor) else alpha
 
 
             # --- Estimate Terms ---

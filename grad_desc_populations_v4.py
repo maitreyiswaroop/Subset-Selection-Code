@@ -34,8 +34,8 @@ from estimators import *
 import re
 # Global hyperparameters and clamping constants
 CLAMP_MAX = 10.0
-CLAMP_MIN = 1e-4
-EPS = 1e-4
+CLAMP_MIN = 1e-2
+EPS = 1e-2
 FREEZE_THRESHOLD = 0.1  # Threshold below which alpha values are frozen
 N_FOLDS = 5             # Number of K-folds for precomputation
 
@@ -47,6 +47,8 @@ def compute_reg_penalty(alpha, reg_type, reg_lambda, epsilon=1e-8):
     """
     Compute a regularization penalty for alpha.
     """
+    # clamp all alpha values to the range [CLAMP_MIN, CLAMP_MAX]
+    alpha = torch.clamp(alpha, min=CLAMP_MIN, max=CLAMP_MAX)
     if reg_type is None:
         return torch.tensor(0.0, device=alpha.device)
     elif reg_type == "Neg_L1":
@@ -70,74 +72,81 @@ def compute_reg_penalty(alpha, reg_type, reg_lambda, epsilon=1e-8):
 # =============================================================================
 
 def compute_full_batch_objective(X, E_Y_given_X, term1,
-                                 alpha, reg_lambda=0, reg_type=None, chunk_size=1000):
-    """
-    Compute the objective for one population:
-      E[E[Y|X]^2] - E[E[Y|S(alpha)]^2] + regularization.
-    """
+                                 alpha, reg_lambda=0, reg_type=None, chunk_size=1000,
+                                              num_mc_samples=1):
+    # move everything to alpha’s device and clamp alpha
     X = X.to(alpha.device)
     E_Y_given_X = E_Y_given_X.to(alpha.device)
     alpha = torch.clamp(alpha, min=CLAMP_MIN, max=CLAMP_MAX)
-    
-    batch_size = X.size(0)
-    if batch_size < chunk_size:
-        chunk_size = batch_size
-    num_chunks = (batch_size + chunk_size - 1) // chunk_size
-    total_obj = term1
-    
-    term2 = 0.0
-    for i in range(num_chunks):
-        start_idx = i * chunk_size
-        end_idx = min((i + 1) * chunk_size, batch_size)
-        X_chunk = X[start_idx:end_idx]
-        E_Y_given_X_chunk = E_Y_given_X[start_idx:end_idx]
-        
-        S_alpha = X_chunk + torch.randn_like(X_chunk) * torch.sqrt(alpha)
-        # E_Y_given_S = estimate_conditional_expectation(X_chunk, S_alpha, E_Y_given_X_chunk, alpha)
-        # E_Y_given_S = estimate_conditional_kernel_oof(X_chunk, S_alpha, E_Y_given_X_chunk, alpha)
-        E_Y_given_S = estimate_conditional_keops(X_chunk, S_alpha, E_Y_given_X_chunk, alpha)
-        # chunk_obj = torch.mean(E_Y_given_X_chunk**2) - torch.mean(E_Y_given_S**2)
-        # total_obj += chunk_obj * (end_idx - start_idx) / batch_size
-        chunk_obj = torch.mean(E_Y_given_S**2)
-        term2 += chunk_obj * (end_idx - start_idx) / batch_size
-    
-    objective = total_obj - term2 + compute_reg_penalty(alpha, reg_type, reg_lambda)
-    return objective
 
-def compute_full_batch_objective_IF_optimized(X, E_Y_given_X_pre, term1, alpha, 
-                                              reg_lambda=0, reg_type=None, chunk_size=1000):
-    """
-    Optimized IF-based objective computation using precomputed predictions.
+    # ensure term1 is a tensor on the same device/dtype
+    term1 = torch.tensor(term1, dtype=alpha.dtype, device=alpha.device)
 
-    Instead of storing the fitted model, we use the precomputed predictions (E_Y_given_X_pre).
-    """
+    # one noise sample per feature vector
+    S_alpha = X + torch.randn_like(X) * torch.sqrt(alpha)
+
+    # differentiable conditional‐expectation via KeOps‐style kernel
+    # E_Y_S = estimate_conditional_keops(X, S_alpha, E_Y_given_X, alpha)
+    # term2  = E_Y_S.pow(2).mean()
+    avg_term2 = 0.0
+    for _ in range(num_mc_samples):
+        # Sample noise DIFFERENTLY each time inside the loop
+        S_alpha = X + torch.randn_like(X) * torch.sqrt(alpha) 
+
+        # Estimate E[Y|S] for THIS noise sample
+        E_Y_S = estimate_conditional_keops(X, S_alpha, E_Y_given_X, alpha) 
+
+        # Calculate term2 for THIS noise sample and accumulate
+        term2_sample = E_Y_S.pow(2).mean()
+        avg_term2 += term2_sample
+    term2 = avg_term2 / num_mc_samples
+
+    # E[E[Y|X]^2] - E[E[Y|S]^2] + regularization
+    return term1 - term2 + compute_reg_penalty(alpha, reg_type, reg_lambda)
+
+def compute_full_batch_objective_IF_optimized(X, E_Y_given_X_pre, term1, alpha,
+                                              reg_lambda=0, reg_type=None, chunk_size=1000,
+                                              num_mc_samples=1):
     X = X.to(alpha.device)
-    alpha = torch.clamp(alpha, min=CLAMP_MIN, max=CLAMP_MAX)
-    
-    # Use the precomputed predictions directly
+    alpha = torch.clamp(alpha, CLAMP_MIN, CLAMP_MAX)
+    term1 = torch.tensor(term1, dtype=alpha.dtype, device=alpha.device)
+
     E_Y_given_X = E_Y_given_X_pre.to(alpha.device)
-    
-    batch_size = X.size(0)
-    if batch_size < chunk_size:
-        chunk_size = batch_size
-    num_chunks = (batch_size + chunk_size - 1) // chunk_size
-    total_term2 = 0.0
-    
-    for i in range(num_chunks):
-        start_idx = i * chunk_size
-        end_idx = min((i + 1) * chunk_size, batch_size)
-        X_chunk = X[start_idx:end_idx]
-        E_Y_given_X_chunk = E_Y_given_X[start_idx:end_idx]
+
+    # one noise sample per X; consider multiple MC samples for smoother gradients
+    S_alpha = X + torch.randn_like(X) * torch.sqrt(alpha)
+
+    # E_Y_S = estimate_conditional_keops(X, S_alpha, E_Y_given_X, alpha)
+    # term2  = E_Y_S.pow(2).mean()
+    avg_term2 = 0.0
+    for _ in range(num_mc_samples):
+        # Sample noise DIFFERENTLY each time inside the loop
+        S_alpha = X + torch.randn_like(X) * torch.sqrt(alpha) 
+
+        # Estimate E[Y|S] for THIS noise sample
+        E_Y_S = estimate_conditional_keops(X, S_alpha, E_Y_given_X, alpha) 
+
+        # Calculate term2 for THIS noise sample and accumulate
+        term2_sample = E_Y_S.pow(2).mean()
+        avg_term2 += term2_sample
+    term2 = avg_term2 / num_mc_samples
+
+    return term1 - term2 + compute_reg_penalty(alpha, reg_type, reg_lambda)
+    # for i in range(num_chunks):
+    #     start_idx = i * chunk_size
+    #     end_idx = min((i + 1) * chunk_size, batch_size)
+    #     X_chunk = X[start_idx:end_idx]
+    #     E_Y_given_X_chunk = E_Y_given_X[start_idx:end_idx]
         
-        S_alpha = X_chunk + torch.randn_like(X_chunk) * torch.sqrt(alpha)
-        # E_Y_given_S = estimate_conditional_expectation(X_chunk, S_alpha, E_Y_given_X_chunk, alpha)
-        # E_Y_given_S = estimate_conditional_kernel_oof(X_chunk, S_alpha, E_Y_given_X_chunk, alpha)
-        E_Y_given_S = estimate_conditional_keops(X_chunk, S_alpha, E_Y_given_X_chunk, alpha)
-        chunk_term2 = torch.mean(E_Y_given_S**2)
-        total_term2 += chunk_term2 * (end_idx - start_idx) / batch_size
+    #     S_alpha = X_chunk + torch.randn_like(X_chunk) * torch.sqrt(alpha)
+    #     # E_Y_given_S = estimate_conditional_expectation(X_chunk, S_alpha, E_Y_given_X_chunk, alpha)
+    #     # E_Y_given_S = estimate_conditional_kernel_oof(X_chunk, S_alpha, E_Y_given_X_chunk, alpha)
+    #     E_Y_given_S = estimate_conditional_keops(X_chunk, S_alpha, E_Y_given_X_chunk, alpha)
+    #     chunk_term2 = torch.mean(E_Y_given_S**2)
+    #     total_term2 += chunk_term2 * (end_idx - start_idx) / batch_size
     
-    objective = term1 - total_term2 + compute_reg_penalty(alpha, reg_type, reg_lambda)
-    return objective
+    # objective = term1 - total_term2 + compute_reg_penalty(alpha, reg_type, reg_lambda)
+    # return objective
 
 # =============================================================================
 # Experiment runner for multi-population variable selection
@@ -182,8 +191,10 @@ def get_pop_data(pop_configs, m1, m,
                 common_meaningful_indices=common_meaningful_indices
             )
         X = torch.tensor(new_X, dtype=torch.float32) if isinstance(new_X, np.ndarray) else new_X.float()
+        # standardize the features
+        X = (X - X.mean(dim=0)) / (X.std(dim=0) + EPS)
         Y = torch.tensor(Y, dtype=torch.float32) if isinstance(Y, np.ndarray) else Y.float()
-        
+        Y = (Y - Y.mean()) / (Y.std() + EPS)  # standardize Y
         if estimator_type == "plugin":
             term1 = plugin_estimator_squared_conditional(X.numpy(), Y.numpy(), estimator_type=base_model_type)
             E_Y_given_X = torch.tensor(plugin_estimator_conditional_mean(X.numpy(), Y.numpy(), estimator_type=base_model_type), dtype=torch.float32)
@@ -207,7 +218,7 @@ def get_pop_data(pop_configs, m1, m,
         })
     return pop_data
 
-def init_alpha(m, alpha_init="random", noise = 0.1, 
+def init_alpha(m, alpha_init="random", noise = 1.0, 
                device="cpu"):
     """
     Initialize the alpha parameter based on the specified initialization method.
@@ -272,7 +283,8 @@ def run_experiment_multi_population(pop_configs, m1, m,
         seed=seed
     )
     # Initialize alpha (the variable weight parameters)
-    alpha = init_alpha(m, alpha_init=alpha_init, noise=0.1, device=device)
+    alpha = init_alpha(m, alpha_init=alpha_init, noise=0.01, device=device)
+    print(f"Initialized alpha: {alpha.detach().cpu().numpy()}")
     optimizer = (optim.Adam([alpha], lr=learning_rate)
                 if optimizer_type=='adam'
                 else optim.SGD([alpha], lr=learning_rate, momentum=0.9, nesterov=True))
@@ -304,7 +316,7 @@ def run_experiment_multi_population(pop_configs, m1, m,
         
         optimizer.zero_grad()
         robust_objective.backward()
-        torch.nn.utils.clip_grad_norm_([alpha], max_norm=1.0)
+        # torch.nn.utils.clip_grad_norm_([alpha], max_norm=10.0)
         
         if param_freezing:
             with torch.no_grad():
@@ -317,6 +329,7 @@ def run_experiment_multi_population(pop_configs, m1, m,
                         if 'momentum_buffer' in state:
                             buf = state['momentum_buffer']
                             buf[frozen_mask] = 0
+        torch.nn.utils.clip_grad_norm_([alpha], max_norm=10.0)
         
         optimizer.step()
         with torch.no_grad():
@@ -341,6 +354,9 @@ def run_experiment_multi_population(pop_configs, m1, m,
         if early_stopping_counter >= early_stopping_patience and verbose:
             print("Early stopping")
             break
+
+        # clamping the alpha values to the range [CLAMP_MIN, CLAMP_MAX]
+        alpha.data.clamp_(min=CLAMP_MIN, max=CLAMP_MAX)
     
     # post-processing, also seeing how the estimator performs
     if verbose:

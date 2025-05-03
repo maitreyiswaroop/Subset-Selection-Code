@@ -232,7 +232,8 @@ def generate_data_continuous_with_corr(pop_id, m1, m, dataset_type="linear_regre
                              dataset_size=10000,
                              noise_scale=0.0, seed=None, 
                              common_meaningful_indices=None, indices_taken=[],
-                             corr_strength=0.5):  # New parameter for correlation strength
+                             corr_strength=0.5,
+                             dist_params: dict = None):  # New parameter for correlation strength
     """
     Generate continuous data for a given population with correlation structure.
     
@@ -260,9 +261,27 @@ def generate_data_continuous_with_corr(pop_id, m1, m, dataset_type="linear_regre
     if 'resnet' not in dataset_type:    
         # Generate meaningful features
         if data_distribution == "normal":
-            X_meaningful = np.random.normal(0, 1, (dataset_size, len(meaningful_indices)))
+            mean, std = 0, 1
+            if dist_params is not None:
+                if 'mean' in dist_params:
+                    mean = dist_params['mean']
+                if 'std' in dist_params:
+                    std = dist_params['std']
+            X_meaningful = np.random.normal(mean, std, (dataset_size, len(meaningful_indices)))
         elif data_distribution == "uniform":
-            X_meaningful = np.random.uniform(0, 1, (dataset_size, len(meaningful_indices)))
+            low, high = 0, 1
+            if dist_params is not None:
+                if 'low' in dist_params:
+                    low = dist_params['low']
+                if 'high' in dist_params:
+                    high = dist_params['high']
+            X_meaningful = np.random.uniform(low, high, (dataset_size, len(meaningful_indices)))
+        elif data_distribution == "bernoulli":
+            if dist_params is not None and 'p' in dist_params:
+                p = dist_params['p']
+            else:
+                p = 0.5
+            X_meaningful = np.random.binomial(1, p, (dataset_size, len(meaningful_indices)))
         else:
             raise ValueError("Unknown data_distribution for population ", pop_id)
         
