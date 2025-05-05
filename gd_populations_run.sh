@@ -8,7 +8,7 @@ chmod +x gd_populations_run.sh
 BASE_ARGS="--m1 4 --m 15 --dataset-size 10000 --noise-scale 0.01 --num-epochs 100"
 BASE_ARGS="$BASE_ARGS --reg-type Reciprocal_L1 --reg-lambda 0.001 --batch-size 256"
 
-python3 grad_desc_populations_v2.py \
+python3 gd_populations_v2.py \
     --m1 4 \
     --m 20 \
     --dataset-size 1000 \

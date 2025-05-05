@@ -929,7 +929,7 @@ def summarize_results(results, save_path='./results/baselines/'):
     
     return f1_sorted, common_sorted, pop_detail_df
 
-def compare_with_gradient_descent(baseline_results, grad_desc_results, save_path='./results/comparison/'):
+def compare_with_gradient_descent(baseline_results, gd_results, save_path='./results/comparison/'):
     """
     Compare baseline methods with gradient descent approach.
     
@@ -937,7 +937,7 @@ def compare_with_gradient_descent(baseline_results, grad_desc_results, save_path
     -----------
     baseline_results : dict
         Dictionary with results for all baseline methods
-    grad_desc_results : dict
+    gd_results : dict
         Dictionary with results for gradient descent method
     save_path : str
         Path to save comparison
@@ -950,18 +950,18 @@ def compare_with_gradient_descent(baseline_results, grad_desc_results, save_path
     os.makedirs(save_path, exist_ok=True)
     
     # Extract grad desc results
-    grad_desc_selected = set(grad_desc_results.get('selected_indices', []))
-    grad_desc_true = set(grad_desc_results.get('true_variable_index', []))
+    gd_selected = set(gd_results.get('selected_indices', []))
+    gd_true = set(gd_results.get('true_variable_index', []))
     
-    if not grad_desc_true and 'meaningful_indices' in grad_desc_results:
+    if not gd_true and 'meaningful_indices' in gd_results:
         # Combine all meaningful indices from all populations
-        for indices in grad_desc_results['meaningful_indices']:
-            grad_desc_true.update(indices)
+        for indices in gd_results['meaningful_indices']:
+            gd_true.update(indices)
     
     # Calculate metrics for grad desc
-    grad_desc_precision = len(grad_desc_selected & grad_desc_true) / len(grad_desc_selected) if grad_desc_selected else 0
-    grad_desc_recall = len(grad_desc_selected & grad_desc_true) / len(grad_desc_true) if grad_desc_true else 0
-    grad_desc_f1 = 2 * (grad_desc_precision * grad_desc_recall) / (grad_desc_precision + grad_desc_recall) if (grad_desc_precision + grad_desc_recall) > 0 else 0
+    gd_precision = len(gd_selected & gd_true) / len(gd_selected) if gd_selected else 0
+    gd_recall = len(gd_selected & gd_true) / len(gd_true) if gd_true else 0
+    gd_f1 = 2 * (gd_precision * gd_recall) / (gd_precision + gd_recall) if (gd_precision + gd_recall) > 0 else 0
     
     # Create comparison dataframe
     comparison = []
@@ -969,9 +969,9 @@ def compare_with_gradient_descent(baseline_results, grad_desc_results, save_path
     # Add grad desc results
     comparison.append({
         'method': 'gradient_descent',
-        'precision': grad_desc_precision,
-        'recall': grad_desc_recall,
-        'f1_score': grad_desc_f1
+        'precision': gd_precision,
+        'recall': gd_recall,
+        'f1_score': gd_f1
     })
     
     # Add baseline results
@@ -1008,7 +1008,7 @@ if __name__ == "__main__":
     # create save path if it doesn't exist
     os.makedirs(args.save_path, exist_ok=True)
 
-    # Define population configurations (similar to grad_desc_populations_v2.py)
+    # Define population configurations (similar to gd_populations_v2.py)
     pop_configs = [
         {'pop_id': i, 'dataset_type': args.populations[i]}
         for i in range(len(args.populations))
@@ -1035,18 +1035,18 @@ if __name__ == "__main__":
         json.dump(vars(args), f, indent=4)
     
     # Compare with gradient descent if requested
-    if args.compare_with_grad_desc:
+    if args.compare_with_gd_:
         try:
-            with open(args.compare_with_grad_desc, 'r') as f:
-                grad_desc_results = json.load(f)
+            with open(args.compare_with_gd_, 'r') as f:
+                gd_results = json.load(f)
             
             comparison = compare_with_gradient_descent(
-                results, grad_desc_results, 
+                results, gd_results, 
                 save_path=os.path.join(args.save_path, 'comparison')
             )
             print("\nComparison with gradient descent method:")
             print(comparison)
         except FileNotFoundError:
-            print(f"Gradient descent results file not found: {args.compare_with_grad_desc}")
+            print(f"Gradient descent results file not found: {args.compare_with_gd_}")
         except json.JSONDecodeError:
-            print(f"Error decoding gradient descent results file: {args.compare_with_grad_desc}")
+            print(f"Error decoding gradient descent results file: {args.compare_with_gd_}")

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Comprehensive hyperparameter tuning for grad_desc_populations_v3.py
+Comprehensive hyperparameter tuning for gd_populations_v3.py
 This script optimizes all the requested parameters:
 - reg_type
 - reg_lambda
@@ -81,7 +81,7 @@ def objective(trial, fixed_params):
     
     # Construct command to run the script with the sampled parameters
     cmd = [
-        "python3", "grad_desc_populations_v3.py",
+        "python3", "gd_populations_v3.py",
         "--m1", str(fixed_params["m1"]),
         "--m", str(fixed_params["m"]),
         "--dataset-size", str(fixed_params["dataset_size"]),
@@ -197,9 +197,9 @@ def save_results(study, output_dir):
         f.write('--base-model-type rf \\\n')
         f.write('--param-freezing"\n\n')
         
-        f.write('echo "Running grad_desc_populations_v3.py with optimized parameters:"\n')
+        f.write('echo "Running gd_populations_v3.py with optimized parameters:"\n')
         f.write('echo $PARAMS\n\n')
-        f.write('python3 grad_desc_populations_v3.py $PARAMS\n')
+        f.write('python3 gd_populations_v3.py $PARAMS\n')
     
     # Make the script executable
     os.chmod(os.path.join(output_dir, 'run_best_params.sh'), 0o755)

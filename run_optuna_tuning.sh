@@ -2,7 +2,7 @@
 # run_optuna_tuning.sh
 #
 # This script runs the Optuna hyperparameter optimization for the
-# grad_desc_populations_v3.py experiment.
+# gd_populations_v3.py experiment.
 
 # Check if Optuna is installed
 python3 -c "import optuna" 2>/dev/null || { 
@@ -17,7 +17,7 @@ SCRIPT="optuna_tuning.py"
 N_TRIALS=200
 
 # Database file for storing results
-DB_FILE="sqlite:///optuna_grad_desc.db"
+DB_FILE="sqlite:///optuna_gd_.db"
 
 # Output directory for optimization results
 OUTPUT_DIR="./optuna_results"

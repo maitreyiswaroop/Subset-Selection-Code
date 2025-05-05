@@ -1,8 +1,8 @@
-# gd_pops_tune_v5.py: Hyperparameter tuning for grad_desc_populations_v5.py using Optuna
+# gd_pops_tune_v5.py: Hyperparameter tuning for gd_populations_v5.py using Optuna
 
 """
 This script uses Optuna to automatically tune hyperparameters for the
-multi-population variable selection experiment defined in grad_desc_populations_v5.py.
+multi-population variable selection experiment defined in gd_populations_v5.py.
 
 It aims to find the hyperparameter combination that maximizes the F1 score
 based on the selected variables compared to the true meaningful indices.
@@ -17,19 +17,19 @@ import torch
 from functools import partial # To pass fixed arguments to objective function
 
 # --- Import necessary components from the experiment script ---
-# Ensure grad_desc_populations_v5.py is in the Python path or same directory
+# Ensure gd_populations_v5.py is in the Python path or same directory
 try:
-    from grad_desc_populations_v5 import (
+    from gd_populations_v5 import (
         run_experiment_multi_population,
         get_pop_data, # Needed to get meaningful indices for evaluation
         compute_population_stats,
         convert_numpy_to_python,
         get_latest_run_number
     )
-    print("Successfully imported from grad_desc_populations_v5.py")
+    print("Successfully imported from gd_populations_v5.py")
 except ImportError as e:
-    print(f"Error importing from grad_desc_populations_v5.py: {e}")
-    print("Please ensure grad_desc_populations_v5.py is in the same directory or Python path.")
+    print(f"Error importing from gd_populations_v5.py: {e}")
+    print("Please ensure gd_populations_v5.py is in the same directory or Python path.")
     exit(1)
 
 # --- Define the Objective Function for Optuna ---

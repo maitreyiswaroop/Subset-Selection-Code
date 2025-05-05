@@ -2,6 +2,7 @@ datasets/
 results/
 code_v1/
 subset/
+logs/
 
 # Python basics
 __pycache__/

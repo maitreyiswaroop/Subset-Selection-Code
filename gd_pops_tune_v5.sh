@@ -9,7 +9,7 @@
 #SBATCH --partition=debug
 # run_experiment.sh
 #
-# This bash script runs the grad_desc_populations_v3.py experiment
+# This bash script runs the gd_populations_v3.py experiment
 # with a predefined set of parameters.
 # Adjust the parameters below as needed.
 
@@ -44,7 +44,7 @@ PARAMS="--n-trials 50 \
 --objective-value-estimator if \
 --seed 42"
 
-echo "Running grad_desc_populations_v3.py with the following parameters:"
+echo "Running gd_populations_v3.py with the following parameters:"
 echo "Using the OOF function"
 echo $PARAMS
 
