@@ -6,18 +6,15 @@
 # baseline_failure_1 baseline_failure_2 baseline_failure_3 baseline_failure_4 baseline_failure_5
 # populations=(linear_regression cubic_regression)
 t2_types=(mc_plugin)
-seeds=(42 17 30 29 9)
-seed=42
+seeds=(42) # 17 30 29 9)
+population=asc
 estimator=plugin
-# population=baseline_failure_1
-populations=(baseline_failure_6 baseline_failure_7 baseline_failure_8 baseline_failure_9 baseline_failure_10)
-N_GRAD_SAMPLES=25
+N_GRAD_SAMPLES=10
 
 # for pop in "${populations[@]}"; do
 #   for t2 in "${t2_types[@]}"; do
 for t2 in "${t2_types[@]}"; do
-  # for seed in "${seeds[@]}"; do
-  for population in "${populations[@]}"; do
+  for seed in "${seeds[@]}"; do
     SAVE_PATH="/data/user_data/mswaroop/Subset-Selection-Code/results_v8/${t2}/${population}/"
     mkdir -p "$SAVE_PATH" "logs"
     sbatch gd_pops_v8_task.sh \
@@ -27,8 +24,8 @@ for t2 in "${t2_types[@]}"; do
       --dataset-size 5000 \
       --noise-scale 0.1 \
       --corr-strength 0.1 \
-      --num-epochs 150 \
-      --budget 8 \
+      --num-epochs 5 \
+      --budget 50 \
       --penalty-type Reciprocal_L1 \
       --penalty-lambda 0.005 \
       --learning-rate 0.05 \
@@ -48,11 +45,9 @@ for t2 in "${t2_types[@]}"; do
       --scheduler-min-lr 1e-6 \
       --seed $seed \
       --save-path $SAVE_PATH \
-      --verbose
-      # pause for 1 second to avoid overloading the scheduler
-      sleep 1
+      --verbose \
+      --param-freezing
   done
 done
-#  \
-      # --param-freezing
+
 echo "All jobs submitted."

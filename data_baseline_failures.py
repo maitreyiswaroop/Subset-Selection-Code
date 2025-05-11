@@ -23,95 +23,114 @@ def standardize_data(X, Y):
 
 def generate_baseline_failure_1_heterogeneous_importance(
     dataset_size: int = 10000,
-    n_features: int = 5,
+    n_features: int = 20,
     noise_scale: float = 0.1,
-    corr_strength: float = 0.2, 
+    corr_strength: float = 0.4, 
     seed: int = None
 ):
     """
-    Scenario 1: Heterogeneous Feature Importance.
+    Scenario 1: Heterogeneous Feature Importance - Enhanced Version.
     Pools three internal populations (A, B, C).
-    Pop A (Large, 45%): Y ~ 2*X1 + 0.5*X2 + epsilon
-    Pop B (Large, 45%): Y ~ 2*X1 + 0.6*X2 + epsilon
-    Pop C (Small but Critical, 10%): Y ~ 0.1*X1 + 3*X3 + epsilon
-    X4, X5 are correlated with X1 and X2.
+    Pop A (Very Large, 65%): Y ~ 3*X1 + 0.5*X2 + epsilon (low noise)
+    Pop B (Medium, 25%): Y ~ 0.5*X1 + 3*X2 + epsilon (low noise)
+    Pop C (Small but Critical, 10%): Y ~ 0.1*X1 + 0.1*X2 + 5*X3 + epsilon (high noise)
+    
+    Features beyond X3 have complex correlation patterns with varying strength.
+    X3 (critical for minority population) has strong correlations with several noise features.
     """
-    if n_features < 3:
-        raise ValueError("Scenario 1 requires at least 3 features (X1, X2, X3).")
+    if n_features < 4:
+        raise ValueError("Enhanced Scenario 1 requires at least 4 features.")
     if seed is not None:
         np.random.seed(seed)
 
-    n_a = int(0.45 * dataset_size)
-    n_b = int(0.45 * dataset_size)
-    n_c = dataset_size - n_a - n_b
+    # More severe population imbalance
+    n_a = int(0.65 * dataset_size)  # Very large population
+    n_b = int(0.25 * dataset_size)  # Medium population
+    n_c = dataset_size - n_a - n_b  # Small critical population (10%)
 
-    # X4, X5 are correlated with X1, X2
-    # X_all = np.random.randn(dataset_size, n_features)
-    # Y_all = np.zeros(dataset_size)
-
-    # Generate correlated features
+    # Generate base features
     X_all = np.random.randn(dataset_size, n_features)
-    # # Correlate X1 and X2 with X4
-    # if n_features > 3:
-    #     X_all[:, 3] = X_all[:, 0] + corr_strength * X_all[:, 1]
-    # # Correlate X1 and X2 with X5
-    # if n_features > 4:
-    #     X_all[:, 4] = X_all[:, 0] + corr_strength * X_all[:, 1]
     Y_all = np.zeros(dataset_size)
 
-
-    # Pop A
+    # Pop A - Mostly relies on X1
     idx_a_end = n_a
     X_pop_a = X_all[:idx_a_end, :]
-    # Create X4 as a linear combination of X1 and X2 with added noise for better correlation
-    if n_features > 3:
-        X_pop_a[:, 3] = corr_strength * X_pop_a[:, 0] + corr_strength * X_pop_a[:, 1] + (1- 2*corr_strength) * np.random.normal(0, 0.01, n_a)
-    # Create X5 as a linear combination of X1 and X2 with added noise for better correlation
-    if n_features > 4:
-        X_pop_a[:, 4] = corr_strength * X_pop_a[:, 0] + corr_strength * X_pop_a[:, 1] + (1- 2*corr_strength) * np.random.normal(0, 0.01, n_a)
-    Y_all[:idx_a_end] = 2 * X_pop_a[:, 0] + 1.0 * X_pop_a[:, 1] + np.random.normal(0, noise_scale, n_a)
+    
+    # Create complex correlation patterns for Pop A
+    for i in range(3, min(n_features, 8)):  # Correlate with first few noise features
+        weight_x1 = 0.4 + 0.1 * (i % 3)  # Varies between 0.4-0.6
+        weight_x2 = 0.6 - 0.1 * (i % 3)  # Varies between 0.6-0.4
+        X_pop_a[:, i] = (weight_x1 * corr_strength * X_pop_a[:, 0] + 
+                          weight_x2 * corr_strength * X_pop_a[:, 1] + 
+                          (1 - corr_strength) * np.random.normal(0, 1, n_a))
+    
+    # Lower noise for dominant population
+    Y_all[:idx_a_end] = 3.0 * X_pop_a[:, 0] + 0.5 * X_pop_a[:, 1] + np.random.normal(0, noise_scale * 0.8, n_a)
 
-    # Pop B
+    # Pop B - Mostly relies on X2
     idx_b_start = n_a
     idx_b_end = n_a + n_b
     X_pop_b = X_all[idx_b_start:idx_b_end, :]
-    # correlate X1 and X2 with X4
-    if n_features > 3:
-        X_pop_b[:, 3] = corr_strength * X_pop_b[:, 0] + corr_strength * X_pop_b[:, 1] + (1- 2*corr_strength) * np.random.normal(0, 0.01, n_b)
-    # correlate X1 and X2 with X5
-    if n_features > 4:
-        X_pop_b[:, 4] = corr_strength * X_pop_b[:, 0] + corr_strength * X_pop_b[:, 1] + (1- 2*corr_strength) * np.random.normal(0, 0.01, n_b)
-    Y_all[idx_b_start:idx_b_end] = 1.0 * X_pop_b[:, 0] + 2.0 * X_pop_b[:, 1] + np.random.normal(0, noise_scale, n_b)
+    
+    # Create complex correlation patterns for Pop B
+    for i in range(3, min(n_features, 8)):
+        weight_x1 = 0.3 + 0.15 * (i % 3)  # Varies between 0.3-0.6
+        weight_x2 = 0.7 - 0.15 * (i % 3)  # Varies between 0.7-0.4
+        X_pop_b[:, i] = (weight_x1 * corr_strength * X_pop_b[:, 0] + 
+                          weight_x2 * corr_strength * X_pop_b[:, 1] + 
+                          (1 - corr_strength) * np.random.normal(0, 1, n_b))
+    
+    # Lower noise for medium population
+    Y_all[idx_b_start:idx_b_end] = 0.5 * X_pop_b[:, 0] + 3.0 * X_pop_b[:, 1] + np.random.normal(0, noise_scale * 0.8, n_b)
 
-    # Pop C
+    # Pop C - Critically relies on X3
     idx_c_start = n_a + n_b
     X_pop_c = X_all[idx_c_start:, :]
-    Y_all[idx_c_start:] = 0.1 * X_pop_c[:, 0] + 0.5* X_pop_c[:, 1] + 3.0 * X_pop_c[:, 2] + np.random.normal(0, noise_scale, n_c)
+    
+    # Stronger correlations for Pop C - particularly between X3 and noise features
+    stronger_corr = min(0.7, corr_strength * 1.5)
+    for i in range(8, min(n_features, 15)):  # More extensive correlations
+        X_pop_c[:, i] = stronger_corr * X_pop_c[:, 2] + (1 - stronger_corr) * np.random.normal(0, 1, n_c)
+    
+    # Additional mixed correlations to create a complex structure
+    if n_features > 15:
+        for i in range(15, n_features):
+            mix_weight = 0.4 + 0.2 * np.random.random()  # Random weight between 0.4-0.6
+            X_pop_c[:, i] = (mix_weight * stronger_corr * X_pop_c[:, 2] + 
+                             (1 - mix_weight) * corr_strength * X_pop_c[:, 0] + 
+                             (1 - stronger_corr) * np.random.normal(0, 1, n_c))
+    
+    # Higher noise for minority population + stronger signal for X3
+    Y_all[idx_c_start:] = (0.1 * X_pop_c[:, 0] + 
+                           0.1 * X_pop_c[:, 1] + 
+                           5.0 * X_pop_c[:, 2] + 
+                           np.random.normal(0, noise_scale * 1.5, n_c))
 
-    meaningful_indices = np.array(sorted(list(set([0, 1, 2])))) # X1, X2, X3
-
+    # Define meaningful indices (the truly relevant features)
+    meaningful_indices = np.array([0, 1, 2])  # X1, X2, X3
+    
+    # Create final population data structures
     pop_data = [
         {
             'pop_id': 'A',
-            'X_raw' : X_pop_a,
-            'Y_raw' : Y_all[:idx_a_end],
+            'X_raw': X_all[:idx_a_end, :],
+            'Y_raw': Y_all[:idx_a_end],
             'meaningful_indices': meaningful_indices
         },
         {
             'pop_id': 'B',
-            'X_raw' : X_pop_b,
-            'Y_raw' : Y_all[idx_b_start:idx_b_end],
+            'X_raw': X_all[idx_b_start:idx_b_end, :],
+            'Y_raw': Y_all[idx_b_start:idx_b_end],
             'meaningful_indices': meaningful_indices
         },
         {
             'pop_id': 'C',
-            'X_raw' : X_pop_c,
-            'Y_raw' : Y_all[idx_c_start:],
+            'X_raw': X_all[idx_c_start:, :],
+            'Y_raw': Y_all[idx_c_start:],
             'meaningful_indices': meaningful_indices
         }
     ]
     return pop_data
-
 
 def generate_baseline_failure_2_opposing_effects(
     dataset_size: int = 10000,
@@ -352,31 +371,31 @@ def generate_baseline_failure_5_irrelevant_differently_distributed_features(
     dataset_size: int = 10000,
     n_features: int = 5,
     noise_scale_y: float = 1.0,
-    noise_feat_dist_means: dict = None, # e.g. {'A': 0, 'B': 5, 'C': -2} for the irrelevant X_noise_dist
+    noise_feat_dist_means: dict = None,  # e.g. {'A': 0, 'B': 5, 'C': -2}
     corr_strength: float = 0.2, 
     seed: int = None
 ):
     """
-    Scenario 5: Irrelevant but Differently Distributed Features. Y ~ 2*X_relevant1 + 1.5*X_relevant2 + eps_y
-    X_noise_dist (X_idx_noise_dist) has different means in Pop A, B, C, but is irrelevant to Y.
-    Pop A (33%): X_noise_dist mean m_A
-    Pop B (33%): X_noise_dist mean m_B
-    Pop C (34%): X_noise_dist mean m_C
-    X_idx_relevant1 (0) and X_idx_relevant2 (2) are the true predictors.
+    Scenario 5: Three Relevant, One Irrelevant. 
+    Y ~ 2*X0 + 1.5*X2 + 1.0*X3 + noise. 
+    X1 is irrelevant but shifts by population.
     """
-    if n_features < 3: # Needs X_relevant1 (0), X_noise_dist (1), X_relevant2 (2)
-        raise ValueError("Scenario 5 requires at least 3 features for this setup.")
+    if n_features < 4:
+        raise ValueError("Scenario 5 now requires at least 4 features (3 relevants + 1 irrelevant).")
     if seed is not None:
         np.random.seed(seed)
 
-    _noise_feat_dist_means = {'A': 0.0, 'B': 5.0, 'C': -2.0} # Defaults for the irrelevant feature
+    # defaults for the irrelevant feature
+    _noise_feat_dist_means = {'A': 0.0, 'B': 5.0, 'C': -2.0}
     if noise_feat_dist_means:
         _noise_feat_dist_means.update(noise_feat_dist_means)
 
+    # indices: 0,2,3 relevant; 1 irrelevant
     idx_relevant1 = 0
-    idx_noise_dist = 1 # This feature is irrelevant to Y but has different distributions
+    idx_noise_dist = 1
     idx_relevant2 = 2
-    current_meaningful = {idx_relevant1, idx_relevant2}
+    idx_relevant3 = 3
+    current_meaningful = {idx_relevant1, idx_relevant2, idx_relevant3}
 
     n_a = dataset_size // 3
     n_b = dataset_size // 3
@@ -385,46 +404,377 @@ def generate_baseline_failure_5_irrelevant_differently_distributed_features(
     X_all = np.random.randn(dataset_size, n_features)
     Y_all = np.zeros(dataset_size)
 
-    # Define Y relationship (same for all pops, based on relevant features)
-    def model_y(X_slice_pop):
-        return (2 * X_slice_pop[:, idx_relevant1] +
-                1.5 * X_slice_pop[:, idx_relevant2] +
-                np.random.normal(0, noise_scale_y, X_slice_pop.shape[0]))
+    # Y-model using three relevants
+    def model_y(X_slice):
+        return (
+            2.0 * X_slice[:, idx_relevant1]
+            + 1.5 * X_slice[:, idx_relevant2]
+            + 1.0 * X_slice[:, idx_relevant3]
+            + np.random.normal(0, noise_scale_y, X_slice.shape[0])
+        )
 
+    # assign irrelevant feature by population and compute Y
     # Pop A
-    idx_a_end = n_a
-    X_all[:idx_a_end, idx_noise_dist] = np.random.normal(_noise_feat_dist_means['A'], 1, n_a)
-    Y_all[:idx_a_end] = model_y(X_all[:idx_a_end, :])
+    end_a = n_a
+    X_all[:end_a, idx_noise_dist] = np.random.normal(_noise_feat_dist_means['A'], 1, n_a)
+    Y_all[:end_a] = model_y(X_all[:end_a, :])
 
     # Pop B
-    idx_b_start = n_a
-    idx_b_end = n_a + n_b
-    X_all[idx_b_start:idx_b_end, idx_noise_dist] = np.random.normal(_noise_feat_dist_means['B'], 1, n_b)
-    Y_all[idx_b_start:idx_b_end] = model_y(X_all[idx_b_start:idx_b_end, :])
+    start_b, end_b = end_a, end_a + n_b
+    X_all[start_b:end_b, idx_noise_dist] = np.random.normal(_noise_feat_dist_means['B'], 1, n_b)
+    Y_all[start_b:end_b] = model_y(X_all[start_b:end_b, :])
 
     # Pop C
-    idx_c_start = n_a + n_b
-    X_all[idx_c_start:, idx_noise_dist] = np.random.normal(_noise_feat_dist_means['C'], 1, n_c)
-    Y_all[idx_c_start:] = model_y(X_all[idx_c_start:, :])
+    start_c = end_b
+    X_all[start_c:, idx_noise_dist] = np.random.normal(_noise_feat_dist_means['C'], 1, n_c)
+    Y_all[start_c:] = model_y(X_all[start_c:, :])
 
-    meaningful_indices = np.array(sorted(list(current_meaningful)))
+    meaningful_indices = np.array(sorted(current_meaningful))
+    pop_data = [
+        {'pop_id': 'A', 'X_raw': X_all[:end_a, :], 'Y_raw': Y_all[:end_a], 'meaningful_indices': meaningful_indices},
+        {'pop_id': 'B', 'X_raw': X_all[start_b:end_b, :], 'Y_raw': Y_all[start_b:end_b], 'meaningful_indices': meaningful_indices},
+        {'pop_id': 'C', 'X_raw': X_all[start_c:, :], 'Y_raw': Y_all[start_c:], 'meaningful_indices': meaningful_indices},
+    ]
+    return pop_data
+
+def generate_baseline_failure_6_hierarchical_importance(dataset_size=10000, n_features=20, noise_scale=0.1, seed=None):
+    """
+    Scenario 6: Hierarchical Feature Importance.
+    Pop A (50%): Y ~ 2*X1 + X2 + epsilon
+    Pop B (30%): Y ~ X1 + X3 + 3*(X4*X5) + epsilon (interaction term!)
+    Pop C (20%): Y ~ X1 + X6 + X7*(X7>0) + epsilon (conditional effect)
+    
+    Key challenge: X4 and X5 have weak marginal effects, but their interaction
+    is critical. X7 only matters when positive.
+    """
+    if seed is not None:
+        np.random.seed(seed)
+
+    n_a = int(0.50 * dataset_size)
+    n_b = int(0.30 * dataset_size)
+    n_c = dataset_size - n_a - n_b
+
+    X_all = np.random.randn(dataset_size, n_features)
+    Y_all = np.zeros(dataset_size)
+
+    # Pop A - simple linear relationship
+    idx_a_end = n_a
+    X_pop_a = X_all[:idx_a_end, :]
+    Y_all[:idx_a_end] = 2 * X_pop_a[:, 0] + X_pop_a[:, 1] + np.random.normal(0, noise_scale, n_a)
+
+    # Pop B - with interaction
+    idx_b_start = n_a
+    idx_b_end = n_a + n_b
+    X_pop_b = X_all[idx_b_start:idx_b_end, :]
+    # X4*X5 interaction term with limited main effects
+    Y_all[idx_b_start:idx_b_end] = (X_pop_b[:, 0] + X_pop_b[:, 2] + 
+                                     0.2 * X_pop_b[:, 3] +  # Small main effect
+                                     0.2 * X_pop_b[:, 4] +  # Small main effect
+                                     3 * X_pop_b[:, 3] * X_pop_b[:, 4] +  # Strong interaction
+                                     np.random.normal(0, noise_scale, n_b))
+
+    # Pop C - with conditional effect
+    idx_c_start = n_a + n_b
+    X_pop_c = X_all[idx_c_start:, :]
+    # X7 only matters when positive
+    Y_all[idx_c_start:] = (X_pop_c[:, 0] + X_pop_c[:, 5] + 
+                           2 * X_pop_c[:, 6] * (X_pop_c[:, 6] > 0) + 
+                           np.random.normal(0, noise_scale, n_c))
+
+    # All meaningful indices
+    meaningful_indices = np.array([0, 1, 2, 3, 4, 5, 6])
+
     pop_data = [
         {
             'pop_id': 'A',
-            'X_raw' : X_all[:idx_a_end, :],
-            'Y_raw' : Y_all[:idx_a_end],
+            'X_raw': X_pop_a,
+            'Y_raw': Y_all[:idx_a_end],
             'meaningful_indices': meaningful_indices
         },
         {
             'pop_id': 'B',
-            'X_raw' : X_all[idx_b_start:idx_b_end, :],
-            'Y_raw' : Y_all[idx_b_start:idx_b_end],
+            'X_raw': X_pop_b,
+            'Y_raw': Y_all[idx_b_start:idx_b_end],
             'meaningful_indices': meaningful_indices
         },
         {
             'pop_id': 'C',
-            'X_raw' : X_all[idx_c_start:, :],
-            'Y_raw' : Y_all[idx_c_start:],
+            'X_raw': X_pop_c,
+            'Y_raw': Y_all[idx_c_start:],
+            'meaningful_indices': meaningful_indices
+        }
+    ]
+    return pop_data
+
+def generate_baseline_failure_7_dilution(dataset_size=10000, n_features=20, noise_scale=0.1, corr_strength=0.4, seed=None):
+    """
+    Scenario 7: Effect Dilution with Correlations.
+    Each population has important features that are correlated with noise features.
+    
+    Pop A (40%): Y ~ 2*X1 + X2 + epsilon
+                 X1 correlated with X10-X12 (noise variables)
+    
+    Pop B (40%): Y ~ X3 + 2*X4 + epsilon
+                 X3 correlated with X13-X15 (noise variables)
+    
+    Pop C (20%): Y ~ 3*X5 + epsilon
+                 X5 strongly correlated with X16-X19 (noise variables)
+    
+    Key challenge: Lasso may select noise variables that are correlated with
+    the true variables, especially in Pop C where dilution is strongest.
+    """
+    if seed is not None:
+        np.random.seed(seed)
+
+    n_a = int(0.40 * dataset_size)
+    n_b = int(0.40 * dataset_size)
+    n_c = dataset_size - n_a - n_b
+
+    # Start with random features
+    X_all = np.random.randn(dataset_size, n_features)
+    Y_all = np.zeros(dataset_size)
+
+    # Pop A
+    idx_a_end = n_a
+    # Create correlations between X1 and noise vars X10-X12
+    for i in range(10, 13):
+        X_all[:idx_a_end, i] = corr_strength * X_all[:idx_a_end, 0] + (1-corr_strength) * X_all[:idx_a_end, i]
+    Y_all[:idx_a_end] = 2 * X_all[:idx_a_end, 0] + X_all[:idx_a_end, 1] + np.random.normal(0, noise_scale, n_a)
+
+    # Pop B
+    idx_b_start = n_a
+    idx_b_end = n_a + n_b
+    # Create correlations between X3 and noise vars X13-X15
+    for i in range(13, 16):
+        X_all[idx_b_start:idx_b_end, i] = corr_strength * X_all[idx_b_start:idx_b_end, 2] + (1-corr_strength) * X_all[idx_b_start:idx_b_end, i]
+    Y_all[idx_b_start:idx_b_end] = X_all[idx_b_start:idx_b_end, 2] + 2 * X_all[idx_b_start:idx_b_end, 3] + np.random.normal(0, noise_scale, n_b)
+
+    # Pop C
+    idx_c_start = n_a + n_b
+    # Create stronger correlations between X5 and noise vars X16-X19
+    stronger_corr = min(0.8, corr_strength * 1.5)  # Increase correlation strength
+    for i in range(16, 20):
+        X_all[idx_c_start:, i] = stronger_corr * X_all[idx_c_start:, 4] + (1-stronger_corr) * X_all[idx_c_start:, i]
+    Y_all[idx_c_start:] = 3 * X_all[idx_c_start:, 4] + np.random.normal(0, noise_scale, n_c)
+
+    meaningful_indices = np.array([0, 1, 2, 3, 4])
+    
+    pop_data = [
+        {
+            'pop_id': 'A',
+            'X_raw': X_all[:idx_a_end, :],
+            'Y_raw': Y_all[:idx_a_end],
+            'meaningful_indices': meaningful_indices
+        },
+        {
+            'pop_id': 'B',
+            'X_raw': X_all[idx_b_start:idx_b_end, :],
+            'Y_raw': Y_all[idx_b_start:idx_b_end],
+            'meaningful_indices': meaningful_indices
+        },
+        {
+            'pop_id': 'C',
+            'X_raw': X_all[idx_c_start:, :],
+            'Y_raw': Y_all[idx_c_start:],
+            'meaningful_indices': meaningful_indices
+        }
+    ]
+    return pop_data
+
+def generate_baseline_failure_8_signal_to_noise_evolution(dataset_size=10000, n_features=20, noise_scale=0.1, seed=None):
+    """
+    Scenario 8: Signal-to-Noise Evolution.
+    Feature importance changes based on a contextual variable Z.
+    
+    Pop A (40%): Z ~ Uniform(0, 0.33)
+                 Y ~ (3*Z)*X1 + (1-Z)*X2 + epsilon
+    
+    Pop B (40%): Z ~ Uniform(0.33, 0.67)
+                 Y ~ (2-2*Z)*X1 + (3*Z-1)*X3 + epsilon
+    
+    Pop C (20%): Z ~ Uniform(0.67, 1.0)
+                 Y ~ (1-Z)*X3 + (3*Z-2)*X4 + epsilon
+                 
+    Key challenge: As Z increases, importance shifts from X1→X2→X3→X4.
+    Methods that don't account for this evolution will miss important features.
+    """
+    if seed is not None:
+        np.random.seed(seed)
+
+    n_a = int(0.40 * dataset_size)
+    n_b = int(0.40 * dataset_size)
+    n_c = dataset_size - n_a - n_b
+
+    X_all = np.random.randn(dataset_size, n_features)
+    Y_all = np.zeros(dataset_size)
+    
+    # Pop A: Z in [0, 0.33] - X1 importance decreases, X2 increases
+    idx_a_end = n_a
+    Z_a = np.random.uniform(0, 0.33, n_a)
+    Y_all[:idx_a_end] = (3*Z_a)*X_all[:idx_a_end, 0] + (1-Z_a)*X_all[:idx_a_end, 1] + np.random.normal(0, noise_scale, n_a)
+    
+    # Pop B: Z in [0.33, 0.67] - X1 continues decreasing, X3 increases
+    idx_b_start = n_a
+    idx_b_end = n_a + n_b
+    Z_b = np.random.uniform(0.33, 0.67, n_b)
+    Y_all[idx_b_start:idx_b_end] = (2-2*Z_b)*X_all[idx_b_start:idx_b_end, 0] + (3*Z_b-1)*X_all[idx_b_start:idx_b_end, 2] + np.random.normal(0, noise_scale, n_b)
+    
+    # Pop C: Z in [0.67, 1.0] - X3 decreases, X4 increases
+    idx_c_start = n_a + n_b
+    Z_c = np.random.uniform(0.67, 1.0, n_c)
+    Y_all[idx_c_start:] = (1-Z_c)*X_all[idx_c_start:, 2] + (3*Z_c-2)*X_all[idx_c_start:, 3] + np.random.normal(0, noise_scale, n_c)
+
+    meaningful_indices = np.array([0, 1, 2, 3])
+    
+    pop_data = [
+        {
+            'pop_id': 'A',
+            'X_raw': X_all[:idx_a_end, :],
+            'Y_raw': Y_all[:idx_a_end],
+            'meaningful_indices': meaningful_indices
+        },
+        {
+            'pop_id': 'B',
+            'X_raw': X_all[idx_b_start:idx_b_end, :],
+            'Y_raw': Y_all[idx_b_start:idx_b_end],
+            'meaningful_indices': meaningful_indices
+        },
+        {
+            'pop_id': 'C',
+            'X_raw': X_all[idx_c_start:, :],
+            'Y_raw': Y_all[idx_c_start:],
+            'meaningful_indices': meaningful_indices
+        }
+    ]
+    return pop_data
+
+def generate_baseline_failure_9_multiscale_relevance(dataset_size=10000, n_features=20, noise_scale=0.1, seed=None):
+    """
+    Scenario 9: Multiscale Relevance.
+    Features have effects at different scales or granularities.
+    
+    Pop A (50%): Y ~ 2*X1 + small_scale_pattern(X2) + epsilon
+                 where small_scale_pattern(x) = sin(10*x)
+    
+    Pop B (30%): Y ~ medium_scale_pattern(X1) + 2*X3 + epsilon
+                 where medium_scale_pattern(x) = sin(3*x)
+    
+    Pop C (20%): Y ~ large_scale_pattern(X1) + large_scale_pattern(X4) + epsilon
+                 where large_scale_pattern(x) = sin(x)
+    
+    Key challenge: Different frequencies of patterns make features contribute
+    differently across populations. Linear methods may miss the multiscale nature.
+    """
+    if seed is not None:
+        np.random.seed(seed)
+
+    n_a = int(0.50 * dataset_size)
+    n_b = int(0.30 * dataset_size)
+    n_c = dataset_size - n_a - n_b
+
+    X_all = np.random.randn(dataset_size, n_features)
+    Y_all = np.zeros(dataset_size)
+    
+    # Pop A: Small scale pattern (high frequency) on X2
+    idx_a_end = n_a
+    Y_all[:idx_a_end] = 2*X_all[:idx_a_end, 0] + np.sin(10*X_all[:idx_a_end, 1]) + np.random.normal(0, noise_scale, n_a)
+    
+    # Pop B: Medium scale pattern on X1
+    idx_b_start = n_a
+    idx_b_end = n_a + n_b
+    Y_all[idx_b_start:idx_b_end] = np.sin(3*X_all[idx_b_start:idx_b_end, 0]) + 2*X_all[idx_b_start:idx_b_end, 2] + np.random.normal(0, noise_scale, n_b)
+    
+    # Pop C: Large scale patterns on X1 and X4
+    idx_c_start = n_a + n_b
+    Y_all[idx_c_start:] = np.sin(X_all[idx_c_start:, 0]) + np.sin(X_all[idx_c_start:, 3]) + np.random.normal(0, noise_scale, n_c)
+
+    meaningful_indices = np.array([0, 1, 2, 3])
+    
+    pop_data = [
+        {
+            'pop_id': 'A',
+            'X_raw': X_all[:idx_a_end, :],
+            'Y_raw': Y_all[:idx_a_end],
+            'meaningful_indices': meaningful_indices
+        },
+        {
+            'pop_id': 'B',
+            'X_raw': X_all[idx_b_start:idx_b_end, :],
+            'Y_raw': Y_all[idx_b_start:idx_b_end],
+            'meaningful_indices': meaningful_indices
+        },
+        {
+            'pop_id': 'C',
+            'X_raw': X_all[idx_c_start:, :],
+            'Y_raw': Y_all[idx_c_start:],
+            'meaningful_indices': meaningful_indices
+        }
+    ]
+    return pop_data
+
+def generate_baseline_failure_10_threshold_effects(dataset_size=10000, n_features=20, noise_scale=0.1, seed=None):
+    """
+    Scenario 10: Threshold Effects with Redundancy.
+    Features have effects only beyond certain thresholds with some redundancy.
+    
+    Pop A (40%): Y ~ X1 + X2*(X2>0.5) + epsilon
+                 
+    Pop B (40%): Y ~ X1 + X3*(X3>1.0) + epsilon
+                 X4 redundant with X3 (correlated)
+    
+    Pop C (20%): Y ~ X1 + X5*(X5>1.5) + epsilon
+                 X6, X7 redundant with X5 (correlated)
+    
+    Key challenge: Threshold effects create non-linearity, while
+    redundant features create selection ambiguity.
+    """
+    if seed is not None:
+        np.random.seed(seed)
+
+    n_a = int(0.40 * dataset_size)
+    n_b = int(0.40 * dataset_size)
+    n_c = dataset_size - n_a - n_b
+
+    X_all = np.random.randn(dataset_size, n_features)
+    Y_all = np.zeros(dataset_size)
+    
+    # Pop A: Simple threshold effect
+    idx_a_end = n_a
+    Y_all[:idx_a_end] = X_all[:idx_a_end, 0] + X_all[:idx_a_end, 1] * (X_all[:idx_a_end, 1] > 0.5) + np.random.normal(0, noise_scale, n_a)
+    
+    # Pop B: Higher threshold with one redundant feature
+    idx_b_start = n_a
+    idx_b_end = n_a + n_b
+    # X4 is redundant with X3
+    X_all[idx_b_start:idx_b_end, 3] = 0.7 * X_all[idx_b_start:idx_b_end, 2] + 0.3 * X_all[idx_b_start:idx_b_end, 3]
+    Y_all[idx_b_start:idx_b_end] = X_all[idx_b_start:idx_b_end, 0] + X_all[idx_b_start:idx_b_end, 2] * (X_all[idx_b_start:idx_b_end, 2] > 1.0) + np.random.normal(0, noise_scale, n_b)
+    
+    # Pop C: Highest threshold with two redundant features
+    idx_c_start = n_a + n_b
+    # X6, X7 are redundant with X5
+    X_all[idx_c_start:, 5] = 0.8 * X_all[idx_c_start:, 4] + 0.2 * X_all[idx_c_start:, 5]
+    X_all[idx_c_start:, 6] = 0.6 * X_all[idx_c_start:, 4] + 0.4 * X_all[idx_c_start:, 6]
+    Y_all[idx_c_start:] = X_all[idx_c_start:, 0] + X_all[idx_c_start:, 4] * (X_all[idx_c_start:, 4] > 1.5) + np.random.normal(0, noise_scale, n_c)
+
+    meaningful_indices = np.array([0, 1, 2, 4])  # Note: redundant features aren't "meaningful"
+    
+    pop_data = [
+        {
+            'pop_id': 'A',
+            'X_raw': X_all[:idx_a_end, :],
+            'Y_raw': Y_all[:idx_a_end],
+            'meaningful_indices': meaningful_indices
+        },
+        {
+            'pop_id': 'B',
+            'X_raw': X_all[idx_b_start:idx_b_end, :],
+            'Y_raw': Y_all[idx_b_start:idx_b_end],
+            'meaningful_indices': meaningful_indices
+        },
+        {
+            'pop_id': 'C',
+            'X_raw': X_all[idx_c_start:, :],
+            'Y_raw': Y_all[idx_c_start:],
             'meaningful_indices': meaningful_indices
         }
     ]
@@ -491,6 +841,42 @@ def get_pop_data_baseline_failures(
             n_features=n_features,
             noise_scale_y=noise_scale,
             noise_feat_dist_means=pop_configs[0].get('noise_feat_dist_means', None),
+            seed=seed
+        )
+    elif baseline_type == 'baseline_failure_6':
+        pop_data = generate_baseline_failure_6_hierarchical_importance(
+            dataset_size=dataset_size,
+            n_features=n_features,
+            noise_scale=noise_scale,
+            seed=seed
+        )
+    elif baseline_type == 'baseline_failure_7':
+        pop_data = generate_baseline_failure_7_dilution(
+            dataset_size=dataset_size,
+            n_features=n_features,
+            noise_scale=noise_scale,
+            corr_strength=corr_strength,
+            seed=seed
+        )
+    elif baseline_type == 'baseline_failure_8':
+        pop_data = generate_baseline_failure_8_signal_to_noise_evolution(
+            dataset_size=dataset_size,
+            n_features=n_features,
+            noise_scale=noise_scale,
+            seed=seed
+        )
+    elif baseline_type == 'baseline_failure_9':
+        pop_data = generate_baseline_failure_9_multiscale_relevance(
+            dataset_size=dataset_size,
+            n_features=n_features,
+            noise_scale=noise_scale,
+            seed=seed
+        )
+    elif baseline_type == 'baseline_failure_10':
+        pop_data = generate_baseline_failure_10_threshold_effects(
+            dataset_size=dataset_size,
+            n_features=n_features,
+            noise_scale=noise_scale,
             seed=seed
         )
     else:

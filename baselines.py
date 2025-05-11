@@ -1,1123 +1,444 @@
-import numpy as np
-import pandas as pd
-from sklearn.linear_model import Lasso, LinearRegression, ElasticNet
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.feature_selection import mutual_info_regression, SelectKBest, f_regression
-from sklearn.metrics import r2_score
-import json
+# baselines.py
 import os
-from copy import deepcopy
-from data import generate_data_continuous, generate_data_continuous_with_corr
-import argparse
+from sklearn.linear_model import Lasso
+import xgboost as xgb 
+from typing import List, Dict, Any, Tuple, Optional
+import numpy as np
+from sklearn.metrics import mean_squared_error
+try:
+    from global_vars import *
+except ImportError:
+    print("Warning: global_vars.py not found. Using placeholder values for gd_pops_v7.py.")
+    EPS = 1e-9
+    CLAMP_MIN_ALPHA = 1e-5
+    CLAMP_MAX_ALPHA = 1e5
+    THETA_CLAMP_MIN = math.log(CLAMP_MIN_ALPHA) if CLAMP_MIN_ALPHA > 0 else -11.5
+    THETA_CLAMP_MAX = math.log(CLAMP_MAX_ALPHA) if CLAMP_MAX_ALPHA > 0 else 11.5
+    N_FOLDS = 5
+    FREEZE_THRESHOLD_ALPHA = 1e-4
+    THETA_FREEZE_THRESHOLD = math.log(FREEZE_THRESHOLD_ALPHA) if FREEZE_THRESHOLD_ALPHA > 0 else -9.2
 
-def pooled_lasso(pop_configs, m1, m, budget, dataset_size=10000, noise_scale=0.01, 
-                 corr_strength=0.5, 
-                alpha=0.01, seed=None):
-    """
-    Baseline 1: Pool all populations and use Lasso regression to select variables.
-    
-    Parameters:
-    -----------
-    pop_configs : list
-        List of population configurations
-    m1 : int
-        Number of meaningful features per population
-    m : int
-        Total number of features
-    dataset_size : int
-        Number of samples per population
-    noise_scale : float
-        Scale of noise in the data
-    alpha : float
-        L1 regularization parameter for Lasso
-    seed : int
-        Random seed
-        
-    Returns:
-    --------
-    dict
-        Dictionary with results including selected variables and scores
-    """
-    if seed is not None:
-        np.random.seed(seed)
-    
-    # Define common meaningful indices
-    k_common = max(1, m1 // 2)
-    common_meaningful_indices = np.arange(k_common)
-    
-    # Generate data for each population
-    all_X = []
-    all_Y = []
-    all_meaningful_indices = []
-    
-    for pop_config in pop_configs:
-        pop_id = pop_config['pop_id']
-        dataset_type = pop_config['dataset_type']
-        
-        if corr_strength > 0:
-            X, Y, A, meaningful_indices = generate_data_continuous_with_corr(
-                pop_id=pop_id, m1=m1, m=m, 
-                dataset_type=dataset_type, 
-                dataset_size=dataset_size,
-                noise_scale=noise_scale, 
-                seed=seed, 
-                common_meaningful_indices=common_meaningful_indices,
-                corr_strength=corr_strength
-            )
-        else:
-            X, Y, A, meaningful_indices = generate_data_continuous(
-                pop_id=pop_id, m1=m1, m=m, 
-                dataset_type=dataset_type, 
-                dataset_size=dataset_size,
-                noise_scale=noise_scale, 
-                seed=seed, 
-                common_meaningful_indices=common_meaningful_indices
-            )
-            
-        all_X.append(X)
-        all_Y.append(Y)
-        all_meaningful_indices.append(meaningful_indices)
-    
-    # Pool all data
-    pooled_X = np.vstack(all_X)
-    pooled_Y = np.concatenate(all_Y)
-    
-    # Train Lasso model
-    lasso = Lasso(alpha=alpha, random_state=seed)
-    lasso.fit(pooled_X, pooled_Y)
-    
-    # Select top 2*m1 features based on absolute coefficient values
-    coef_abs = np.abs(lasso.coef_)
-    selected_indices = np.argsort(-coef_abs)[:budget]
-    
-    # Evaluate the selection
-    true_indices = set()
-    for indices in all_meaningful_indices:
-        true_indices.update(indices)
-    print('True indices:', true_indices)
-    print('Selected indices:', selected_indices)
-    
-    recall = len(set(selected_indices) & true_indices) / len(true_indices)
-    precision = len(set(selected_indices) & true_indices) / len(selected_indices)
-    
-    return {
-        'selected_indices': selected_indices.tolist(),
-        'true_indices': list(true_indices),
-        'method': 'pooled_lasso',
-        'recall': recall,
-        'precision': precision,
-        'f1_score': 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0,
-        'coef_values': coef_abs[selected_indices].tolist()
+# UTILITIES
+def standardize_data(X, Y):
+    X_mean = np.mean(X, axis=0); X_std = np.std(X, axis=0)
+    Y_mean = np.mean(Y); Y_std = np.std(Y)
+    X_std[X_std < EPS] = EPS
+    if Y_std < EPS: Y_std = EPS
+    return (X - X_mean) / X_std, (Y - Y_mean) / Y_std, X_mean, X_std, Y_mean, Y_std
+
+def compute_population_stats(selected_indices: List[int],
+                             meaningful_indices_list: List[List[int]]) -> Tuple[List[Dict], Dict]:
+    """Compute population-wise statistics for selected variables."""
+    pop_stats = []
+    percentages = []
+    selected_set = set(selected_indices)
+
+    for i, meaningful in enumerate(meaningful_indices_list):
+        meaningful_set = set(meaningful)
+        common = selected_set.intersection(meaningful_set)
+        count = len(common)
+        total = len(meaningful_set)
+        percentage = (count / total * 100) if total > 0 else 0.0
+        percentages.append(percentage)
+        pop_stats.append({
+            'population': i, 'selected_relevant_count': count,
+            'total_relevant': total, 'percentage': percentage
+        })
+
+    min_perc = min(percentages) if percentages else 0.0
+    max_perc = max(percentages) if percentages else 0.0
+    median_perc = float(np.median(percentages)) if percentages else 0.0
+    min_pop_idx = np.argmin(percentages) if percentages else -1
+    max_pop_idx = np.argmax(percentages) if percentages else -1
+
+    overall_stats = {
+        'min_percentage': min_perc, 'max_percentage': max_perc,
+        'median_percentage': median_perc,
+        'min_population_details': pop_stats[min_pop_idx] if min_pop_idx != -1 else None,
+        'max_population_details': pop_stats[max_pop_idx] if max_pop_idx != -1 else None,
     }
+    return pop_stats, overall_stats
+# VANILLA POOLED BASELINES
+def baseline_lasso_comparison(
+    pop_data: List[Dict[str, Any]],
+    budget: int,
+    alpha_lasso: Optional[float] = None,
+    lasso_alphas_to_try: Optional[List[float]] = None
+) -> Dict[str, Any]:
+    """
+    Run Lasso baseline comparison on pooled pop_data.
+    Returns the best baseline_results dict with keys:
+      - alpha_value, selected_indices, baseline_coeffs,
+        baseline_pop_stats, baseline_overall_stats,
+        precision, recall, f1_score
+    """
+    # pool raw X, Y
+    X_pooled = np.vstack([pop['X_raw'] for pop in pop_data])
+    Y_pooled = np.hstack([pop['Y_raw'] for pop in pop_data])
+    X_std, Y_std, _, _, _, _ = standardize_data(X_pooled, Y_pooled)
 
-def population_wise_regression(pop_configs, m1, m, budget, dataset_size=10000, noise_scale=0.01, 
-                               corr_strength=0.5,
-                              model_type='linear', voting='frequency', seed=None):
+    # determine alphas to try
+    if lasso_alphas_to_try is None:
+        lasso_alphas_to_try = [alpha_lasso] if alpha_lasso is not None else [0.0001, 0.001, 0.01, 0.1]
+
+    meaningful_indices_list = [pop['meaningful_indices'] for pop in pop_data]
+    best_lasso_f1 = -1.0
+    best_results = {}
+    best_prediction_loss = float('inf')
+
+    for current_alpha in lasso_alphas_to_try:
+        model = Lasso(alpha=current_alpha, fit_intercept=False, max_iter=10000, tol=1e-4)
+        model.fit(X_std, Y_std)
+        coeffs = model.coef_
+        selected_idx = np.argsort(np.abs(coeffs))[-budget:]
+        # can we get the prediction loss?
+        prediction_loss = mean_squared_error(Y_std, model.predict(X_std))
+        
+        if meaningful_indices_list is None or any(mi is None for mi in meaningful_indices_list):
+            print(f"Since meaningful_indices_list is None, using prediction loss for selection.")
+            if prediction_loss < best_prediction_loss:
+                best_prediction_loss = prediction_loss
+                best_results = {
+                    'alpha_value':       current_alpha,
+                    'selected_indices':  selected_idx.tolist(),
+                    'all_indices_ranked': np.argsort(-np.abs(coeffs)).tolist(),
+                    'baseline_coeffs':   coeffs[selected_idx].tolist(),
+                    'baseline_pop_stats': None,
+                    'baseline_overall_stats': None,
+                    'precision':         None,
+                    'recall':            None,
+                    'f1_score':          None
+                }
+        else:
+            sel_set  = set(selected_idx)
+            true_set = set.union(*(set(mi) for mi in meaningful_indices_list))
+            intersect = len(sel_set & true_set)
+            prec = intersect / len(sel_set)   if sel_set  else 0.0
+            rec  = intersect / len(true_set)  if true_set else 0.0
+            f1   = 2*prec*rec/(prec+rec)      if (prec+rec)>0 else 0.0
+
+            if f1 > best_lasso_f1:
+                best_lasso_f1 = f1
+                pop_stats, overall_stats = compute_population_stats(
+                    selected_idx.tolist(), meaningful_indices_list
+                )
+                best_results = {
+                    'alpha_value':       current_alpha,
+                    'selected_indices':  selected_idx.tolist(),
+                    'baseline_coeffs':   coeffs[selected_idx].tolist(),
+                    'baseline_pop_stats':    pop_stats,
+                    'baseline_overall_stats': overall_stats,
+                    'precision':         prec,
+                    'recall':            rec,
+                    'f1_score':          f1
+                }
+
+    return best_results
+
+def baseline_xgb_comparison(pop_data: List[Dict[str, Any]],
+                            budget: int,
+                            classification: bool = False):
     """
-    Baseline 2: Perform regression on each population and use a voting mechanism to select variables.
-    
-    Parameters:
-    -----------
-    pop_configs : list
-        List of population configurations
-    m1 : int
-        Number of meaningful features per population
-    m : int
-        Total number of features
-    dataset_size : int
-        Number of samples per population
-    noise_scale : float
-        Scale of noise in the data
-    model_type : str
-        Type of regression model ('linear', 'rf', 'lasso')
-    voting : str
-        Voting mechanism ('frequency', 'rank_sum', 'borda', 'weighted')
-    seed : int
-        Random seed
-        
-    Returns:
-    --------
-    dict
-        Dictionary with results including selected variables and scores
+    Run XGBoost baseline comparison on pooled pop_data.
+    Returns the best baseline_results dict with keys:
+      - alpha_value, selected_indices, baseline_coeffs,
+        baseline_pop_stats, baseline_overall_stats,
+        precision, recall, f1_score
     """
-    if seed is not None:
-        np.random.seed(seed)
-    
-    # Define common meaningful indices
-    k_common = max(1, m1 // 2)
-    common_meaningful_indices = np.arange(k_common)
-    
-    # Generate data for each population
-    pop_data = []
-    all_meaningful_indices = []
-    
-    for pop_config in pop_configs:
-        pop_id = pop_config['pop_id']
-        dataset_type = pop_config['dataset_type']
-        
-        if corr_strength > 0:
-            X, Y, A, meaningful_indices = generate_data_continuous_with_corr(
-                pop_id=pop_id, m1=m1, m=m, 
-                dataset_type=dataset_type, 
-                dataset_size=dataset_size,
-                noise_scale=noise_scale, 
-                seed=seed, 
-                common_meaningful_indices=common_meaningful_indices,
-                corr_strength=corr_strength
-            )
-        else:
-            X, Y, A, meaningful_indices = generate_data_continuous(
-                pop_id=pop_id, m1=m1, m=m, 
-                dataset_type=dataset_type, 
-                dataset_size=dataset_size,
-                noise_scale=noise_scale, 
-                seed=seed, 
-                common_meaningful_indices=common_meaningful_indices
-            )
-        
-        pop_data.append((X, Y, pop_id))
-        all_meaningful_indices.append(meaningful_indices)
-    
-    # Initialize structures for voting
-    votes = np.zeros(m)
-    rank_scores = np.zeros(m)
-    importance_scores = np.zeros(m)
-    
-    for X, Y, pop_id in pop_data:
-        # Choose model based on model_type
-        if model_type == 'linear':
-            model = LinearRegression()
-        elif model_type == 'rf':
-            model = RandomForestRegressor(n_estimators=100, random_state=seed)
-        elif model_type == 'lasso':
-            model = Lasso(alpha=0.01, random_state=seed)
-        # elif model_type == 'elasticnet':
-        #     model = ElasticNet(alpha=0.01, l1_ratio=0.5, random_state=seed)
-        else:
-            raise ValueError(f"Unknown model_type: {model_type}")
-        
-        model.fit(X, Y)
-        
-        # Extract feature importance
-        if model_type == 'rf':
-            importance = model.feature_importances_
-        else:
-            importance = np.abs(model.coef_)
-        
-        # Select top features for this population
-        top_indices = np.argsort(-importance)[:budget]
-        
-        # Update voting
-        votes[top_indices] += 1
-        
-        # Update rank scores (Borda count)
-        for i, idx in enumerate(np.argsort(-importance)):
-            rank_scores[idx] += m - i
-        
-        # Update importance scores
-        importance_scores += importance / np.sum(importance)  # Normalize
-    
-    # Select final variables based on voting mechanism
-    if voting == 'frequency':
-        # Select based on frequency of appearance
-        selected_indices = np.argsort(-votes)[:budget]
-    elif voting == 'rank_sum':
-        # Select based on sum of ranks
-        selected_indices = np.argsort(-rank_scores)[:budget]
-    elif voting == 'borda':
-        # Borda count
-        selected_indices = np.argsort(-rank_scores)[:budget]
-    elif voting == 'weighted':
-        # Weighted by importance
-        selected_indices = np.argsort(-importance_scores)[:budget]
+    # pool raw X, Y
+    X_pooled = np.vstack([pop['X_raw'] for pop in pop_data])
+    Y_pooled = np.hstack([pop['Y_raw'] for pop in pop_data])
+    X_std, Y_std, _, _, _, _ = standardize_data(X_pooled, Y_pooled)
+    # XGBoost model
+    if classification:
+        model = xgb.XGBClassifier(objective='binary:logistic', eval_metric='logloss')
     else:
-        raise ValueError(f"Unknown voting mechanism: {voting}")
-    
-    # Evaluate the selection
-    true_indices = set()
-    for indices in all_meaningful_indices:
-        true_indices.update(indices)
-    
-    recall = len(set(selected_indices) & true_indices) / len(true_indices)
-    precision = len(set(selected_indices) & true_indices) / len(selected_indices)
-    
-    return {
-        'selected_indices': selected_indices.tolist(),
-        'true_indices': list(true_indices),
-        'method': f'population_wise_{model_type}_{voting}',
-        'recall': recall,
-        'precision': precision,
-        'f1_score': 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0,
-        'votes': votes[selected_indices].tolist(),
-        'rank_scores': rank_scores[selected_indices].tolist(),
-        'importance_scores': importance_scores[selected_indices].tolist()
-    }
+        model = xgb.XGBRegressor(objective='reg:squarederror', eval_metric='rmse')
+    model.fit(X_std, Y_std)
+    # Get feature importances
+    importances = model.feature_importances_
+    # Select top features
+    selected_idx = np.argsort(importances)[-budget:]
 
-def mutual_information_selection(pop_configs, m1, m, budget, dataset_size=10000, noise_scale=0.01, 
-                                 corr_strength=0.5,
-                               pooling='union', seed=None):
+    if pop_data[0]['meaningful_indices'] is None or any(pop['meaningful_indices'] is None for pop in pop_data):
+        print(f"Since meaningful_indices_list is None, using prediction loss for selection.")
+        # can we get the prediction loss?
+        prediction_loss = mean_squared_error(Y_std, model.predict(X_std))
+        best_results = {
+            'alpha_value':       None,
+            'selected_indices':  selected_idx.tolist(),
+            'all_indices_ranked': np.argsort(-importances).tolist(),
+            'baseline_coeffs':   importances[selected_idx].tolist(),
+            'baseline_pop_stats': None,
+            'baseline_overall_stats': None,
+            'precision':         None,
+            'recall':            None,
+            'f1_score':          None
+        }
+    else:
+        meaningful_indices_list = [pop['meaningful_indices'] for pop in pop_data]
+        sel_set  = set(selected_idx)
+        true_set = set.union(*(set(mi) for mi in meaningful_indices_list))
+        intersect = len(sel_set & true_set)
+        prec = intersect / len(sel_set)   if sel_set  else 0.0
+        rec  = intersect / len(true_set)  if true_set else 0.0
+        f1   = 2*prec*rec/(prec+rec)      if (prec+rec)>0 else 0.0
+
+        pop_stats, overall_stats = compute_population_stats(
+            selected_idx.tolist(), meaningful_indices_list
+        )
+        best_results = {
+            'alpha_value':       None,
+            'selected_indices':  selected_idx.tolist(),
+            'baseline_coeffs':   importances[selected_idx].tolist(),
+            'baseline_pop_stats':    pop_stats,
+            'baseline_overall_stats': overall_stats,
+            'precision':         prec,
+            'recall':            rec,
+            'f1_score':          f1
+        }
+    return best_results
+
+
+def baseline_dro_lasso_comparison(
+    pop_data: List[Dict[str, Any]],
+    budget: int,
+    alpha_lasso: Optional[float] = None,
+    lasso_alphas_to_try: Optional[List[float]] = None,
+    max_iter: int = 100,
+    tol: float = 1e-4,
+    eta: float = 0.1  # Step size for weight updates
+) -> Dict[str, Any]:
     """
-    Baseline 3: Use mutual information to select variables.
+    Run DRO Lasso comparison on pop_data.
+    Uses a min-max approach focusing on worst-case performance across populations.
     
-    Parameters:
-    -----------
-    pop_configs : list
-        List of population configurations
-    m1 : int
-        Number of meaningful features per population
-    m : int
-        Total number of features
-    dataset_size : int
-        Number of samples per population
-    noise_scale : float
-        Scale of noise in the data
-    pooling : str
-        How to combine results from different populations ('union', 'intersection', 'weighted')
-    seed : int
-        Random seed
-        
-    Returns:
-    --------
-    dict
-        Dictionary with results including selected variables and scores
+    Returns the best baseline_results dict with keys:
+      - alpha_value, selected_indices, baseline_coeffs,
+        baseline_pop_stats, baseline_overall_stats,
+        precision, recall, f1_score
     """
-    if seed is not None:
-        np.random.seed(seed)
+    # Determine alphas to try
+    if lasso_alphas_to_try is None:
+        lasso_alphas_to_try = [alpha_lasso] if alpha_lasso is not None else [0.0001, 0.001, 0.01, 0.1]
     
-    # Define common meaningful indices
-    k_common = max(1, m1 // 2)
-    common_meaningful_indices = np.arange(k_common)
+    # Get population data
+    population_data = []
+    for pop in pop_data:
+        X_std, Y_std, _, _, _, _ = standardize_data(pop['X_raw'], pop['Y_raw'])
+        population_data.append((X_std, Y_std))
     
-    # Generate data for each population
-    pop_data = []
-    all_meaningful_indices = []
+    meaningful_indices_list = [pop['meaningful_indices'] for pop in pop_data]
+    best_lasso_f1 = -1.0
+    best_prediction_max_loss = float('inf')
+    best_results = {}
     
-    for pop_config in pop_configs:
-        pop_id = pop_config['pop_id']
-        dataset_type = pop_config['dataset_type']
+    for current_alpha in lasso_alphas_to_try:
+        # Initialize uniform weights for each population
+        pop_weights = np.ones(len(population_data)) / len(population_data)
         
-        if corr_strength > 0:
-            X, Y, A, meaningful_indices = generate_data_continuous_with_corr(
-                pop_id=pop_id, m1=m1, m=m, 
-                dataset_type=dataset_type, 
-                dataset_size=dataset_size,
-                noise_scale=noise_scale, 
-                seed=seed, 
-                common_meaningful_indices=common_meaningful_indices,
-                corr_strength=corr_strength
-            )
+        # Initialize model
+        model = Lasso(alpha=current_alpha, fit_intercept=False, max_iter=10000, tol=tol)
+        
+        # DRO iterations
+        for _ in range(max_iter):
+            # Create weighted dataset
+            X_weighted = np.vstack([w * X for (X, _), w in zip(population_data, pop_weights)])
+            Y_weighted = np.hstack([w * Y for (_, Y), w in zip(population_data, pop_weights)])
+            
+            # Fit model on weighted data
+            model.fit(X_weighted, Y_weighted)
+            
+            # Calculate losses for each population
+            population_losses = []
+            for X, Y in population_data:
+                pred = model.predict(X)
+                loss = np.mean((Y - pred) ** 2)  # MSE loss
+                population_losses.append(loss)
+            
+            # Update weights based on losses (exponentiated gradient)
+            updated_weights = pop_weights * np.exp(eta * np.array(population_losses))
+            # Normalize
+            pop_weights = updated_weights / updated_weights.sum()
+            
+            # Check for convergence
+            if np.max(np.abs(updated_weights - pop_weights)) < tol:
+                break
+        
+        # Get final model and coefficients
+        coeffs = model.coef_
+        selected_idx = np.argsort(np.abs(coeffs))[-budget:]
+        
+        # Calculate maximum loss across populations for model selection
+        max_loss = max(np.mean((Y - model.predict(X)) ** 2) for X, Y in population_data)
+        
+        if meaningful_indices_list is None or any(mi is None for mi in meaningful_indices_list):
+            # Use max loss if meaningful indices aren't available
+            if max_loss < best_prediction_max_loss:
+                best_prediction_max_loss = max_loss
+                best_results = {
+                    'alpha_value': current_alpha,
+                    'selected_indices': selected_idx.tolist(),
+                    'all_indices_ranked': np.argsort(-np.abs(coeffs)).tolist(),
+                    'baseline_coeffs': coeffs[selected_idx].tolist(),
+                    'baseline_pop_stats': None,
+                    'baseline_overall_stats': None,
+                    'precision': None,
+                    'recall': None,
+                    'f1_score': None,
+                    'max_population_loss': max_loss,
+                    'final_pop_weights': pop_weights.tolist()
+                }
         else:
-            X, Y, A, meaningful_indices = generate_data_continuous(
-                pop_id=pop_id, m1=m1, m=m, 
-                dataset_type=dataset_type, 
-                dataset_size=dataset_size,
-                noise_scale=noise_scale, 
-                seed=seed, 
-                common_meaningful_indices=common_meaningful_indices
-            )
-        
-        pop_data.append((X, Y, pop_id))
-        all_meaningful_indices.append(meaningful_indices)
+            # Calculate F1 score if meaningful indices are available
+            sel_set = set(selected_idx)
+            true_set = set.union(*(set(mi) for mi in meaningful_indices_list))
+            intersect = len(sel_set & true_set)
+            prec = intersect / len(sel_set) if sel_set else 0.0
+            rec = intersect / len(true_set) if true_set else 0.0
+            f1 = 2 * prec * rec / (prec + rec) if (prec + rec) > 0 else 0.0
+            
+            if f1 > best_lasso_f1:
+                best_lasso_f1 = f1
+                pop_stats, overall_stats = compute_population_stats(
+                    selected_idx.tolist(), meaningful_indices_list
+                )
+                best_results = {
+                    'alpha_value': current_alpha,
+                    'selected_indices': selected_idx.tolist(),
+                    'baseline_coeffs': coeffs[selected_idx].tolist(),
+                    'baseline_pop_stats': pop_stats,
+                    'baseline_overall_stats': overall_stats,
+                    'precision': prec,
+                    'recall': rec,
+                    'f1_score': f1,
+                    'max_population_loss': max_loss,
+                    'final_pop_weights': pop_weights.tolist()
+                }
     
-    # Compute mutual information for each population
-    pop_selected = []
-    mi_scores = np.zeros(m)
+    return best_results
+
+
+def baseline_dro_xgb_comparison(
+    pop_data: List[Dict[str, Any]],
+    budget: int,
+    classification: bool = False,
+    max_iter: int = 10,
+    eta: float = 0.1  # Step size for weight updates
+) -> Dict[str, Any]:
+    """
+    Run DRO XGBoost comparison on pop_data.
+    Uses a min-max approach focusing on worst-case performance across populations.
     
-    for X, Y, pop_id in pop_data:
-        # Compute mutual information
-        mi = mutual_info_regression(X, Y, random_state=seed)
-        
-        # Select top features for this population
-        top_indices = np.argsort(-mi)[:budget]
-        pop_selected.append(top_indices)
-        
-        # Update MI scores
-        mi_scores += mi / np.sum(mi)  # Normalize
+    Returns the best baseline_results dict with keys:
+      - selected_indices, baseline_coeffs, baseline_pop_stats,
+        baseline_overall_stats, precision, recall, f1_score
+    """
+    # Get population data
+    population_data = []
+    for pop in pop_data:
+        X_std, Y_std, _, _, _, _ = standardize_data(pop['X_raw'], pop['Y_raw'])
+        population_data.append((X_std, Y_std))
     
-    # Combine results based on pooling method
-    if pooling == 'union':
-        # Union of selected features across populations
-        selected_set = set()
-        for indices in pop_selected:
-            selected_set.update(indices)
+    # Initialize uniform weights for each population
+    pop_weights = np.ones(len(population_data)) / len(population_data)
+    
+    # Initialize model
+    if classification:
+        model = xgb.XGBClassifier(objective='binary:logistic', eval_metric='logloss')
+    else:
+        model = xgb.XGBRegressor(objective='reg:squarederror', eval_metric='rmse')
+    
+    # DRO iterations
+    for iteration in range(max_iter):
+        # Create sample weights matrix for XGBoost
+        # XGBoost expects sample weights per observation, not per population
+        sample_weights = []
+        X_all = []
+        Y_all = []
         
-        # If more than 2*m1 features, take the top by MI score
-        if len(selected_set) > 2*m1:
-            selected_indices = np.array(list(selected_set))
-            selected_scores = mi_scores[selected_indices]
-            selected_indices = selected_indices[np.argsort(-selected_scores)[:budget]]
-        else:
-            # If less than 2*m1, fill with top MI features
-            remaining = 2*m1 - len(selected_set)
-            if remaining > 0:
-                selected_set_list = list(selected_set)
-                remaining_indices = [i for i in range(m) if i not in selected_set]
-                remaining_scores = mi_scores[remaining_indices]
-                top_remaining = np.array(remaining_indices)[np.argsort(-remaining_scores)[:remaining]]
-                selected_indices = np.concatenate([selected_set_list, top_remaining])
+        for idx, ((X, Y), weight) in enumerate(zip(population_data, pop_weights)):
+            X_all.append(X)
+            Y_all.append(Y)
+            sample_weights.extend([weight] * len(Y))  # Same weight for all samples in population
+        
+        X_all = np.vstack(X_all)
+        Y_all = np.hstack(Y_all)
+        sample_weights = np.array(sample_weights)
+        
+        # Fit model with sample weights
+        model.fit(X_all, Y_all, sample_weight=sample_weights)
+        
+        # Calculate losses for each population
+        population_losses = []
+        for X, Y in population_data:
+            pred = model.predict(X)
+            if classification:
+                # Use log loss for classification
+                # Add small epsilon to prevent log(0)
+                pred = np.clip(pred, 1e-15, 1-1e-15)
+                loss = -np.mean(Y * np.log(pred) + (1-Y) * np.log(1-pred))
             else:
-                selected_indices = np.array(list(selected_set))
-    
-    elif pooling == 'intersection':
-        # Intersection of selected features (with a minimum)
-        selected_set = set(pop_selected[0])
-        for indices in pop_selected[1:]:
-            selected_set = selected_set.intersection(set(indices))
+                # MSE loss for regression
+                loss = np.mean((Y - pred) ** 2)
+            population_losses.append(loss)
         
-        # If too few features, add more based on MI scores
-        if len(selected_set) < 2*m1:
-            remaining = 2*m1 - len(selected_set)
-            selected_set_list = list(selected_set)
-            remaining_indices = [i for i in range(m) if i not in selected_set]
-            remaining_scores = mi_scores[remaining_indices]
-            top_remaining = np.array(remaining_indices)[np.argsort(-remaining_scores)[:remaining]]
-            selected_indices = np.concatenate([selected_set_list, top_remaining])
-        else:
-            # If more than 2*m1, take top by MI score
-            selected_indices = np.array(list(selected_set))
-            selected_scores = mi_scores[selected_indices]
-            selected_indices = selected_indices[np.argsort(-selected_scores)[:budget]]
-    
-    elif pooling == 'weighted':
-        # Simply take top 2*m1 features by combined MI scores
-        selected_indices = np.argsort(-mi_scores)[:budget]
-    
-    else:
-        raise ValueError(f"Unknown pooling method: {pooling}")
-    
-    # Evaluate the selection
-    true_indices = set()
-    for indices in all_meaningful_indices:
-        true_indices.update(indices)
-    
-    recall = len(set(selected_indices) & true_indices) / len(true_indices)
-    precision = len(set(selected_indices) & true_indices) / len(selected_indices)
-    
-    return {
-        'selected_indices': selected_indices.tolist(),
-        'true_indices': list(true_indices),
-        'method': f'mutual_information_{pooling}',
-        'recall': recall,
-        'precision': precision,
-        'f1_score': 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0,
-        'mi_scores': mi_scores[selected_indices].tolist()
-    }
-
-def stability_selection(pop_configs, m1, m, budget, dataset_size=10000, noise_scale=0.01, 
-                          corr_strength=0.5,
-                       n_bootstraps=50, sample_fraction=0.75, alpha_range=None, 
-                       threshold=0.7, seed=None):
-    """
-    Baseline 4: Stability selection with Lasso.
-    
-    Parameters:
-    -----------
-    pop_configs : list
-        List of population configurations
-    m1 : int
-        Number of meaningful features per population
-    m : int
-        Total number of features
-    dataset_size : int
-        Number of samples per population
-    noise_scale : float
-        Scale of noise in the data
-    n_bootstraps : int
-        Number of bootstrap samples
-    sample_fraction : float
-        Fraction of samples to use in each bootstrap
-    alpha_range : list or None
-        Range of alpha values for Lasso
-    threshold : float
-        Threshold for stability selection
-    seed : int
-        Random seed
+        # Update weights based on losses (exponentiated gradient)
+        updated_weights = pop_weights * np.exp(eta * np.array(population_losses))
+        # Normalize
+        pop_weights = updated_weights / updated_weights.sum()
         
-    Returns:
-    --------
-    dict
-        Dictionary with results including selected variables and scores
-    """
-    if seed is not None:
-        np.random.seed(seed)
+        print(f"DRO XGBoost Iteration {iteration+1}: Population weights = {pop_weights}")
     
-    if alpha_range is None:
-        alpha_range = [0.001, 0.005, 0.01, 0.05, 0.1]
+    # Get feature importances from final model
+    importances = model.feature_importances_
+    selected_idx = np.argsort(importances)[-budget:]
     
-    # Define common meaningful indices
-    k_common = max(1, m1 // 2)
-    common_meaningful_indices = np.arange(k_common)
-    
-    # Generate data for each population
-    all_X = []
-    all_Y = []
-    all_meaningful_indices = []
-    
-    for pop_config in pop_configs:
-        pop_id = pop_config['pop_id']
-        dataset_type = pop_config['dataset_type']
-        
-        if corr_strength > 0:
-            X, Y, A, meaningful_indices = generate_data_continuous_with_corr(
-                pop_id=pop_id, m1=m1, m=m, 
-                dataset_type=dataset_type, 
-                dataset_size=dataset_size,
-                noise_scale=noise_scale, 
-                seed=seed, 
-                common_meaningful_indices=common_meaningful_indices,
-                corr_strength=corr_strength
-            )
-        else:
-            X, Y, A, meaningful_indices = generate_data_continuous(
-                pop_id=pop_id, m1=m1, m=m, 
-                dataset_type=dataset_type, 
-                dataset_size=dataset_size,
-                noise_scale=noise_scale, 
-                seed=seed, 
-                common_meaningful_indices=common_meaningful_indices
-            )
-        
-        all_X.append(X)
-        all_Y.append(Y)
-        all_meaningful_indices.append(meaningful_indices)
-    
-    # Pool all data
-    pooled_X = np.vstack(all_X)
-    pooled_Y = np.concatenate(all_Y)
-    
-    n_samples = pooled_X.shape[0]
-    bootstrap_size = int(n_samples * sample_fraction)
-    
-    # Initialize selection probability matrix
-    selection_probability = np.zeros((len(alpha_range), m))
-    
-    # Run stability selection
-    for i, alpha in enumerate(alpha_range):
-        feature_counts = np.zeros(m)
-        
-        for b in range(n_bootstraps):
-            # Create bootstrap sample
-            bootstrap_indices = np.random.choice(n_samples, bootstrap_size, replace=True)
-            X_bootstrap = pooled_X[bootstrap_indices]
-            Y_bootstrap = pooled_Y[bootstrap_indices]
-            
-            # Fit Lasso
-            lasso = Lasso(alpha=alpha, random_state=seed+b)
-            lasso.fit(X_bootstrap, Y_bootstrap)
-            
-            # Count selected features
-            selected = np.where(np.abs(lasso.coef_) > 0)[0]
-            feature_counts[selected] += 1
-        
-        # Calculate selection probability
-        selection_probability[i] = feature_counts / n_bootstraps
-    
-    # Aggregate over all alpha values
-    max_probability = np.max(selection_probability, axis=0)
-    
-    # Select features that exceed the threshold
-    stable_features = np.where(max_probability >= threshold)[0]
-    
-    # If we have more than 2*m1 stable features, take the top ones
-    if len(stable_features) > 2*m1:
-        selected_indices = stable_features[np.argsort(-max_probability[stable_features])[:budget]]
-    # If we have fewer, add more based on probability
-    elif len(stable_features) < 2*m1:
-        remaining = 2*m1 - len(stable_features)
-        unstable_features = np.array([i for i in range(m) if i not in stable_features])
-        top_unstable = unstable_features[np.argsort(-max_probability[unstable_features])[:remaining]]
-        selected_indices = np.concatenate([stable_features, top_unstable])
-    else:
-        selected_indices = stable_features
-    
-    # Evaluate the selection
-    true_indices = set()
-    for indices in all_meaningful_indices:
-        true_indices.update(indices)
-    
-    recall = len(set(selected_indices) & true_indices) / len(true_indices)
-    precision = len(set(selected_indices) & true_indices) / len(selected_indices)
-    
-    return {
-        'selected_indices': selected_indices.tolist(),
-        'true_indices': list(true_indices),
-        'method': 'stability_selection',
-        'recall': recall,
-        'precision': precision,
-        'f1_score': 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0,
-        'selection_probabilities': max_probability[selected_indices].tolist()
-    }
-
-def group_lasso_selection(pop_configs, m1, m, budget, dataset_size=10000, noise_scale=0.01, 
-                            corr_strength=0.5,
-                         alpha=0.01, seed=None):
-    """
-    Baseline 5: Group Lasso approach (by treating populations as groups and selecting features
-    that are important across groups).
-    
-    Note: This is an approximation of group lasso since sklearn doesn't have it built-in.
-    We use separate Lasso models and then combine the results.
-    
-    Parameters:
-    -----------
-    pop_configs : list
-        List of population configurations
-    m1 : int
-        Number of meaningful features per population
-    m : int
-        Total number of features
-    dataset_size : int
-        Number of samples per population
-    noise_scale : float
-        Scale of noise in the data
-    alpha : float
-        L1 regularization parameter
-    seed : int
-        Random seed
-        
-    Returns:
-    --------
-    dict
-        Dictionary with results including selected variables and scores
-    """
-    if seed is not None:
-        np.random.seed(seed)
-    
-    # Define common meaningful indices
-    k_common = max(1, m1 // 2)
-    common_meaningful_indices = np.arange(k_common)
-    
-    # Generate data for each population
-    pop_data = []
-    all_meaningful_indices = []
-    
-    for pop_config in pop_configs:
-        pop_id = pop_config['pop_id']
-        dataset_type = pop_config['dataset_type']
-        
-        if corr_strength > 0:
-            X, Y, A, meaningful_indices = generate_data_continuous_with_corr(
-                pop_id=pop_id, m1=m1, m=m, 
-                dataset_type=dataset_type, 
-                dataset_size=dataset_size,
-                noise_scale=noise_scale, 
-                seed=seed, 
-                common_meaningful_indices=common_meaningful_indices,
-                corr_strength=corr_strength
-            )
-        else:
-            X, Y, A, meaningful_indices = generate_data_continuous(
-                pop_id=pop_id, m1=m1, m=m, 
-                dataset_type=dataset_type, 
-                dataset_size=dataset_size,
-                noise_scale=noise_scale, 
-                seed=seed, 
-                common_meaningful_indices=common_meaningful_indices
-            )
-        
-        pop_data.append((X, Y, pop_id))
-        all_meaningful_indices.append(meaningful_indices)
-    
-    # Run Lasso on each population and get coefficients
-    all_coefs = np.zeros((len(pop_data), m))
-    
-    for i, (X, Y, _) in enumerate(pop_data):
-        lasso = Lasso(alpha=alpha, random_state=seed)
-        lasso.fit(X, Y)
-        all_coefs[i] = np.abs(lasso.coef_)
-    
-    # Compute group norms (L2 norm across populations)
-    group_norms = np.sqrt(np.sum(all_coefs**2, axis=0))
-    
-    # Select top features based on group norms
-    selected_indices = np.argsort(-group_norms)[:budget]
-    
-    # Evaluate the selection
-    true_indices = set()
-    for indices in all_meaningful_indices:
-        true_indices.update(indices)
-    
-    recall = len(set(selected_indices) & true_indices) / len(true_indices)
-    precision = len(set(selected_indices) & true_indices) / len(selected_indices)
-    
-    return {
-        'selected_indices': selected_indices.tolist(),
-        'true_indices': list(true_indices),
-        'method': 'group_lasso',
-        'recall': recall,
-        'precision': precision,
-        'f1_score': 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0,
-        'group_norms': group_norms[selected_indices].tolist()
-    }
-
-def condorcet_voting(pop_configs, m1, m, budget, dataset_size=10000, noise_scale=0.01, 
-                        corr_strength=0.5,
-                    model_type='rf', seed=None):
-    """
-    Baseline 6: Condorcet voting method for variable selection.
-    
-    Parameters:
-    -----------
-    pop_configs : list
-        List of population configurations
-    m1 : int
-        Number of meaningful features per population
-    m : int
-        Total number of features
-    dataset_size : int
-        Number of samples per population
-    noise_scale : float
-        Scale of noise in the data
-    model_type : str
-        Type of regression model ('linear', 'rf', 'lasso')
-    seed : int
-        Random seed
-        
-    Returns:
-    --------
-    dict
-        Dictionary with results including selected variables and scores
-    """
-    if seed is not None:
-        np.random.seed(seed)
-    
-    # Define common meaningful indices
-    k_common = max(1, m1 // 2)
-    common_meaningful_indices = np.arange(k_common)
-    
-    # Generate data for each population
-    pop_data = []
-    all_meaningful_indices = []
-    
-    for pop_config in pop_configs:
-        pop_id = pop_config['pop_id']
-        dataset_type = pop_config['dataset_type']
-        
-        if corr_strength > 0:
-            X, Y, A, meaningful_indices = generate_data_continuous_with_corr(
-                pop_id=pop_id, m1=m1, m=m, 
-                dataset_type=dataset_type, 
-                dataset_size=dataset_size,
-                noise_scale=noise_scale, 
-                seed=seed, 
-                common_meaningful_indices=common_meaningful_indices,
-                corr_strength=corr_strength
-            )
-        else:
-            X, Y, A, meaningful_indices = generate_data_continuous(
-                pop_id=pop_id, m1=m1, m=m, 
-                dataset_type=dataset_type, 
-                dataset_size=dataset_size,
-                noise_scale=noise_scale, 
-                seed=seed, 
-                common_meaningful_indices=common_meaningful_indices
-            )
-        
-        pop_data.append((X, Y, pop_id))
-        all_meaningful_indices.append(meaningful_indices)
-    
-    # Get feature rankings for each population
-    pop_rankings = []
-    
-    for X, Y, _ in pop_data:
-        # Choose model based on model_type
-        if model_type == 'linear':
-            model = LinearRegression()
-        elif model_type == 'rf':
-            model = RandomForestRegressor(n_estimators=100, random_state=seed)
-        elif model_type == 'lasso':
-            model = Lasso(alpha=0.01, random_state=seed)
-        else:
-            raise ValueError(f"Unknown model_type: {model_type}")
-        
-        model.fit(X, Y)
-        
-        # Extract feature importance
-        if model_type == 'rf':
-            importance = model.feature_importances_
-        else:
-            importance = np.abs(model.coef_)
-        
-        # Get ranking (higher importance = better rank)
-        ranking = np.argsort(-importance)
-        pop_rankings.append(ranking)
-    
-    # Initialize Condorcet matrix (pairwise comparisons)
-    condorcet_matrix = np.zeros((m, m))
-    
-    # Fill Condorcet matrix
-    for ranking in pop_rankings:
-        for i in range(m):
-            feature_i = ranking[i]
-            # All features ranked after feature_i lose to feature_i
-            for j in range(i+1, m):
-                feature_j = ranking[j]
-                condorcet_matrix[feature_i, feature_j] += 1
-    
-    # Compute Copeland score (wins - losses)
-    wins = np.sum(condorcet_matrix > condorcet_matrix.T, axis=1)
-    losses = np.sum(condorcet_matrix < condorcet_matrix.T, axis=1)
-    copeland_scores = wins - losses
-    
-    # Select top features based on Copeland scores
-    selected_indices = np.argsort(-copeland_scores)[:budget]
-    
-    # Evaluate the selection
-    true_indices = set()
-    for indices in all_meaningful_indices:
-        true_indices.update(indices)
-    
-    recall = len(set(selected_indices) & true_indices) / len(true_indices)
-    precision = len(set(selected_indices) & true_indices) / len(selected_indices)
-    
-    return {
-        'selected_indices': selected_indices.tolist(),
-        'true_indices': list(true_indices),
-        'method': f'condorcet_{model_type}',
-        'recall': recall,
-        'precision': precision,
-        'f1_score': 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0,
-        'copeland_scores': copeland_scores[selected_indices].tolist()
-    }
-
-def convert_to_serializable(obj):
-    """Convert numpy types to Python native types for JSON serialization"""
-    if isinstance(obj, (np.int64, np.int32, np.int16, np.int8)):
-        return int(obj)
-    elif isinstance(obj, (np.float64, np.float32)):
-        return float(obj)
-    elif isinstance(obj, np.ndarray):
-        return obj.tolist()
-    elif isinstance(obj, list):
-        return [convert_to_serializable(item) for item in obj]
-    elif isinstance(obj, dict):
-        return {k: convert_to_serializable(v) for k, v in obj.items()}
-    elif isinstance(obj, set):
-        return list(obj)
-    return obj
-
-def run_all_baselines(pop_configs, m1, m, budget, dataset_size=10000, noise_scale=0.01, corr_strength=0.0,
-                      seed=42, save_path='./results/baselines/'):
-    """
-    Run all baseline methods and return/save the results.
-    
-    Parameters:
-    -----------
-    pop_configs : list
-        List of population configurations
-    m1 : int
-        Number of meaningful features per population
-    m : int
-        Total number of features
-    dataset_size : int
-        Number of samples per population
-    noise_scale : float
-        Scale of noise in the data
-    seed : int
-        Random seed
-    save_path : str
-        Path to save results
-        
-    Returns:
-    --------
-    dict
-        Dictionary with results for all methods
-    """
-    os.makedirs(save_path, exist_ok=True)
-    
-    # generate dummy dataset to get population configurations
-    if seed is not None:
-        np.random.seed(seed)
-    
-    # Define common meaningful indices
-    k_common = max(1, m1 // 2)
-    common_meaningful_indices = np.arange(k_common)
-    
-    # Generate data for each population
-    pop_configs_temp = []
-    all_meaningful_indices = []
-    
-    for pop_config in pop_configs:
-        pop_id = pop_config['pop_id']
-        dataset_type = pop_config['dataset_type']
-        
-        if corr_strength > 0:
-            X, Y, A, meaningful_indices = generate_data_continuous_with_corr(
-                pop_id=pop_id, m1=m1, m=m, 
-                dataset_type=dataset_type, 
-                dataset_size=dataset_size,
-                noise_scale=noise_scale, 
-                seed=seed, 
-                common_meaningful_indices=common_meaningful_indices,
-                corr_strength=corr_strength
-            )
-        else:
-            X, Y, A, meaningful_indices = generate_data_continuous(
-                pop_id=pop_id, m1=m1, m=m, 
-                dataset_type=dataset_type, 
-                dataset_size=dataset_size,
-                noise_scale=noise_scale, 
-                seed=seed, 
-                common_meaningful_indices=common_meaningful_indices
-            )
-        
-        # pop_data.append((X, Y, pop_id, meaningful_indices))
-        pop_configs_temp.append({
-            'pop_id': pop_id,
-            'dataset_type': dataset_type,
-            'meaningful_indices': meaningful_indices
-        })
-
-        all_meaningful_indices.append(meaningful_indices)
-    ########
-    results = {}
-    results['pop_configs'] = pop_configs_temp
-    budget = m1//2 + len(pop_configs) * (m1//2)
-    # Run all baselines
-    results['pooled_lasso'] = pooled_lasso(pop_configs, m1, m, budget, dataset_size, noise_scale, alpha=0.01, seed=seed)
-    
-    # Population-wise regression with different models and voting mechanisms
-    model_types = ['linear', 'rf', 'lasso']
-    voting_methods = ['frequency', 'rank_sum', 'borda', 'weighted']
-    
-    for model_type in model_types:
-        for voting in voting_methods:
-            key = f'population_wise_{model_type}_{voting}'
-            results[key] = population_wise_regression(
-                pop_configs, m1, m, budget, dataset_size, noise_scale, 
-                model_type=model_type, voting=voting, seed=seed
-            )
-    
-    # Mutual information with different pooling strategies
-    pooling_methods = ['union', 'intersection', 'weighted']
-    for pooling in pooling_methods:
-        key = f'mutual_information_{pooling}'
-        results[key] = mutual_information_selection(
-            pop_configs, m1, m, budget, dataset_size, noise_scale, 
-            pooling=pooling, seed=seed
-        )
-    
-    # # Stability selection
-    # results['stability_selection'] = stability_selection(
-    #     pop_configs, m1, m, dataset_size, noise_scale, 
-    #     n_bootstraps=50, sample_fraction=0.75, threshold=0.7, seed=seed
-    # )
-    
-    # Group Lasso approach
-    results['group_lasso'] = group_lasso_selection(
-        pop_configs, m1, m, budget, dataset_size, noise_scale, alpha=0.01, seed=seed
+    # Calculate max loss across populations for reporting
+    max_loss = max(
+        np.mean((Y - model.predict(X)) ** 2) if not classification 
+        else -np.mean(Y * np.log(np.clip(model.predict(X), 1e-15, 1-1e-15)) + 
+                      (1-Y) * np.log(np.clip(1-model.predict(X), 1e-15, 1-1e-15)))
+        for X, Y in population_data
     )
     
-    # Condorcet voting with different base models
-    for model_type in model_types:
-        key = f'condorcet_{model_type}'
-        results[key] = condorcet_voting(
-            pop_configs, m1, m, budget, dataset_size, noise_scale, 
-            model_type=model_type, seed=seed
+    meaningful_indices_list = [pop['meaningful_indices'] for pop in pop_data]
+    
+    if meaningful_indices_list is None or any(mi is None for mi in meaningful_indices_list):
+        best_results = {
+            'selected_indices': selected_idx.tolist(),
+            'all_indices_ranked': np.argsort(-importances).tolist(),
+            'baseline_coeffs': importances[selected_idx].tolist(),
+            'baseline_pop_stats': None,
+            'baseline_overall_stats': None,
+            'precision': None,
+            'recall': None,
+            'f1_score': None,
+            'max_population_loss': max_loss,
+            'final_pop_weights': pop_weights.tolist()
+        }
+    else:
+        # Calculate F1 score
+        sel_set = set(selected_idx)
+        true_set = set.union(*(set(mi) for mi in meaningful_indices_list))
+        intersect = len(sel_set & true_set)
+        prec = intersect / len(sel_set) if sel_set else 0.0
+        rec = intersect / len(true_set) if true_set else 0.0
+        f1 = 2 * prec * rec / (prec + rec) if (prec + rec) > 0 else 0.0
+        
+        pop_stats, overall_stats = compute_population_stats(
+            selected_idx.tolist(), meaningful_indices_list
         )
+        best_results = {
+            'selected_indices': selected_idx.tolist(),
+            'baseline_coeffs': importances[selected_idx].tolist(),
+            'baseline_pop_stats': pop_stats,
+            'baseline_overall_stats': overall_stats,
+            'precision': prec,
+            'recall': rec,
+            'f1_score': f1,
+            'max_population_loss': max_loss,
+            'final_pop_weights': pop_weights.tolist()
+        }
     
-    # Convert results before saving
-    serializable_results = convert_to_serializable(results)
-
-    # Save results
-    with open(os.path.join(save_path, 'baseline_results.json'), 'w') as f:
-        json.dump(serializable_results, f, indent=4)
-    
-    return results
-
-def summarize_results(results, save_path='./results/baselines/'):
-    """
-    Summarize the results of all baseline methods.
-    
-    Parameters:
-    -----------
-    results : dict
-        Dictionary with results for all methods
-    save_path : str
-        Path to save summary
-        
-    Returns:
-    --------
-    pandas.DataFrame
-        DataFrame with summarized results
-    """
-    pop_configs = results['pop_configs']
-    summary = []
-    
-    for method_name, method_results in results.items():
-        if method_name == 'pop_configs':
-            continue
-        # print(f"Processing method: {method_name}")
-        # print(pop_configs)
-        # find min selected percentage across populations
-        min_selected_percentage = min([
-            len(set(method_results['selected_indices']) & set(pop_config['meaningful_indices'])) / len(pop_config['meaningful_indices'])
-            for pop_config in pop_configs
-        ])
-        # find max selected percentage across populations
-        max_selected_percentage = max([
-            len(set(method_results['selected_indices']) & set(pop_config['meaningful_indices'])) / len(pop_config['meaningful_indices'])
-            for pop_config in pop_configs
-        ])
-        # find mean selected percentage across populations  
-        mean_selected_percentage = np.mean([
-            len(set(method_results['selected_indices']) & set(pop_config['meaningful_indices'])) / len(pop_config['meaningful_indices'])
-            for pop_config in pop_configs
-        ])
-        # # find std selected percentage across populations
-        # std_selected_percentage = np.std([
-        #     len(set(method_results['selected_indices']) & set(pop_config['meaningful_indices'])) / len(pop_config['meaningful_indices'])
-        #     for pop_config in pop_configs
-        # ])
-        # find median selected percentage across populations
-        median_selected_percentage = np.median([
-            len(set(method_results['selected_indices']) & set(pop_config['meaningful_indices'])) / len(pop_config['meaningful_indices'])
-            for pop_config in pop_configs
-        ])
-        summary.append({
-            'method': method_name,
-            'precision': method_results['precision'],
-            'recall': method_results['recall'],
-            'f1_score': method_results['f1_score'],
-            'min_selected_percentage': min_selected_percentage,
-            'max_selected_percentage': max_selected_percentage,
-            'mean_selected_percentage': mean_selected_percentage,
-            # 'std_selected_percentage': std_selected_percentage,
-            'median_selected_percentage': median_selected_percentage,
-        })
-    
-    summary_df = pd.DataFrame(summary)
-    summary_df = summary_df.sort_values('f1_score', ascending=False)
-    
-    # Save summary
-    summary_df.to_csv(os.path.join(save_path, 'baseline_summary.csv'), index=False)
-    
-    return summary_df
-
-def compare_with_gradient_descent(baseline_results, gd_results, save_path='./results/comparison/'):
-    """
-    Compare baseline methods with gradient descent approach.
-    
-    Parameters:
-    -----------
-    baseline_results : dict
-        Dictionary with results for all baseline methods
-    gd_results : dict
-        Dictionary with results for gradient descent method
-    save_path : str
-        Path to save comparison
-        
-    Returns:
-    --------
-    pandas.DataFrame
-        DataFrame with comparison results
-    """
-    os.makedirs(save_path, exist_ok=True)
-    
-    # Extract grad desc results
-    gd_selected = set(gd_results.get('selected_indices', []))
-    gd_true = set(gd_results.get('true_variable_index', []))
-    
-    if not gd_true and 'meaningful_indices' in gd_results:
-        # Combine all meaningful indices from all populations
-        for indices in gd_results['meaningful_indices']:
-            gd_true.update(indices)
-    
-    # Calculate metrics for grad desc
-    gd_precision = len(gd_selected & gd_true) / len(gd_selected) if gd_selected else 0
-    gd_recall = len(gd_selected & gd_true) / len(gd_true) if gd_true else 0
-    gd_f1 = 2 * (gd_precision * gd_recall) / (gd_precision + gd_recall) if (gd_precision + gd_recall) > 0 else 0
-    
-    # Create comparison dataframe
-    comparison = []
-    
-    # Add grad desc results
-    comparison.append({
-        'method': 'gradient_descent',
-        'precision': gd_precision,
-        'recall': gd_recall,
-        'f1_score': gd_f1
-    })
-    
-    # Add baseline results
-    for method_name, method_results in baseline_results.items():
-        comparison.append({
-            'method': method_name,
-            'precision': method_results['precision'],
-            'recall': method_results['recall'],
-            'f1_score': method_results['f1_score']
-        })
-    
-    comparison_df = pd.DataFrame(comparison)
-    comparison_df = comparison_df.sort_values('f1_score', ascending=False)
-    
-    # Save comparison
-    comparison_df.to_csv(os.path.join(save_path, 'method_comparison.csv'), index=False)
-    
-    return comparison_df
-
-if __name__ == "__main__": 
-    parser = argparse.ArgumentParser(description='Run baseline variable selection methods')
-    parser.add_argument('--m1', type=int, default=4, help='Number of meaningful features per population')
-    parser.add_argument('--m', type=int, default=20, help='Total number of features')
-    parser.add_argument('--dataset-size', type=int, default=1000, help='Number of samples per population')
-    parser.add_argument('--noise-scale', type=float, default=1.0, help='Scale of noise in the data')
-    parser.add_argument('--corr-strength', type=float, default=0.0)
-    parser.add_argument('--populations', nargs='+', default=['linear_regression', 'sinusoidal_regression'])
-    parser.add_argument('--seed', type=int, default=42, help='Random seed')
-    parser.add_argument('--save-path', type=str, default='./results/baselines/num_true_vars', help='Path to save results')
-    parser.add_argument('--compare-with-grad-desc', type=str, default=None, 
-                        help='Path to gradient descent results JSON file for comparison')
-    
-    args = parser.parse_args()
-    
-    # create save path if it doesn't exist
-    os.makedirs(args.save_path, exist_ok=True)
-
-    # Define population configurations (similar to gd_populations_v2.py)
-    pop_configs = [
-        {'pop_id': i, 'dataset_type': args.populations[i]}
-        for i in range(len(args.populations))
-    ]
-    
-    budget = args.m1//2 + len(pop_configs) * (args.m1//2)
-    print(f"Running with budget: {budget}")
-    # Run all baselines
-    results = run_all_baselines(
-        pop_configs=pop_configs,
-        m1=args.m1,
-        m=args.m,
-        budget=budget,
-        dataset_size=args.dataset_size,
-        noise_scale=args.noise_scale,
-        corr_strength=args.corr_strength,
-        seed=args.seed,
-        save_path=args.save_path
-    )
-    
-    # append the pop configs to the results
-    # Summarize results
-    summary = summarize_results(results, save_path=args.save_path)
-    print("Baseline methods summary:")
-    print(summary)
-
-    # also save the args
-    with open(os.path.join(args.save_path, 'args.json'), 'w') as f:
-        json.dump(vars(args), f, indent=4)
-    
-    # Compare with gradient descent if requested
-    if args.compare_with_gd_:
-        try:
-            with open(args.compare_with_gd_, 'r') as f:
-                gd_results = json.load(f)
-            
-            comparison = compare_with_gradient_descent(
-                results, gd_results, 
-                save_path=os.path.join(args.save_path, 'comparison')
-            )
-            print("\nComparison with gradient descent method:")
-            print(comparison)
-        except FileNotFoundError:
-            print(f"Gradient descent results file not found: {args.compare_with_gd_}")
-        except json.JSONDecodeError:
-            print(f"Error decoding gradient descent results file: {args.compare_with_gd_}")
+    return best_results

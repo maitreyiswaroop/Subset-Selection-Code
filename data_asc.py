@@ -294,8 +294,9 @@ def get_asc_pop_data(
     horizon="1-Year",
     root_dir="data",
     feature_cols=None,
+    subsample=True,
     target="PINCP",  # default to the raw personal-income column
-    # asc_source='./data_asc',
+    asc_source='./data_asc',
 ):
     """
     Return population data dicts in the same format as data_baseline_failures:
@@ -366,11 +367,17 @@ def get_asc_pop_data(
             Xs[i] = np.array([])
             Ys[i] = np.array([])
             valid_indices.remove(i)  # Remove from valid indices
-            
-    # Create final population data list
+    
     pop_data = []
     for i, s in enumerate(sts):
         if i in valid_indices and Xs[i].size > 0 and Ys[i].size > 0:
+            if subsample:
+                # Randomly sample 10% of the data for each state
+                n_samples = Xs[i].shape[0]
+                sample_size = max(1, int(n_samples * 0.1))
+                indices = np.random.choice(n_samples, sample_size, replace=False)
+                Xs[i] = Xs[i][indices]
+                Ys[i] = Ys[i][indices]
             pop_data.append({
                 'pop_id': s,
                 'X_raw': Xs[i],

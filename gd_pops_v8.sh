@@ -31,9 +31,10 @@ SCRIPT_PATH="$SCRIPT_DIR/$SCRIPT_NAME"
 # kernel_if_like / mc_plugin
 # seeds: 42, 17, 30, 29, 9
 t2_types=(mc_plugin)
-populations=(quadratic_regression)
+populations=(asc)
 estimator=plugin
-seed=9
+seed=(42) #  17 30 29 9 Change this to the desired seed value
+N_GRAD_SAMPLES=10
 # baseline_failure_2 baseline_failure_3 baseline_failure_4 baseline_failure_5 linear_regression cubic_regression)
 
 for population in "${populations[@]}"; do
@@ -59,7 +60,7 @@ for population in "${populations[@]}"; do
         --patience 20 \
         --gradient-mode autograd \
         --t2-estimator-type $t2 \
-        --N-grad-samples 25 \
+        --N-grad-samples $N_GRAD_SAMPLES \
         --estimator-type $estimator \
         --base-model-type xgb \
         --objective-value-estimator if \

@@ -2,7 +2,7 @@
 # for ASC data handling
 """
 Performs variable subset selection using gradient descent.
-Version 7 introduces an optional IF-like T2 estimator for gradient computation.
+Version 8 introduces an optional IF-like T2 estimator for gradient computation.
 
 Objective: Minimize L(param) = SmoothMax_pop [ T1_std - T2(param) + P(param) ]
   T1_std = E[(standardized E[Y|X])^2]
@@ -23,7 +23,6 @@ import torch.nn.functional as F
 import torch.optim as optim
 import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.linear_model import Lasso
 from sklearn.kernel_ridge import KernelRidge
 from sklearn.model_selection import KFold
 from sklearn.metrics import f1_score, precision_score, recall_score, mean_squared_error, r2_score
@@ -56,6 +55,12 @@ try:
     )
     from torch.optim import lr_scheduler
     print("Successfully imported data, estimators (v7), and scheduler functions.")
+    from baselines import (
+        compute_population_stats,
+        standardize_data,
+        baseline_lasso_comparison,
+        baseline_xgb_comparison
+    )
 except ImportError as e:
     print(f"Import Error: {e}")
     print("Please ensure data.py, estimators.py are accessible and updated for v7.")
@@ -255,62 +260,6 @@ def create_results_dataframe(results, args_dict, save_path=None):
         df.to_pickle(os.path.join(save_path, 'results_summary_v7.pkl'))
     return df
 
-def baseline_lasso_comparison(
-    pop_data: List[Dict[str, Any]],
-    budget: int,
-    alpha_lasso: Optional[float] = None,
-    lasso_alphas_to_try: Optional[List[float]] = None
-) -> Dict[str, Any]:
-    """
-    Run Lasso baseline comparison on pooled pop_data.
-    Returns the best baseline_results dict with keys:
-      - alpha_value, selected_indices, baseline_coeffs,
-        baseline_pop_stats, baseline_overall_stats,
-        precision, recall, f1_score
-    """
-    # pool raw X, Y
-    X_pooled = np.vstack([pop['X_raw'] for pop in pop_data])
-    Y_pooled = np.hstack([pop['Y_raw'] for pop in pop_data])
-    X_std, Y_std, _, _, _, _ = standardize_data(X_pooled, Y_pooled)
-
-    # determine alphas to try
-    if lasso_alphas_to_try is None:
-        lasso_alphas_to_try = [alpha_lasso] if alpha_lasso is not None else [0.0001, 0.001, 0.01, 0.1]
-
-    meaningful_indices_list = [pop['meaningful_indices'] for pop in pop_data]
-    best_lasso_f1 = -1.0
-    best_results = {}
-
-    for current_alpha in lasso_alphas_to_try:
-        model = Lasso(alpha=current_alpha, fit_intercept=False, max_iter=10000, tol=1e-4)
-        model.fit(X_std, Y_std)
-        coeffs = model.coef_
-        selected_idx = np.argsort(np.abs(coeffs))[-budget:]
-        
-        sel_set  = set(selected_idx)
-        true_set = set.union(*(set(mi) for mi in meaningful_indices_list))
-        intersect = len(sel_set & true_set)
-        prec = intersect / len(sel_set)   if sel_set  else 0.0
-        rec  = intersect / len(true_set)  if true_set else 0.0
-        f1   = 2*prec*rec/(prec+rec)      if (prec+rec)>0 else 0.0
-
-        if f1 > best_lasso_f1:
-            best_lasso_f1 = f1
-            pop_stats, overall_stats = compute_population_stats(
-                selected_idx.tolist(), meaningful_indices_list
-            )
-            best_results = {
-                'alpha_value':       current_alpha,
-                'selected_indices':  selected_idx.tolist(),
-                'baseline_coeffs':   coeffs[selected_idx].tolist(),
-                'baseline_pop_stats':    pop_stats,
-                'baseline_overall_stats': overall_stats,
-                'precision':         prec,
-                'recall':            rec,
-                'f1_score':          f1
-            }
-
-    return best_results
 
 def run_variable_selection(
     pop_data: List[Dict], m1: int, m: int, dataset_size: int = 5000,
@@ -505,12 +454,15 @@ def run_variable_selection(
     final_alpha_np = np.exp(best_param) if parameterization == 'theta' else best_param
     final_alpha_np = np.clip(final_alpha_np, CLAMP_MIN_ALPHA, CLAMP_MAX_ALPHA)
     selected_indices = np.argsort(final_alpha_np)[:budget] # Smallest alpha selected
+    print(f"Selected indices: {selected_indices}")
 
     meaningful_indices_list = [pop['meaningful_indices'] for pop in pop_data]
     
         # --- Save Diagnostics Plot (if verbose) ---
     if verbose:
         try:
+            # collect meaningful lists (may be None)
+            meaningful_indices_list = [pop.get('meaningful_indices') for pop in pop_data]
             plt.figure(figsize=(18, 6))
             # Objective
             plt.subplot(1, 3, 1)
@@ -524,21 +476,25 @@ def run_variable_selection(
             if grad_norms: plt.plot(grad_norms, label="Total Gradient Norm")
             plt.xlabel("Epoch"); plt.ylabel("Gradient Norm"); plt.title("Gradient Norm vs Epoch"); plt.yscale('log'); plt.grid(True)
             
-            # Parameters (Alpha or Theta)
+            # Parameters (alpha or theta)
             plt.subplot(1, 3, 3)
             param_hist_np = np.array(param_history)
-            num_params_to_plot = min(budget, 10)
-            # indices_to_plot = np.linspace(0, m - 1, num_params_to_plot, dtype=int)
             indices_to_plot = selected_indices
-            param_label = r'$\alpha$' if parameterization == 'alpha' else r'$\theta$'
+            # ASCII-only
+            param_label = 'alpha' if parameterization == 'alpha' else 'theta'
             for i in indices_to_plot:
-                label = f'{param_label}_{{{i}}}'
-                is_meaningful = any(i in pop_indices for pop_indices in meaningful_indices_list)
-                if is_meaningful: label += " (True)"
+                label = f'{param_label}_{i}'
+                # only mark "(True)" if we actually have lists of meaningful indices
+                if meaningful_indices_list and all(isinstance(mi, (list, tuple)) for mi in meaningful_indices_list):
+                    if any(i in mi for mi in meaningful_indices_list if mi):
+                        label += " (True)"
                 plt.plot(param_hist_np[:, i], label=label)
-            plt.xlabel("Epoch"); plt.ylabel(f"{param_label} Value"); plt.title(f"{param_label} Trajectories (Top {num_params_to_plot})")
-            if parameterization == 'alpha': plt.yscale('log') # Log scale often useful for alpha
-            plt.legend(fontsize='small', loc='center left', bbox_to_anchor=(1, 0.5)); plt.grid(True)
+            plt.xlabel("Epoch"); plt.ylabel(f"{param_label} Value")
+            plt.title(f"{param_label} Trajectories (Top {len(indices_to_plot)})")
+            if parameterization == 'alpha':
+                plt.yscale('log')
+            plt.legend(fontsize='small', loc='center left', bbox_to_anchor=(1, 0.5))
+            plt.grid(True)
 
             plt.tight_layout()
             diag_path = os.path.join(save_path, f"optimization_diagnostics_v6_{parameterization}.png")
@@ -553,9 +509,13 @@ def run_variable_selection(
         )
         if baseline_results:
             print(f"Baseline Lasso Results: {baseline_results}")
-            baseline_pop_stats, baseline_overall_stats = compute_population_stats(
-                baseline_results['selected_indices'], meaningful_indices_list
-            )
+            if meaningful_indices_list is None or any(mi is None for mi in meaningful_indices_list):
+                print("Warning: meaningful_indices_list contains None. Skipping population stats computation.")
+                baseline_pop_stats, baseline_overall_stats = None, None
+            else:
+                baseline_pop_stats, baseline_overall_stats = compute_population_stats(
+                    baseline_results['selected_indices'], meaningful_indices_list
+                )
             baseline_results.update({
                 'baseline_pop_stats': baseline_pop_stats,
                 'baseline_overall_stats': baseline_overall_stats
@@ -691,11 +651,12 @@ def run_experiment_multi_population(
         baseline_results = []
         for pop in pop_data_test_val:
             train_idx, test_idx = train_test_indices[pop['pop_id']]
-            X_train_pop = pop['X_std'][train_idx][:, baseline_top_indices]
-            Y_train_pop = pop['Y_std'][train_idx]
-            X_test_pop = pop['X_std'][test_idx][:, baseline_top_indices]
-            Y_test_pop = pop['Y_std'][test_idx]
-            model = RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=-1)
+            # slice and move to CPU/NumPy for sklearn
+            X_train_pop = pop['X_std'][train_idx][:, baseline_top_indices].detach().cpu().numpy()
+            Y_train_pop = pop['Y_std'][train_idx].detach().cpu().numpy()
+            X_test_pop  = pop['X_std'][test_idx][:, baseline_top_indices].detach().cpu().numpy()
+            Y_test_pop  = pop['Y_std'][test_idx].detach().cpu().numpy()
+            model = RandomForestRegressor(n_estimators=100, random_state=seed, n_jobs=-1)
             model.fit(X_train_pop, Y_train_pop)
             Y_pred = model.predict(X_test_pop)
             mse = mean_squared_error(Y_test_pop, Y_pred)
@@ -712,11 +673,11 @@ def run_experiment_multi_population(
         our_results = []
         for pop in pop_data_test_val:
             train_idx, test_idx = train_test_indices[pop['pop_id']]
-            X_train_pop = pop['X_std'][train_idx][:, our_top_indices]
-            Y_train_pop = pop['Y_std'][train_idx]
-            X_test_pop = pop['X_std'][test_idx][:, our_top_indices]
-            Y_test_pop = pop['Y_std'][test_idx]
-            model = RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=-1)
+            X_train_pop = pop['X_std'][train_idx][:, our_top_indices].detach().cpu().numpy()
+            Y_train_pop = pop['Y_std'][train_idx].detach().cpu().numpy()
+            X_test_pop  = pop['X_std'][test_idx][:, our_top_indices].detach().cpu().numpy()
+            Y_test_pop  = pop['Y_std'][test_idx].detach().cpu().numpy()
+            model = RandomForestRegressor(n_estimators=100, random_state=seed, n_jobs=-1)
             model.fit(X_train_pop, Y_train_pop)
             Y_pred = model.predict(X_test_pop)
             mse = mean_squared_error(Y_test_pop, Y_pred)
@@ -831,39 +792,6 @@ def get_latest_run_number(save_path: str) -> int:
     existing = [d for d in os.listdir(save_path) if os.path.isdir(os.path.join(save_path, d)) and d.startswith('run_')]
     run_nums = [int(d.split('_')[1]) for d in existing if d.split('_')[1].isdigit()]
     return max(run_nums) + 1 if run_nums else 0
-
-def compute_population_stats(selected_indices: List[int],
-                             meaningful_indices_list: List[List[int]]) -> Tuple[List[Dict], Dict]:
-    """Compute population-wise statistics for selected variables."""
-    pop_stats = []
-    percentages = []
-    selected_set = set(selected_indices)
-
-    for i, meaningful in enumerate(meaningful_indices_list):
-        meaningful_set = set(meaningful)
-        common = selected_set.intersection(meaningful_set)
-        count = len(common)
-        total = len(meaningful_set)
-        percentage = (count / total * 100) if total > 0 else 0.0
-        percentages.append(percentage)
-        pop_stats.append({
-            'population': i, 'selected_relevant_count': count,
-            'total_relevant': total, 'percentage': percentage
-        })
-
-    min_perc = min(percentages) if percentages else 0.0
-    max_perc = max(percentages) if percentages else 0.0
-    median_perc = float(np.median(percentages)) if percentages else 0.0
-    min_pop_idx = np.argmin(percentages) if percentages else -1
-    max_pop_idx = np.argmax(percentages) if percentages else -1
-
-    overall_stats = {
-        'min_percentage': min_perc, 'max_percentage': max_perc,
-        'median_percentage': median_perc,
-        'min_population_details': pop_stats[min_pop_idx] if min_pop_idx != -1 else None,
-        'max_population_details': pop_stats[max_pop_idx] if max_pop_idx != -1 else None,
-    }
-    return pop_stats, overall_stats
 
 # =============================================================================
 # Arg Parsing and Main Execution
@@ -984,82 +912,6 @@ def main():
     if results.get('error'):
         print(f"Experiment failed: {results['error']}")
         return
-
-    # if results['final_objective'] is not None:
-    #     print(f"Final Robust Objective (minimized): {results['final_objective']:.4f}")
-    # else:
-    #     print("Final Robust Objective: NaN")
-
-    # final_alpha = np.array(results['final_alpha']) # Always derived alpha
-    # selected_indices = results['selected_indices']
-    # actual_budget = len(selected_indices)
-    # print(f"Final Alpha (derived from best param): {final_alpha}")
-    # print(f"Selected Variables (indices, budget={actual_budget}): {selected_indices}")
-    # print(f"Selected Variables (alpha values): {final_alpha[selected_indices]}")
-
-    # # --- Evaluate Selection ---
-    # all_meaningful_indices = set()
-    # for indices in results['meaningful_indices']:
-    #     all_meaningful_indices.update(indices)
-
-    # selected_set = set(selected_indices)
-    # intersection_size = len(selected_set & all_meaningful_indices)
-    # precision = intersection_size / len(selected_set) if selected_set else 0.0
-    # recall = intersection_size / len(all_meaningful_indices) if all_meaningful_indices else 0.0
-    # f1_score = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0.0
-
-    # print("\n--- Overall Performance ---")
-    # print(f"  Precision: {precision:.4f}")
-    # print(f"  Recall:    {recall:.4f}")
-    # print(f"  F1 Score:  {f1_score:.4f}")
-
-    # # --- Population Stats ---
-    # pop_stats, overall_stats = compute_population_stats(selected_indices, results['meaningful_indices'])
-    # print("\n--- Population-wise Statistics ---")
-    # stats_str = "Population-wise statistics for selected variables:\n"
-    # for stat in pop_stats:
-    #     line = (f"  Pop {stat['population']}: {stat['selected_relevant_count']}/{stat['total_relevant']} relevant selected ({stat['percentage']:.2f}%)\n")
-    #     print(line, end='')
-    #     stats_str += line
-    # print("\nOverall Population Stats:")
-    # print(f"  Min %: {overall_stats['min_percentage']:.2f}%")
-    # print(f"  Max %: {overall_stats['max_percentage']:.2f}%")
-    # print(f"  Median %: {overall_stats['median_percentage']:.2f}%")
-    # stats_str += f"\nOverall Stats: {json.dumps(convert_numpy_to_python(overall_stats), indent=2)}\n"
-    # stats_str += f"\nOverall Precision: {precision:.4f}\nOverall Recall: {recall:.4f}\nOverall F1 Score: {f1_score:.4f}\n"
-
-    # # Add to the stats string, the baseline results if available
-    # if results.get('baseline_results'):
-    #     baseline_results = results['baseline_results']
-    #     stats_str += f"\nBaseline Results: {json.dumps(convert_numpy_to_python(baseline_results), indent=2)}\n"
-    #     print(f"\nBaseline Results: {json.dumps(convert_numpy_to_python(baseline_results), indent=2)}")
-    # # --- Save Stats and Results ---
-    # stats_file_path = os.path.join(save_path, 'summary_stats_v7.txt')
-    # with open(stats_file_path, 'w') as f: f.write(stats_str)
-    # print(f"\nSummary statistics saved to: {stats_file_path}")
-
-    # # --- Fix the order of operations ---
-    # # First, create results_to_save
-    # results_to_save = results.copy()
-    # results_to_save['overall_precision'] = precision
-    # results_to_save['overall_recall'] = recall
-    # results_to_save['overall_f1_score'] = f1_score
-    # results_to_save['population_stats'] = pop_stats
-    # results_to_save['overall_stats'] = overall_stats
-
-    # # Then create the DataFrame
-    # results_df = create_results_dataframe(results_to_save, vars(args), save_path)
-    # print(f"\nResults DataFrame created with shape: {results_df.shape}")
-
-    # # Finally save the full results
-    # results_file_path = os.path.join(save_path, 'results_v7.json')
-    # try:
-    #     serializable_results = convert_numpy_to_python(results_to_save)
-    #     with open(results_file_path, 'w') as f:
-    #         json.dump(serializable_results, f, indent=4)
-    #     print(f"Full results dictionary saved to: {results_file_path}")
-    # except Exception as e:
-    #     print(f"ERROR saving results JSON: {e}")
 
 if __name__ == '__main__':
     main()
