@@ -251,7 +251,7 @@ def estimate_conditional_keops(
 ):
     """Estimates E[ E_Y_X | S=s ] using KeOps (or BallTree fallback) on variance-scaled features."""
     # alpha: vector of noise alpha for S features
-    # 1) clamp & per‐dim inv sqrt of variance
+    # 1) clamp & per-dim inv sqrt of variance
     var_clamped = torch.clamp(alpha, min=clamp_min) # Use clamp_min for variance
     inv_sqrt_var_t = torch.rsqrt(var_clamped)[None, None, :] # (1,1,d) = 1/sqrt(variance)
     # 2) scale into Mahalanobis space
@@ -735,7 +735,7 @@ def main():
         ax.legend()
         ax.grid(True, linestyle='--', alpha=0.6)
         ax.set_yscale('log')
-        # replace float‐alpha ticks with integer positions
+        # replace float-alpha ticks with integer positions
         ax.set_xticks(x_positions)
         ax.set_xticklabels([str(i) for i in x_positions])
 

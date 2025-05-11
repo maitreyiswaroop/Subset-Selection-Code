@@ -69,18 +69,18 @@ def find_best_estimator(
     save_dir: str = None  
 ) -> dict:
     """
-    Grid‐search across (clamp_min, clamp_max, k) for the k‐NN‐kernel estimator
-    and compare to the plugin estimator, using the IF‐corrected term2 as reference.
+    Grid-search across (clamp_min, clamp_max, k) for the k-NN-kernel estimator
+    and compare to the plugin estimator, using the IF-corrected term2 as reference.
     Returns a dict with the best 'estimator' and its hyperparams.
     """
     np.random.seed(seed)
-    # 1) draw test alphas log‐uniformly
+    # 1) draw test alphas log-uniformly
     # alphas = np.exp(np.linspace(np.log(0.001), np.log(10.0), n_alphas))
     for alpha_max in [0.1, 1.0, 2.0, 5.0, 10.0, 10.0]:
         alphas = np.random.uniform(0.01, alpha_max, size=(n_alphas, X.shape[1])) + 0.01 * np.random.randn(n_alphas, X.shape[1])
         if verbose:
             print(f"Generated {n_alphas} alphas with max value {alpha_max}: {alphas}")
-    # 2) precompute out‐of‐fold plugin conditional mean once
+    # 2) precompute out-of-fold plugin conditional mean once
     E_Y_X_plugin = plugin_estimator_conditional_mean(X, Y, n_folds=n_folds)
     E_Y_X_IF = IF_estimator_conditional_mean(X, Y, n_folds=n_folds)
 
@@ -107,7 +107,7 @@ def find_best_estimator(
         noise = np.random.randn(*X.shape) * np.sqrt(alpha)[None,:]
         S = X + noise
 
-        # reference term2 via IF‐estimator
+        # reference term2 via IF-estimator
         true2   = IF_estimator_squared_conditional(S, Y,
                     estimator_type="rf", n_folds=n_folds)
         # plugin term2
@@ -188,7 +188,7 @@ def find_best_estimator(
 
 def main():
     p = argparse.ArgumentParser(
-        description="Grid‐search tune clamp_min, clamp_max, k for estimate_conditional_kernel_oof"
+        description="Grid-search tune clamp_min, clamp_max, k for estimate_conditional_kernel_oof"
     )
     p.add_argument('--pop-id',      type=int,   default=0)
     p.add_argument('--m1',          type=int,   default=4)
@@ -221,7 +221,7 @@ def main():
     noise = np.random.randn(*X.shape) * np.sqrt(alpha)[None,:]
     S = X + noise
 
-    # 3) precompute out‐of‐fold IF‐term2 and E_Y_X
+    # 3) precompute out-of-fold IF-term2 and E_Y_X
     IF_term2 = IF_estimator_squared_conditional(
         S, Y, estimator_type="rf", n_folds=args.n_folds
     )
@@ -229,7 +229,7 @@ def main():
         X, Y, estimator_type="rf", n_folds=args.n_folds
     )
 
-    # 4) grid‐search over clamp_min, clamp_max, k
+    # 4) grid-search over clamp_min, clamp_max, k
     best = None
     all_results = []
     for cm in args.clamp_mins:

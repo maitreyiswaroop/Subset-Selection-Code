@@ -3,6 +3,14 @@ results/
 code_v1/
 subset/
 logs/
+results_v8/
+optuna_runs/
+optuna_studies/
+logs/
+folktables_data_storage/
+data_regression_plots/
+data_asc/
+data/
 
 # Python basics
 __pycache__/

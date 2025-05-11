@@ -230,7 +230,7 @@ def estimate_conditional_keops(
     alpha: Tensor,       # (d,)
     clamp_min=1e-4
 ):
-    # 1) clamp & per‐dim inv sqrt
+    # 1) clamp & per-dim inv sqrt
     a = torch.clamp(alpha, min=clamp_min)
     inv = torch.rsqrt(a)[None, None, :]             # (1,1,d)
     # 2) scale into Mahalanobis space

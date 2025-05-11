@@ -182,8 +182,25 @@ def generate_data_continuous(pop_id, m1, m, dataset_type="linear_regression",
             Y = AX**3 + noise_scale * np.random.randn(dataset_size)
         elif dataset_type == "sinusoidal_regression":
             Y = np.sin(AX) + noise_scale * np.random.randn(dataset_size)
+        elif dataset_type == "exponential_regression":
+            # Strong non-linear, monotonic growth
+            Y = np.exp(AX) + noise_scale * np.random.randn(dataset_size)
+        elif dataset_type == "logarithmic_regression":
+            # Monotonic, sub-linear growth (use abs to avoid log of negative)
+            Y = np.log1p(np.abs(AX)) * np.sign(AX) + noise_scale * np.random.randn(dataset_size)
+        elif dataset_type == "tanh_regression":
+            # Bounded non-linear transformation
+            Y = np.tanh(AX) + noise_scale * np.random.randn(dataset_size)
+        elif dataset_type == "interaction_regression":
+            # Include a two-way interaction term between first two meaningful features
+            # assumes len(meaningful_indices) >= 2
+            inter = X_meaningful[:, 0] * X_meaningful[:, 1]
+            Y = AX + 0.5 * inter + noise_scale * np.random.randn(dataset_size)
+        elif dataset_type == "piecewise_regression":
+            # Different regimes below/above zero
+            Y = np.where(AX < 0, AX, AX**2) + noise_scale * np.random.randn(dataset_size)
         else:
-            raise ValueError("Unknown dataset_type for population ", pop_id)
+            raise ValueError(f"Unknown dataset_type '{dataset_type}' for population {pop_id}")
         
         # Create full X by filling the non-meaningful columns with noise
         if data_distribution == "normal":
@@ -296,8 +313,25 @@ def generate_data_continuous_with_corr(pop_id, m1, m, dataset_type="linear_regre
             Y = AX**3 + noise_scale * np.random.randn(dataset_size)
         elif dataset_type == "sinusoidal_regression":
             Y = np.sin(AX) + noise_scale * np.random.randn(dataset_size)
+        elif dataset_type == "exponential_regression":
+            # Strong non-linear, monotonic growth
+            Y = np.exp(AX) + noise_scale * np.random.randn(dataset_size)
+        elif dataset_type == "logarithmic_regression":
+            # Monotonic, sub-linear growth (use abs to avoid log of negative)
+            Y = np.log1p(np.abs(AX)) * np.sign(AX) + noise_scale * np.random.randn(dataset_size)
+        elif dataset_type == "tanh_regression":
+            # Bounded non-linear transformation
+            Y = np.tanh(AX) + noise_scale * np.random.randn(dataset_size)
+        elif dataset_type == "interaction_regression":
+            # Include a two-way interaction term between first two meaningful features
+            # assumes len(meaningful_indices) >= 2
+            inter = X_meaningful[:, 0] * X_meaningful[:, 1]
+            Y = AX + 0.5 * inter + noise_scale * np.random.randn(dataset_size)
+        elif dataset_type == "piecewise_regression":
+            # Different regimes below/above zero
+            Y = np.where(AX < 0, AX, AX**2) + noise_scale * np.random.randn(dataset_size)
         else:
-            raise ValueError("Unknown dataset_type for population ", pop_id)
+            raise ValueError(f"Unknown dataset_type '{dataset_type}' for population {pop_id}")
         
         # Create full X
         X = np.zeros((dataset_size, m))
@@ -472,4 +506,3 @@ def generate_data_discrete(pop_id, m1, m, dataset_type="linear_regression",
     #     indices_taken.extend(meaningful_indices.tolist())
 
     return X, Y, A_meaningful, meaningful_indices
-

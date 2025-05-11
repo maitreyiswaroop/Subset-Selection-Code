@@ -1,4 +1,0 @@
-[I 2025-05-03 15:44:36,036] Using an existing study with name 'gd_pops_v5_tuning' instead of creating a new one.
-[I 2025-05-03 16:10:00,553] Trial 50 finished with value: 0.375 and parameters: {'learning_rate': 0.0002825169625898916, 'optimizer_type': 'adam', 'penalty_type': 'Reciprocal_L1', 'penalty_lambda': 0.011138687787125935, 'N_grad_samples': 10}. Best is trial 50 with value: 0.375.
-[I 2025-05-03 16:34:15,513] Trial 51 finished with value: 0.375 and parameters: {'learning_rate': 0.0002710721801133072, 'optimizer_type': 'adam', 'penalty_type': 'Reciprocal_L1', 'penalty_lambda': 0.0078091539215315595, 'N_grad_samples': 10}. Best is trial 50 with value: 0.375.
-slurmstepd: error: *** JOB 4743736 ON babel-9-7 CANCELLED AT 2025-05-03T16:44:43 DUE TO TIME LIMIT ***

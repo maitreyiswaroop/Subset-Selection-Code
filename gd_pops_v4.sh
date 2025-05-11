@@ -33,11 +33,12 @@ PARAMS="--m1 4 \
 --batch-size 5000 \
 --optimizer-type adam \
 --seed 17 \
---patience 10 \
+--patience 50 \
 --alpha-init random_2 \
 --estimator-type if \
 --base-model-type rf \
---populations linear_regression linear_regression linear_regression \
+--smooth-minmax 100 \
+--populations linear_regression \
 --run-baseline"
 
 echo "Running gd_populations_v3.py with the following parameters:"

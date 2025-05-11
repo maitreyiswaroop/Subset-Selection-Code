@@ -1,0 +1,5 @@
+- use the iF residuals now
+- look for real datasets with multiple population_objective_values
+    - look at table shif benchmark
+    - fairness in ml papers
+- outline the intro better

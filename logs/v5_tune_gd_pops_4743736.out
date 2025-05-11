@@ -1,3 +1,0 @@
-Running gd_populations_v3.py with the following parameters:
-Using the OOF function
---n-trials 50 --study-name gd_pops_v5_tuning --storage sqlite:///tuning.db --base-save-path ./results_v5_tuning/ --m1 4 --m 20 --dataset-size 5000 --noise-scale 0.1 --corr-strength 0.0 --populations cubic_regression cubic_regression cubic_regression --num-epochs 100 --batch-size 5000 --alpha-init random_1 --patience 10 --param-freezing --use-baseline --estimator-type if --base-model-type rf --objective-value-estimator if --seed 42

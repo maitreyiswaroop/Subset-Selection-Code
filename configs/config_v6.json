@@ -1,0 +1,47 @@
+{
+    "script_version": "v6_combined_smoothmax",
+    "data_args": {
+      "m1": 4,
+      "m": 20,
+      "dataset_size": 5000,
+      "noise_scale": 0.1,
+      "corr_strength": 0.0,
+      "populations": ["linear_regression", "sinusoidal_regression", "cubic_regression"]
+    },
+    "optimization_args": {
+      "num_epochs": 150,
+      "budget": null, 
+      "penalty_type": "Reciprocal_L1",
+      "penalty_lambda": 0.005,
+      "learning_rate": 0.05,
+      "optimizer_type": "adam",
+      "alpha_init": "random_2",
+      "patience": 20,
+      "param_freezing": true,
+      "smooth_minmax": "inf" 
+    },
+    "gradient_args": {
+      "gradient_mode": "autograd", 
+      "N_grad_samples": 25,
+      "use_baseline": true
+    },
+    "estimator_args": {
+      "estimator_type": "if",
+      "base_model_type": "xgb",
+      "objective_value_estimator": "if"
+    },
+    "scheduler_args": {
+      "scheduler_type": "CosineAnnealingLR", 
+      "scheduler_step_size": 50,
+      "scheduler_gamma": 0.1,
+      "scheduler_milestones": [80, 120],
+      "scheduler_t_max": 150, 
+      "scheduler_min_lr": 1e-6,
+      "scheduler_patience": 10
+    },
+    "other_args": {
+      "seed": 123,
+      "save_path": "./results/from_config_run/",
+      "verbose": true
+    }
+  }

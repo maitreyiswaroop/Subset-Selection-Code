@@ -28,7 +28,7 @@ PARAMS="--m1 4 \
 --dataset-size 5000 \
 --noise-scale 0.1 \
 --corr-strength 0 \
---populations linear_regression linear_regression linear_regression \
+--populations linear_regression \
 --num-epochs 100 \
 --penalty-type Reciprocal_L1 \
 --penalty-lambda 0.001 \

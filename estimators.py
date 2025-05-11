@@ -9,9 +9,43 @@ import torch
 from torch import Tensor
 import matplotlib.pyplot as plt
 import xgboost as xgb # Import XGBoost
+from typing import Optional
+import math
 
-N_FOLDS = 5
-EPS = 1e-8 # Define EPS if not defined elsewhere
+from global_vars import *
+
+
+def compute_penalty(alpha: torch.Tensor, # Input is always alpha
+                    penalty_type: Optional[str],
+                    penalty_lambda: float,
+                    epsilon: float = EPS) -> torch.Tensor:
+    """
+    Compute a penalty term P(alpha) designed to encourage large alpha values.
+    We minimize L = (T1 - T2) + P(alpha).
+    """
+    # Clamp alpha within the function for calculation, ensuring gradients flow
+    alpha_clamped = torch.clamp(alpha, min=CLAMP_MIN_ALPHA, max=CLAMP_MAX_ALPHA)
+
+    if penalty_type is None or penalty_lambda == 0 or penalty_type.lower() == "none":
+        return torch.tensor(0.0, device=alpha.device, dtype=alpha.dtype, requires_grad=alpha.requires_grad)
+
+    penalty_type_lower = penalty_type.lower()
+
+    if penalty_type_lower == "reciprocal_l1":
+        return penalty_lambda * torch.sum(1.0 / (alpha_clamped + epsilon))
+    elif penalty_type_lower == "neg_l1":
+        print("Warning: Using Neg_L1 penalty encourages small alpha.")
+        return penalty_lambda * torch.sum(torch.abs(alpha_clamped))
+    elif penalty_type_lower == "max_dev":
+        target_val = torch.tensor(1.0, device=alpha.device) # Target alpha=1
+        return penalty_lambda * torch.sum(torch.abs(target_val - alpha_clamped))
+    elif penalty_type_lower == "quadratic_barrier":
+        return penalty_lambda * torch.sum((alpha_clamped + epsilon) ** (-2))
+    elif penalty_type_lower == "exponential":
+        return penalty_lambda * torch.sum(torch.exp(-alpha_clamped))
+    else:
+        raise ValueError("Unknown penalty_type: " + str(penalty_type))
+
 
 # =============================================================================
 # K-fold based estimators for conditional means and squared functionals
@@ -175,7 +209,6 @@ def IF_estimator_conditional_mean(X, Y, estimator_type="rf",
         except Exception as e_corr:
              print(f"Error during k-NN correction calculation (no CV): {e_corr}")
              out_preds = mu_X # Fallback to plugin
-
     # --- Case 2: K-Fold Cross-Validation ---
     else:
         kf = KFold(n_splits=n_folds, shuffle=True, random_state=seed)
@@ -325,7 +358,16 @@ def estimate_conditional_expectation_knn(
     # 3) Compute pairwise squared distances in scaled space
     #    D2_ij = || Ss_scaled_i - Xs_scaled_j ||^2
     #    Using cdist is generally efficient and stable
-    D2 = torch.cdist(Ss_scaled, Xs_scaled, p=2).pow(2)     # (n_query, n_ref)
+    if n_ref > 10000:
+        # Compute squared distances in mini-batches to reduce peak memory
+        batch_size = 50
+        D2_chunks = []
+        for i in range(0, n_query, batch_size):
+            chunk = Ss_scaled[i:i+batch_size]
+            D2_chunks.append(torch.cdist(chunk, Xs_scaled, p=2).pow(2))
+        D2 = torch.cat(D2_chunks, dim=0)
+    else:
+        D2 = torch.cdist(Ss_scaled, Xs_scaled, p=2).pow(2)     # (n_query, n_ref)
 
     # Clamp distances to avoid potential numerical issues (optional but safe)
     D2 = torch.clamp(D2, min=clamp_min, max=clamp_max_dist) # (n_query, n_ref)
@@ -392,7 +434,7 @@ def estimate_conditional_kernel_oof(
         return oof # Or handle differently
 
     if n_folds <= 1:
-        oof = estimate_conditional_expectation(
+        oof = estimate_conditional_expectation_knn(
             X_batch, S_batch, E_Y_X, alpha, k=actual_k, clamp_min=clamp_min, clamp_max=clamp_max
         )
         return oof
@@ -405,70 +447,739 @@ def estimate_conditional_kernel_oof(
         # Assuming current implementation is intended:
         kf  = KFold(n_splits=n_folds, shuffle=True, random_state=seed)
         for _, te_idx in kf.split(S_batch): # We only need test indices for S_batch
-            oof[te_idx] = estimate_conditional_expectation(
+            oof[te_idx] = estimate_conditional_expectation_knn(
                 X_batch, S_batch[te_idx], E_Y_X, alpha, k=actual_k, clamp_min=clamp_min, clamp_max=clamp_max
             )
         return oof
 
 def estimate_conditional_keops(
-    X: Tensor,           # (n_train,d)
-    S: Tensor,           # (n_test, d)
-    E_Y_X: Tensor,       # (n_train,) - Estimated E[Y|X] values on training data
-    alpha: Tensor,   # (d,) - Vector of noise alpha for S features
-    clamp_min=1e-4
-):
-    """Estimates E[ E_Y_X | S=s ] using KeOps (or BallTree fallback) on variance-scaled features."""
-    # Ensure E_Y_X is 1D
-    if E_Y_X.ndim != 1:
-        if E_Y_X.ndim == 2 and E_Y_X.shape[1] == 1:
-            E_Y_X = E_Y_X.squeeze(1)
-        else:
-            raise ValueError(f"E_Y_X must be a 1D tensor, but got shape {E_Y_X.shape}")
+    X: Tensor,           # (n_train, d) - Reference features
+    S: Tensor,           # (n_test, d)  - Query features
+    E_Y_X: Tensor,       # (n_train,) - Reference values
+    alpha: Tensor,       # (d,)       - Noise parameters
+    k: int = 1000,       # Number of neighbors to use
+    clamp_min: float = 1e-4, # Min clamping for alpha variance
+    # clamp_max_dist: float = 1e6 # Optional: Max clamping for squared distances
+) -> Tensor:
+    """
+    Estimates E[ E_Y_X | S=s ] using PyTorch k-NN kernel weighting
+    on variance-scaled features. Maintains differentiability w.r.t. alpha.
 
-    # alpha: vector of noise alpha for S features
-    # 1) clamp & per‐dim inv sqrt of variance
-    alpha_clamped = torch.clamp(alpha, min=clamp_min) # Use clamp_min for variance
-    inv_sqrt_var_t = torch.rsqrt(alpha_clamped)[None, None, :] # (1,1,d) = 1/sqrt(variance)
-    # 2) scale into Mahalanobis space
-    Xs = X[None, :, :] * inv_sqrt_var_t             # (1,n_train,d)
-    Ss = S[:, None, :] * inv_sqrt_var_t             # (n_test,1,d)
+    Args:
+        X: Reference features tensor.
+        S: Query features tensor.
+        E_Y_X: Reference values tensor (E[Y|X]).
+        alpha: Noise variance parameters tensor.
+        k: Number of nearest neighbors to consider.
+        clamp_min: Minimum value for variance clamping.
+        # clamp_max_dist: Optional max value for squared distances.
 
-    n_train_curr = X.shape[0] # Use current X batch size
+    Returns:
+        Tensor: Estimated values E[Y|S] for each query point in S.
+    """
+    device = S.device
+    n_train = X.shape[0]
+    n_test = S.shape[0]
+    d = X.shape[1]
 
-    # --- Fallback to BallTree logic (unchanged math, uses sqrt(variance)) ---
-    # Increased threshold for fallback, KeOps might be slow for larger n_train
-    if n_train_curr > 5000:
-        # using the ball tree method for large datasets;
-        # Ensure tensors are on CPU before converting to numpy if they might be on GPU
-        X_scaled = Xs.squeeze(0).cpu().numpy()
-        S_scaled = Ss.squeeze(1).cpu().numpy()
-        # k for BallTree fallback
-        k_bt = min(1000, X_scaled.shape[0] - 1 if X_scaled.shape[0] > 1 else 1)
-        if k_bt < 1: return torch.zeros(S.shape[0], device=S.device) # Handle edge case
+    # --- Input Validation ---
+    if E_Y_X.ndim != 1 or E_Y_X.shape[0] != n_train:
+        raise ValueError(f"E_Y_X must be a 1D tensor of shape ({n_train},), but got shape {E_Y_X.shape}")
+    if alpha.shape != (d,):
+         raise ValueError(f"alpha must be a 1D tensor of shape ({d},), but got shape {alpha.shape}")
+    if X.device != device or E_Y_X.device != device or alpha.device != device:
+        # For simplicity in this example, move all to S's device.
+        # In practice, ensure inputs are on the desired device beforehand.
+        X = X.to(device)
+        E_Y_X = E_Y_X.to(device)
+        alpha = alpha.to(device)
+        # print("Warning: Moving input tensors to device:", device)
 
-        tree = BallTree(X_scaled, leaf_size=40)
-        dist, ind = tree.query(S_scaled, k=k_bt)    # (n_test, k)
-        # Gaussian weights
-        logW_np = -0.5 * dist**2
-        # Convert logW back to a torch tensor
-        logW = torch.from_numpy(logW_np).to(X.device) # Use .to(X.device) for consistency
-        W = torch.softmax(logW, dim=1)                     # (n_test, k)
-        # gather E_Y for neighbors and do weighted average
-        # Ensure E_Y_X is on CPU if needed for indexing with numpy array 'ind'
-        E_Y_X_np = E_Y_X.cpu().numpy() if E_Y_X.is_cuda else E_Y_X.numpy()
-        neighbor_preds_np = E_Y_X_np[ind]                   # (n_test, k)
-        neighbor_preds = torch.from_numpy(neighbor_preds_np).to(X.device) # Back to device
-        return (W * neighbor_preds).sum(dim=1)       # (n_test,)
+
+    # --- 1. Scaling ---
+    # Clamp alpha (variance) and compute inverse square root
+    alpha_clamped = torch.clamp(alpha, min=clamp_min)       # (d,)
+    inv_sqrt_var_t = torch.rsqrt(alpha_clamped)             # (d,) -> 1/sqrt(variance)
+
+    # Scale features into Mahalanobis-like space
+    # Ensure broadcasting works correctly: (n, d) * (d,) -> (n, d)
+    Xs_scaled = X * inv_sqrt_var_t                   # (n_train, d)
+    Ss_scaled = S * inv_sqrt_var_t                   # (n_test, d)
+
+    # --- 2. Pairwise Distances ---
+    # Calculate squared Euclidean distances in the scaled space
+    # This operation is differentiable w.r.t. Ss_scaled, Xs_scaled, and thus alpha
+    if n_train > 10000:
+        # Compute squared distances in mini-batches to reduce peak memory
+        batch_size = 50
+        D2_chunks = []
+        for i in range(0, n_test, batch_size):
+            chunk = Ss_scaled[i:i+batch_size]
+            D2_chunks.append(torch.cdist(chunk, Xs_scaled, p=2).pow(2))
+        D2 = torch.cat(D2_chunks, dim=0) # (n_test, n_train)
     else:
-        # 3) pairwise squared distances
-        D2 = torch.cdist(Ss.squeeze(1), Xs.squeeze(0), p=2).pow(2) # (n_test, n_train)
-        # D2 = torch.sum((Ss - Xs)**2, dim=-1)       # Manual calculation (n_test,n_train)
+        D2 = torch.cdist(Ss_scaled, Xs_scaled, p=2).pow(2)     # (n_test, n_train)
 
-        # 4) Gaussian weights
-        logW = -0.5 * D2                            # (n_test,n_train)
-        W = torch.softmax(logW, dim=1)               # (n_test,n_train)
-        # 5) weighted sum
-        return (W @ E_Y_X) # (n_test,)
+    # Optional: Clamp distances for numerical stability
+    # D2 = torch.clamp(D2, min=clamp_min, max=clamp_max_dist)
+
+    # --- 3. Find K-Nearest Neighbors ---
+    # Determine the actual k to use (cannot exceed n_train)
+    actual_k = min(k, n_train)
+    if actual_k < 1:
+        print(f"Warning: actual_k={actual_k} < 1. Returning mean E[Y|X].")
+        # Fallback: return the mean of reference values
+        return torch.full((n_test,), E_Y_X.mean(), device=device, dtype=S.dtype)
+
+    # Find the indices and *squared distances* of the k nearest neighbors
+    # `topk` returns (values, indices). values are the smallest squared distances here.
+    # Importantly, the returned distances (D2_knn) retain gradient history.
+    D2_knn, knn_indices = torch.topk(D2, actual_k, dim=1, largest=False) # (n_test, k)
+
+    # --- 4. Calculate Weights ---
+    # Gaussian kernel weights based on the squared distances of the k neighbors
+    logW = -0.5 * D2_knn                            # (n_test, k)
+    # Normalize weights using softmax across the k neighbors for each test point
+    W = torch.softmax(logW, dim=1)                  # (n_test, k), rows sum to 1
+
+    # --- 5. Weighted Sum ---
+    # Gather the E[Y|X] values for the k neighbors using the indices
+    # E_Y_X[knn_indices] uses advanced indexing and works correctly
+    E_Y_X_neighbors = E_Y_X[knn_indices]             # (n_test, k)
+
+    # Compute the weighted average
+    E_Y_S_estimate = (W * E_Y_X_neighbors).sum(dim=1)    # (n_test,)
+
+    return E_Y_S_estimate
+
+def chunked_pairwise_distance(X: torch.Tensor, S: torch.Tensor, chunk_size: int = 50) -> torch.Tensor:
+    """
+    Calculates pairwise distances between X and S in a memory-efficient way using chunks.
+    Preserves gradient flow while reducing peak memory usage.
+    
+    Args:
+        X: First set of points (n_train, d)
+        S: Second set of points (n_test, d)
+        chunk_size: Size of chunks to process at a time
+        
+    Returns:
+        Pairwise squared distances (n_test, n_train)
+    """
+    n_test, d = S.shape
+    n_train = X.shape[0]
+    device = S.device
+    
+    # Pre-allocate the full distance matrix
+    D2 = torch.zeros((n_test, n_train), device=device)
+    
+    # Process in chunks to reduce memory usage
+    for i in range(0, n_test, chunk_size):
+        end_idx = min(i + chunk_size, n_test)
+        chunk = S[i:end_idx]
+        
+        # Calculate distances for this chunk
+        try:
+            D2[i:end_idx] = torch.cdist(chunk, X, p=2).pow(2)
+        except RuntimeError as e:
+            if 'CUDA out of memory' in str(e):
+                # Fallback to even smaller chunks if necessary
+                for j in range(i, end_idx):
+                    D2[j:j+1] = torch.cdist(S[j:j+1], X, p=2).pow(2)
+            else:
+                raise e
+                
+    return D2
+
+def estimate_conditional_keops_flexible(
+    X: torch.Tensor,           # (n_train, d) - Reference features
+    S: torch.Tensor,           # (n_test, d)  - Query features
+    E_Y_X: torch.Tensor,       # (n_train,) - Reference values
+    param: torch.Tensor,       # (d,)       - Either alpha or theta
+    param_type: str = 'alpha', # 'alpha' or 'theta'
+    k: int = 1000,
+    clamp_min_alpha: float = 1e-4, # Min clamping for alpha variance
+    chunk_size: int = 50       # Size of chunks for distance calculation
+) -> torch.Tensor:
+    """
+    Estimates E[ E_Y_X | S=s ] using PyTorch k-NN kernel weighting.
+    Uses chunked distance calculation to reduce memory usage while preserving gradients.
+    
+    Args:
+        X: Reference features tensor
+        S: Query features tensor
+        E_Y_X: Reference values tensor (E[Y|X])
+        param: Noise variance parameters tensor (alpha or theta)
+        param_type: 'alpha' or 'theta'
+        k: Number of nearest neighbors to consider
+        clamp_min_alpha: Minimum value for alpha clamping
+        chunk_size: Size of chunks for distance calculation
+        
+    Returns:
+        Tensor: Estimated values E[Y|S] for each query point in S
+    """
+    # Store original device
+    device = param.device
+    
+    # Get tensor dimensions
+    n_train, d = X.shape
+    n_test = S.shape[0]
+    
+    # --- Input Validation ---
+    if E_Y_X.ndim != 1 or E_Y_X.shape[0] != n_train:
+        raise ValueError(f"E_Y_X shape mismatch: expected ({n_train},), got {E_Y_X.shape}")
+    if param.shape != (d,):
+         raise ValueError(f"Parameter shape mismatch: expected ({d},), got {param.shape}")
+    
+    # Ensure inputs are on the same device
+    X, E_Y_X = X.to(device), E_Y_X.to(device)
+    
+    # --- 1. Scaling based on param_type ---
+    if param_type == 'alpha':
+        alpha_clamped = torch.clamp(param, min=clamp_min_alpha)
+        inv_sqrt_var_t = torch.rsqrt(alpha_clamped) # 1/sqrt(alpha)
+    elif param_type == 'theta':
+        inv_sqrt_var_t = torch.exp(-param / 2.0) # 1/sqrt(exp(theta))
+    else:
+        raise ValueError("param_type must be 'alpha' or 'theta'")
+
+    # Apply scaling - this preserves gradients
+    Xs_scaled = X * inv_sqrt_var_t
+    Ss_scaled = S * inv_sqrt_var_t
+    
+    # Actual k to use (cannot exceed n_train)
+    actual_k = min(k, n_train)
+    if actual_k < 1:
+        print(f"Warning: actual_k={actual_k} < 1. Returning mean E[Y|X].")
+        return torch.full((n_test,), E_Y_X.mean(), device=device, dtype=S.dtype)
+    
+    # --- 2. Memory-efficient distance calculation ---
+    try:
+        # Try using chunked distance calculation
+        D2 = chunked_pairwise_distance(Xs_scaled, Ss_scaled, chunk_size=chunk_size)
+        
+        # --- 3. Find K-Nearest Neighbors ---
+        dists, inds = torch.topk(D2, actual_k, largest=False, dim=1)
+        
+        # --- 4. Calculate Weights ---
+        W = torch.exp(-0.5 * dists)
+        W = W / (torch.sum(W, dim=1, keepdim=True) + 1e-8)
+        
+        # --- 5. Weighted Sum ---
+        E_Y_X_neighbors = E_Y_X[inds]
+        E_Y_S_estimate = torch.sum(W * E_Y_X_neighbors, dim=1)
+        
+        return E_Y_S_estimate
+        
+    except RuntimeError as e:
+        if 'CUDA out of memory' in str(e):
+            print(f"Warning: CUDA OOM with chunk size {chunk_size}. Processing one sample at a time.")
+            
+            # Process one sample at a time as a last resort
+            results = []
+            for i in range(n_test):
+                # Calculate distances for one sample
+                sample = Ss_scaled[i:i+1]
+                try:
+                    # Try on current device
+                    D2_i = torch.cdist(sample, Xs_scaled, p=2).pow(2)
+                    dists_i, inds_i = torch.topk(D2_i, actual_k, largest=False, dim=1)
+                    W_i = torch.exp(-0.5 * dists_i)
+                    W_i = W_i / (torch.sum(W_i, dim=1, keepdim=True) + 1e-8)
+                    E_Y_X_neighbors_i = E_Y_X[inds_i]
+                    result_i = torch.sum(W_i * E_Y_X_neighbors_i, dim=1)
+                    results.append(result_i)
+                    
+                except RuntimeError:
+                    # Last resort: move to CPU while preserving gradient flow
+                    cpu_sample = sample.cpu()
+                    cpu_Xs = Xs_scaled.cpu()
+                    cpu_E_Y_X = E_Y_X.cpu()
+                    
+                    D2_i = torch.cdist(cpu_sample, cpu_Xs, p=2).pow(2)
+                    dists_i, inds_i = torch.topk(D2_i, actual_k, largest=False, dim=1)
+                    W_i = torch.exp(-0.5 * dists_i)
+                    W_i = W_i / (torch.sum(W_i, dim=1, keepdim=True) + 1e-8)
+                    E_Y_X_neighbors_i = cpu_E_Y_X[inds_i]
+                    result_i = torch.sum(W_i * E_Y_X_neighbors_i, dim=1)
+                    results.append(result_i.to(device))  # Back to original device
+            
+            # Combine results while preserving gradient flow
+            return torch.cat(results, dim=0)
+        else:
+            # Re-raise if not OOM error
+            raise e
+        
+# Changed on May 10, 25, when keops kept giving memory errors
+# def estimate_conditional_keops_flexible(
+#     X: torch.Tensor,           # (n_train, d) - Reference features
+#     S: torch.Tensor,           # (n_test, d)  - Query features
+#     E_Y_X: torch.Tensor,       # (n_train,) - Reference values
+#     param: torch.Tensor,       # (d,)       - Either alpha or theta
+#     param_type: str = 'alpha', # 'alpha' or 'theta'
+#     k: int = 1000,
+#     clamp_min_alpha: float = 1e-4, # Min clamping for alpha variance
+#     use_knn: bool = True # Use k-NN for estimation
+# ) -> torch.Tensor:
+#     """
+#     Estimates E[ E_Y_X | S=s ] using PyTorch k-NN kernel weighting.
+#     Handles scaling based on either alpha or theta = log(alpha).
+#     Maintains differentiability w.r.t. param.
+#     """
+#     device = S.device
+#     n_train, d = X.shape
+#     n_test = S.shape[0]
+
+#     # --- Input Validation ---
+#     if E_Y_X.ndim != 1 or E_Y_X.shape[0] != n_train:
+#         raise ValueError(f"E_Y_X shape mismatch: expected ({n_train},), got {E_Y_X.shape}")
+#     if param.shape != (d,):
+#          raise ValueError(f"Parameter shape mismatch: expected ({d},), got {param.shape}")
+#     X, E_Y_X, param = X.to(device), E_Y_X.to(device), param.to(device)
+
+#     # --- 1. Scaling based on param_type ---
+#     if param_type == 'alpha':
+#         alpha_clamped = torch.clamp(param, min=clamp_min_alpha)
+#         inv_sqrt_var_t = torch.rsqrt(alpha_clamped) # 1/sqrt(alpha)
+#     elif param_type == 'theta':
+#         inv_sqrt_var_t = torch.exp(-param / 2.0) # 1/sqrt(exp(theta))
+#     else:
+#         raise ValueError("param_type must be 'alpha' or 'theta'")
+
+#     Xs_scaled = X * inv_sqrt_var_t
+#     Ss_scaled = S * inv_sqrt_var_t
+
+#     # --- 2. Pairwise Distances ---
+#     # if too large, use batches
+#     if n_train > 5000:
+#         batch_size = 50
+#         results = []
+#         actual_k = min(k, n_train)
+#         for i in range(0, n_test, batch_size):
+#             chunk = Ss_scaled[i:i+batch_size]                  # (bs, d)
+#             # 1) distances for this chunk only
+#             D2_chunk = torch.cdist(chunk, Xs_scaled, p=2).pow(2)  # (bs, n_train)
+#             # 2) find neighbors
+#             dists, inds = D2_chunk.topk(actual_k, largest=False, dim=1)
+#             # 3) weights & normalize
+#             W = torch.exp(-0.5 * dists)
+#             W = W / (W.sum(dim=1, keepdim=True) + 1e-8)
+#             # 4) gather predictions and combine
+#             neigh_preds = E_Y_X[inds]                     # (bs, k)
+#             chunk_mu = (W * neigh_preds).sum(dim=1)       # (bs,)
+#             results.append(chunk_mu)
+#         return torch.cat(results, dim=0)  
+#     else:
+#         D2 = torch.cdist(Ss_scaled, Xs_scaled, p=2).pow(2) # (n_test, n_train)
+
+#     # --- 3. Find K-Nearest Neighbors ---
+#     actual_k = min(k, n_train)
+#     if actual_k < 1:
+#         print(f"Warning: actual_k={actual_k} < 1. Returning mean E[Y|X].")
+#         return torch.full((n_test,), E_Y_X.mean(), device=device, dtype=S.dtype)
+
+#     D2_knn, knn_indices = torch.topk(D2, actual_k, dim=1, largest=False) # (n_test, k)
+
+#     # --- 4. Calculate Weights ---
+#     logW = -0.5 * D2_knn                            # (n_test, k)
+#     W = torch.softmax(logW, dim=1)                  # (n_test, k)
+
+#     # --- 5. Weighted Sum ---
+#     E_Y_X_neighbors = E_Y_X[knn_indices]             # (n_test, k)
+#     E_Y_S_estimate = (W * E_Y_X_neighbors).sum(dim=1)    # (n_test,)
+
+#     return E_Y_S_estimate
+
+# def estimate_T2_mc_flexible(X_std_torch: torch.Tensor,
+#                             E_Yx_std_torch: torch.Tensor, # Standardized E[Y|X]
+#                             param_torch: torch.Tensor,    # Alpha or Theta parameter tensor
+#                             param_type: str,              # 'alpha' or 'theta'
+#                             n_mc_samples: int,
+#                             k_kernel: int) -> torch.Tensor:
+#     """
+#     Estimates T2 = E[E[Y_std|S]^2] using Monte Carlo sampling and the flexible kernel estimator.
+#     Differentiable w.r.t. param_torch.
+#     """
+#     avg_term2_std = 0.0
+#     # Clamp alpha for noise generation, but pass original param to kernel
+#     if param_type == 'alpha':
+#         # Clamp the parameter directly if it's alpha
+#         alpha_clamped = param_torch.clamp(min=CLAMP_MIN_ALPHA, max=CLAMP_MAX_ALPHA)
+#         noise_scale = torch.sqrt(alpha_clamped)
+#         param_for_kernel = param_torch # Pass original for grad
+#     elif param_type == 'theta':
+#         # Calculate alpha, clamp it for noise, but pass original theta to kernel
+#         with torch.no_grad(): # Avoid tracking grad through exp just for noise
+#              alpha_for_noise = torch.exp(param_torch).clamp(min=CLAMP_MIN_ALPHA, max=CLAMP_MAX_ALPHA)
+#         noise_scale = torch.sqrt(alpha_for_noise)
+#         param_for_kernel = param_torch # Pass original theta for grad
+#     else:
+#         raise ValueError("param_type must be 'alpha' or 'theta'")
+
+#     for _ in range(n_mc_samples):
+#         epsilon_k = torch.randn_like(X_std_torch)
+#         S_param_k = X_std_torch + epsilon_k * noise_scale # Noise depends on param type
+
+#         # Estimate E[Y_std|S] using kernel estimator, passing the original param
+#         E_Y_S_std_k = estimate_conditional_keops_flexible(
+#             X_std_torch, S_param_k, E_Yx_std_torch, param_for_kernel, param_type, k=k_kernel
+#         )
+#         term2_sample_std_k = E_Y_S_std_k.pow(2).mean()
+#         avg_term2_std += term2_sample_std_k
+
+#     return avg_term2_std / n_mc_samples
+
+def estimate_T2_mc_flexible(
+    X_std_torch: torch.Tensor,
+    E_Yx_std_torch: torch.Tensor,
+    param_torch: torch.Tensor,
+    param_type: str,
+    n_mc_samples: int,
+    k_kernel: int,
+    chunk_size: int = 50      # Size of chunks for distance calculation
+) -> torch.Tensor:
+    """
+    Estimates T2 = E[E[Y_std|S]^2] using Monte Carlo sampling and memory-efficient kernel estimator.
+    Differentiable w.r.t. param_torch.
+    
+    Args:
+        X_std_torch: Standardized features (n, d)
+        E_Yx_std_torch: Standardized conditional expectations E[Y|X] (n,)
+        param_torch: Parameter tensor (alpha or theta) (d,)
+        param_type: 'alpha' or 'theta'
+        n_mc_samples: Number of Monte Carlo samples
+        k_kernel: Number of neighbors for kernel estimation
+        chunk_size: Size of chunks for distance calculation
+        
+    Returns:
+        Scalar estimate of T2 = E[E[Y_std|S]^2]
+    """
+    device = param_torch.device
+    avg_term2_std = torch.zeros(1, device=device, dtype=torch.float32)
+    
+    # Determine noise scale based on param type
+    if param_type == 'alpha':
+        alpha_clamped = param_torch.clamp(min=CLAMP_MIN_ALPHA, max=CLAMP_MAX_ALPHA)
+        noise_scale = torch.sqrt(alpha_clamped)
+        param_for_kernel = param_torch
+    elif param_type == 'theta':
+        alpha_derived = torch.exp(param_torch)
+        alpha_clamped = alpha_derived.clamp(min=CLAMP_MIN_ALPHA, max=CLAMP_MAX_ALPHA)
+        noise_scale = torch.sqrt(alpha_clamped)
+        param_for_kernel = param_torch
+    else:
+        raise ValueError("param_type must be 'alpha' or 'theta'")
+    
+    # Use dynamic MC sample count based on data size
+    n_train = X_std_torch.shape[0]
+    actual_mc_samples = min(n_mc_samples, 5 if n_train > 10000 else n_mc_samples)
+    
+    # Monte Carlo estimation
+    for i in range(actual_mc_samples):
+        epsilon_k = torch.randn_like(X_std_torch)
+        S_param_k = X_std_torch + epsilon_k * noise_scale
+        
+        # Use memory-efficient kernel estimator
+        E_Y_S_std_k = estimate_conditional_keops_flexible(
+            X_std_torch, S_param_k, E_Yx_std_torch, 
+            param_for_kernel, param_type, k=k_kernel,
+            chunk_size=chunk_size
+        )
+        
+        term2_sample_std_k = E_Y_S_std_k.pow(2).mean()
+        avg_term2_std += term2_sample_std_k
+    
+    return avg_term2_std / actual_mc_samples
+
+def estimate_T2_kernel_IF_like_flexible(
+    X_std_torch: torch.Tensor,
+    Y_std_torch: torch.Tensor,
+    E_Yx_std_torch: torch.Tensor,
+    param_torch: torch.Tensor,
+    param_type: str,
+    n_mc_samples: int,
+    k_kernel: int,
+    chunk_size: int = 50      # Size of chunks for distance calculation
+) -> torch.Tensor:
+    """
+    Estimates T2 using IF-like form: E[2*Y*mu_S - mu_S^2] with memory-efficient kernel estimator.
+    Differentiable w.r.t. param_torch through all paths.
+    
+    Args:
+        X_std_torch: Standardized features (n, d)
+        Y_std_torch: Standardized outcomes (n,)
+        E_Yx_std_torch: Standardized conditional expectations E[Y|X] (n,)
+        param_torch: Parameter tensor (alpha or theta) (d,)
+        param_type: 'alpha' or 'theta'
+        n_mc_samples: Number of Monte Carlo samples
+        k_kernel: Number of neighbors for kernel estimation
+        chunk_size: Size of chunks for distance calculation
+        
+    Returns:
+        Scalar estimate of T2 using IF-like form
+    """
+    device = param_torch.device
+    avg_term2_if_like = torch.tensor(0.0, device=device, dtype=param_torch.dtype)
+    
+    # Determine noise scale based on param type
+    if param_type == 'alpha':
+        alpha_for_noise = param_torch.clamp(min=CLAMP_MIN_ALPHA, max=CLAMP_MAX_ALPHA)
+    elif param_type == 'theta':
+        alpha_derived = torch.exp(param_torch)
+        alpha_for_noise = alpha_derived.clamp(min=CLAMP_MIN_ALPHA, max=CLAMP_MAX_ALPHA)
+    else:
+        raise ValueError("param_type must be 'alpha' or 'theta'")
+    
+    noise_scale = torch.sqrt(alpha_for_noise)
+    
+    # Use dynamic MC sample count based on data size
+    n_train = X_std_torch.shape[0]
+    actual_mc_samples = min(n_mc_samples, 5 if n_train > 10000 else n_mc_samples)
+    
+    # Monte Carlo estimation
+    for i in range(actual_mc_samples):
+        epsilon_k = torch.randn_like(X_std_torch)
+        S_param_k = X_std_torch + epsilon_k * noise_scale
+        
+        # Use memory-efficient kernel estimator
+        mu_S_hat_k = estimate_conditional_keops_flexible(
+            X_std_torch, S_param_k, E_Yx_std_torch,
+            param_torch, param_type, k=k_kernel,
+            chunk_size=chunk_size
+        )
+        
+        term2_sample_if_like_k = (2 * Y_std_torch * mu_S_hat_k - mu_S_hat_k.pow(2)).mean()
+        avg_term2_if_like += term2_sample_if_like_k
+    
+    return avg_term2_if_like / actual_mc_samples
+
+def estimate_E_Y_S_kernel_flexible(X_std_torch: torch.Tensor,
+                                   E_Yx_std_torch: torch.Tensor,
+                                   param_torch: torch.Tensor, # Detached alpha or theta
+                                   param_type: str,
+                                   n_mc_samples_S: int = 1,
+                                   k_kernel: int = 1000) -> torch.Tensor:
+     """
+     Estimates E[Y_std|S] value using the flexible kernel method.
+     Averages over n_mc_samples_S realizations of S. Uses detached param.
+     """
+     avg_E_Y_S = torch.zeros(X_std_torch.shape[0], device=X_std_torch.device, dtype=X_std_torch.dtype)
+     param_val = param_torch.detach().clone() # Use detached value
+
+     if param_type == 'alpha':
+         alpha_clamped = param_val.clamp(min=CLAMP_MIN_ALPHA, max=CLAMP_MAX_ALPHA)
+         noise_scale = torch.sqrt(alpha_clamped)
+     elif param_type == 'theta':
+         # Clamp the resulting alpha for noise stability
+         alpha_for_noise = torch.exp(param_val).clamp(min=CLAMP_MIN_ALPHA, max=CLAMP_MAX_ALPHA)
+         noise_scale = torch.sqrt(alpha_for_noise)
+     else:
+         raise ValueError("param_type must be 'alpha' or 'theta'")
+
+     with torch.no_grad():
+         for _ in range(n_mc_samples_S):
+             epsilon_k = torch.randn_like(X_std_torch)
+             S_param_k = X_std_torch + epsilon_k * noise_scale
+             # Pass detached param for value estimation
+             E_Y_S_std_k = estimate_conditional_keops_flexible(
+                 X_std_torch, S_param_k, E_Yx_std_torch, param_val, param_type, k=k_kernel
+             )
+             avg_E_Y_S += E_Y_S_std_k
+
+     return avg_E_Y_S / n_mc_samples_S
+
+
+# def estimate_T2_kernel_IF_like_flexible(
+#     X_std_torch: torch.Tensor,
+#     Y_std_torch: torch.Tensor,
+#     E_Yx_std_torch: torch.Tensor,
+#     param_torch: torch.Tensor,
+#     param_type: str,
+#     n_mc_samples: int,
+#     k_kernel: int) -> torch.Tensor:
+#     """
+#     Estimates T2 = E[(E[Y_std|S])^2] using an IF-like form: E[2*Y_std*mu_S - mu_S^2],
+#     where mu_S = E[Y_std|S] is estimated via the flexible kernel method.
+#     Differentiable w.r.t. param_torch through all paths.
+#     """
+#     avg_term2_if_like = torch.tensor(0.0, device=param_torch.device, dtype=param_torch.dtype)
+#     param_for_kernel_call = param_torch # param being optimized (alpha or theta)
+
+#     # Determine noise_scale based on param_torch, keeping it on the computation graph
+#     if param_type == 'alpha':
+#         alpha_for_noise = param_torch.clamp(min=CLAMP_MIN_ALPHA, max=CLAMP_MAX_ALPHA)
+#     elif param_type == 'theta':
+#         alpha_derived = torch.exp(param_torch) # alpha = exp(theta), on graph
+#         alpha_for_noise = alpha_derived.clamp(min=CLAMP_MIN_ALPHA, max=CLAMP_MAX_ALPHA)
+#     else:
+#         raise ValueError("param_type must be 'alpha' or 'theta'")
+#     noise_scale = torch.sqrt(alpha_for_noise) # This is on the graph wrt param_torch
+
+#     for _ in range(n_mc_samples):
+#         epsilon_k = torch.randn_like(X_std_torch)
+#         S_param_k = X_std_torch + epsilon_k * noise_scale # S_param_k is on graph wrt param_torch
+
+#         mu_S_hat_k = estimate_conditional_keops_flexible(
+#             X_std_torch, S_param_k, E_Yx_std_torch,
+#             param_for_kernel_call, param_type, k=k_kernel
+#         )
+#         term2_sample_if_like_k = (2 * Y_std_torch * mu_S_hat_k - mu_S_hat_k.pow(2)).mean()
+#         avg_term2_if_like += term2_sample_if_like_k
+#     return avg_term2_if_like / n_mc_samples
+
+# --- Gradient Estimator Functions ---
+def analytical_gradient_penalty_alpha(alpha_torch: torch.Tensor,
+                                      penalty_type: Optional[str],
+                                      penalty_lambda: float) -> torch.Tensor:
+    """Calculates analytical gradient dP/d(alpha) using autograd."""
+    if penalty_type is None or penalty_lambda == 0 or penalty_type.lower() == "none":
+        return torch.zeros_like(alpha_torch)
+
+    alpha_torch_param = alpha_torch.clone().detach().requires_grad_(True)
+    penalty_val = compute_penalty(alpha_torch_param, penalty_type, penalty_lambda)
+
+    if penalty_val.requires_grad:
+        try:
+            grad_P = torch.autograd.grad(penalty_val, alpha_torch_param, retain_graph=False)[0]
+            return grad_P
+        except RuntimeError as e:
+            print(f"Warning: Autograd failed for penalty {penalty_type}. Error: {e}")
+            return torch.full_like(alpha_torch, float('nan')) # Indicate failure
+    else:
+        return torch.zeros_like(alpha_torch)
+    
+
+
+def estimate_gradient_autograd_flexible(X_std_torch: torch.Tensor,
+                                        E_Yx_std_torch: torch.Tensor,
+                                        param_torch: torch.Tensor, # Alpha or Theta (requires_grad=True)
+                                        param_type: str,
+                                        n_mc_samples: int,
+                                        k_kernel: int,
+                                        penalty_type: Optional[str],
+                                        penalty_lambda: float) -> torch.Tensor:
+    """
+    Estimates total gradient dL/d(param) using Autograd through MC estimate of T2.
+    L = T1_est - T2_est + P
+    dL/dparam = -dT2/dparam + dP/dparam
+    """
+    if not param_torch.requires_grad:
+        param_torch.requires_grad_(True)
+
+    # --- Estimate T2 using MC + Flexible Kernel ---
+    # This term needs to be differentiable w.r.t. param_torch
+    term2_est = estimate_T2_mc_flexible(
+        X_std_torch, E_Yx_std_torch, param_torch, param_type, n_mc_samples, k_kernel
+    )
+
+    # --- Calculate Penalty ---
+    # Compute penalty based on alpha, deriving alpha from theta if needed
+    if param_type == 'alpha':
+        alpha_for_penalty = param_torch
+    elif param_type == 'theta':
+        # Need alpha = exp(theta) for penalty calculation, maintain grad graph
+        alpha_for_penalty = torch.exp(param_torch)
+    else:
+        raise ValueError("param_type must be 'alpha' or 'theta'")
+
+    penalty_value = compute_penalty(alpha_for_penalty, penalty_type, penalty_lambda)
+
+    # --- Total Objective (for Autograd, ignoring constant T1) ---
+    # L = -T2 + P (we minimize this, gradient is -dT2/dparam + dP/dparam)
+    # Or L = T2 + P (if minimizing this, gradient is dT2/dparam + dP/dparam)
+    # Let's assume we minimize L = T2 + P based on gd_pops_v6 logic
+    objective_L = term2_est + penalty_value
+
+    # --- Compute Gradient ---
+    grad_L = torch.autograd.grad(objective_L, param_torch, retain_graph=False)[0]
+
+    return grad_L
+
+def estimate_gradient_reinforce_flexible(X_std_torch: torch.Tensor,
+                                         E_Yx_std_torch: torch.Tensor,
+                                         param_torch: torch.Tensor, # Alpha or Theta (NO grad needed initially)
+                                         param_type: str,
+                                         n_grad_samples: int,
+                                         k_kernel: int,
+                                         penalty_type: Optional[str],
+                                         penalty_lambda: float,
+                                         use_baseline: bool) -> torch.Tensor:
+    """
+    Estimates total gradient dL/d(param) using REINFORCE for T2 part.
+    L = T2 + P => dL/dparam = dT2/dparam + dP/dparam
+    """
+    device = param_torch.device
+    m = param_torch.shape[0]
+    # Use detached version for internal calculations not needing grad from param
+    param_detached = param_torch.detach().clone()
+
+    # --- REINFORCE Gradient for Term 2 ---
+    grad_term2_accum = torch.zeros_like(param_torch)
+
+    if param_type == 'alpha':
+        alpha_clamped_detached = param_detached.clamp(CLAMP_MIN_ALPHA, CLAMP_MAX_ALPHA)
+        noise_var = alpha_clamped_detached # Variance for noise generation
+    elif param_type == 'theta':
+        # Calculate alpha from theta for noise generation, clamp alpha
+        alpha_detached = torch.exp(param_detached)
+        alpha_clamped_detached = alpha_detached.clamp(CLAMP_MIN_ALPHA, CLAMP_MAX_ALPHA)
+        noise_var = alpha_clamped_detached
+    else:
+        raise ValueError("param_type must be 'alpha' or 'theta'")
+
+    for _ in range(n_grad_samples):
+        with torch.no_grad(): # Sample noise and estimate reward g(S)^2
+            epsilon_k = torch.randn_like(X_std_torch)
+            S_param_k = X_std_torch + epsilon_k * torch.sqrt(noise_var)
+            # Estimate g(S) = E[Y_std|S] using kernel, pass detached param
+            g_hat_S_k = estimate_conditional_keops_flexible(
+                X_std_torch, S_param_k, E_Yx_std_torch, param_detached, param_type, k=k_kernel
+            )
+            g_hat_S_k_squared = g_hat_S_k.pow(2) # Reward
+
+        baseline = g_hat_S_k_squared.mean() if use_baseline else 0.0
+
+        # Calculate score function: grad_param log p(S|param)
+        if param_type == 'alpha':
+            # Score for alpha: (epsilon^2 - 1) / (2 * alpha)
+            score_term = (epsilon_k.pow(2) - 1.0) / (2.0 * alpha_clamped_detached + EPS)
+        elif param_type == 'theta':
+            # Score for theta: [(S-X)^2 - alpha] / (2 * alpha) = [(epsilon*sqrt(alpha))^2 - alpha]/(2*alpha)
+            # score_term = (epsilon_k.pow(2) * alpha_clamped_detached - alpha_clamped_detached) / (2.0 * alpha_clamped_detached + EPS) # Simplify?
+            # Original derivation: ((S-X)^2 - exp(theta)) / (2 * exp(theta))
+            score_term = (epsilon_k.pow(2) * noise_var - noise_var) / (2.0 * noise_var + EPS)
+            # score_term = (epsilon_k.pow(2) - 1.0) / 2.0 # Simplified version if noise_var cancels if > 0
+
+        # Gradient estimate for E[g(S)^2] for this sample
+        term_to_average = (g_hat_S_k_squared - baseline).unsqueeze(1) * score_term
+        grad_term2_accum += term_to_average.mean(dim=0) # Average over batch N
+
+    # Final REINFORCE gradient estimate for T2
+    grad_term2_reinforce = grad_term2_accum / n_grad_samples
+
+    # --- Penalty Gradient (using Autograd and Chain Rule if needed) ---
+    alpha_torch_param = None
+    if param_type == 'alpha':
+        alpha_torch_param = param_torch.clone().detach().requires_grad_(True)
+        grad_penalty_torch = analytical_gradient_penalty_alpha(alpha_torch_param, penalty_type, penalty_lambda)
+    elif param_type == 'theta':
+        theta_torch_param = param_torch.clone().detach().requires_grad_(True)
+        alpha_from_theta = torch.exp(theta_torch_param)
+        # Get grad w.r.t alpha first
+        grad_penalty_alpha = analytical_gradient_penalty_alpha(alpha_from_theta, penalty_type, penalty_lambda)
+        # Apply chain rule: dP/dtheta = dP/dalpha * dalpha/dtheta = dP/dalpha * alpha
+        grad_penalty_torch = grad_penalty_alpha * alpha_from_theta # Element-wise product
+    else:
+        grad_penalty_torch = torch.zeros_like(param_torch)
+
+    if torch.isnan(grad_penalty_torch).any():
+         print(f"Warning: NaN detected in penalty gradient calculation for {param_type}.")
+         grad_penalty_torch.nan_to_num_(0.0) # Replace NaN with 0 for safety
+
+    # --- Total Gradient: dL/dparam = dT2/dparam + dP/dparam ---
+    total_gradient = grad_term2_reinforce + grad_penalty_torch
+
+    return total_gradient
+
 
 def test_estimator(seeds, alpha_lists, X, Y, save_path=None):
     """
