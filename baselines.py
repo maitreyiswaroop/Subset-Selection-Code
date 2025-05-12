@@ -125,6 +125,7 @@ def baseline_lasso_comparison(
                 best_results = {
                     'alpha_value':       current_alpha,
                     'selected_indices':  selected_idx.tolist(),
+                    'all_indices_ranked': np.argsort(-np.abs(coeffs)).tolist(),
                     'baseline_coeffs':   coeffs[selected_idx].tolist(),
                     'baseline_pop_stats':    pop_stats,
                     'baseline_overall_stats': overall_stats,
@@ -190,6 +191,7 @@ def baseline_xgb_comparison(pop_data: List[Dict[str, Any]],
         best_results = {
             'alpha_value':       None,
             'selected_indices':  selected_idx.tolist(),
+            'all_indices_ranked': np.argsort(-importances).tolist(),
             'baseline_coeffs':   importances[selected_idx].tolist(),
             'baseline_pop_stats':    pop_stats,
             'baseline_overall_stats': overall_stats,
@@ -306,6 +308,7 @@ def baseline_dro_lasso_comparison(
                 best_results = {
                     'alpha_value': current_alpha,
                     'selected_indices': selected_idx.tolist(),
+                    'all_indices_ranked': np.argsort(-np.abs(coeffs)).tolist(),
                     'baseline_coeffs': coeffs[selected_idx].tolist(),
                     'baseline_pop_stats': pop_stats,
                     'baseline_overall_stats': overall_stats,
@@ -432,6 +435,7 @@ def baseline_dro_xgb_comparison(
         best_results = {
             'selected_indices': selected_idx.tolist(),
             'baseline_coeffs': importances[selected_idx].tolist(),
+            'all_indices_ranked': np.argsort(-importances).tolist(),
             'baseline_pop_stats': pop_stats,
             'baseline_overall_stats': overall_stats,
             'precision': prec,

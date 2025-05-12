@@ -9,29 +9,30 @@ t2_types=(mc_plugin)
 seeds=(42 17 30 29 9)
 seed=42
 estimator=plugin
-# population=baseline_failure_1
-populations=(baseline_failure_6 baseline_failure_7 baseline_failure_8 baseline_failure_9 baseline_failure_10)
+population=quadratic_regression
+populations=(baseline_failure_1 baseline_failure_2 baseline_failure_3 baseline_failure_4 baseline_failure_5 baseline_failure_6 baseline_failure_7 baseline_failure_8 baseline_failure_9 baseline_failure_10)
 N_GRAD_SAMPLES=25
 
 # for pop in "${populations[@]}"; do
 #   for t2 in "${t2_types[@]}"; do
 for t2 in "${t2_types[@]}"; do
-  # for seed in "${seeds[@]}"; do
-  for population in "${populations[@]}"; do
+  for seed in "${seeds[@]}"; do
+  # for population in "${populations[@]}"; do
     SAVE_PATH="/data/user_data/mswaroop/Subset-Selection-Code/results_v8/${t2}/${population}/"
     mkdir -p "$SAVE_PATH" "logs"
     sbatch gd_pops_v8_task.sh \
       --populations $population $population $population  \
       --m1 4 \
       --m 20 \
-      --dataset-size 5000 \
+      --dataset-size 12000 \
+      --baseline-data-size 20000 \
       --noise-scale 0.1 \
       --corr-strength 0.1 \
       --num-epochs 150 \
       --budget 8 \
       --penalty-type Reciprocal_L1 \
-      --penalty-lambda 0.005 \
-      --learning-rate 0.05 \
+      --penalty-lambda 0.001 \
+      --learning-rate 0.02 \
       --optimizer-type adam \
       --parameterization theta \
       --alpha-init random_1 \
@@ -48,10 +49,11 @@ for t2 in "${t2_types[@]}"; do
       --scheduler-min-lr 1e-6 \
       --seed $seed \
       --save-path $SAVE_PATH \
-      --verbose
-      # pause for 1 second to avoid overloading the scheduler
-      sleep 1
+      --verbose \
+      --param-freezing
+      sleep 5
   done
+  sleep 5
 done
 #  \
       # --param-freezing

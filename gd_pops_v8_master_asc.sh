@@ -5,15 +5,21 @@
 
 # baseline_failure_1 baseline_failure_2 baseline_failure_3 baseline_failure_4 baseline_failure_5
 # populations=(linear_regression cubic_regression)
-t2_types=(mc_plugin)
+t2_types=(kernel_if_like)
 seeds=(42) # 17 30 29 9)
 population=asc
 estimator=plugin
-N_GRAD_SAMPLES=10
-
+N_GRAD_SAMPLES=5
+t2=mc_plugin
+learning_rate=0.00001
+learningrates=(0.00001)
+# lr should be 1e-4 or lower
 # for pop in "${populations[@]}"; do
 #   for t2 in "${t2_types[@]}"; do
-for t2 in "${t2_types[@]}"; do
+# for t2 in "${t2_types[@]}"; do
+smooth_minmaxes=(5.0 10.0 20.0 50.0)
+# for learning_rate in "${learningrates[@]}"; do
+for smooth_minmax in "${smooth_minmaxes[@]}"; do
   for seed in "${seeds[@]}"; do
     SAVE_PATH="/data/user_data/mswaroop/Subset-Selection-Code/results_v8/${t2}/${population}/"
     mkdir -p "$SAVE_PATH" "logs"
@@ -24,14 +30,14 @@ for t2 in "${t2_types[@]}"; do
       --dataset-size 5000 \
       --noise-scale 0.1 \
       --corr-strength 0.1 \
-      --num-epochs 5 \
-      --budget 50 \
+      --num-epochs 20 \
+      --budget 10 \
       --penalty-type Reciprocal_L1 \
-      --penalty-lambda 0.005 \
-      --learning-rate 0.05 \
+      --penalty-lambda 0.00001 \
+      --learning-rate $learning_rate \
       --optimizer-type adam \
       --parameterization theta \
-      --alpha-init random_1 \
+      --alpha-init random_5 \
       --patience 20 \
       --gradient-mode autograd \
       --t2-estimator-type $t2 \
@@ -46,7 +52,8 @@ for t2 in "${t2_types[@]}"; do
       --seed $seed \
       --save-path $SAVE_PATH \
       --verbose \
-      --param-freezing
+      --param-freezing \
+      --smooth-minmax $smooth_minmax
   done
 done
 

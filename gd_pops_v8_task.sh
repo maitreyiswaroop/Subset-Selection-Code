@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name="gd_pops_v8"
+#SBATCH --job-name="v8_task_gd_pops"
 #SBATCH --output=/data/user_data/mswaroop/Subset-Selection-Code/logs/v8_task_gd_%j.out
 #SBATCH --error=/data/user_data/mswaroop/Subset-Selection-Code/logs/v8_task_gd_%j.err
 #SBATCH --gres=gpu:1

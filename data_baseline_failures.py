@@ -22,7 +22,7 @@ def standardize_data(X, Y):
     return X_stdized, Y_stdized, X_mean, X_std, Y_mean, Y_std
 
 def generate_baseline_failure_1_heterogeneous_importance(
-    dataset_size: int = 10000,
+    dataset_size: int = 15000,
     n_features: int = 20,
     noise_scale: float = 0.1,
     corr_strength: float = 0.4, 
@@ -115,25 +115,25 @@ def generate_baseline_failure_1_heterogeneous_importance(
             'pop_id': 'A',
             'X_raw': X_all[:idx_a_end, :],
             'Y_raw': Y_all[:idx_a_end],
-            'meaningful_indices': meaningful_indices
+            'meaningful_indices': np.array([0, 1])  # X1 and X2 are meaningful in Pop A
         },
         {
             'pop_id': 'B',
             'X_raw': X_all[idx_b_start:idx_b_end, :],
             'Y_raw': Y_all[idx_b_start:idx_b_end],
-            'meaningful_indices': meaningful_indices
+            'meaningful_indices': np.array([0, 1])  # X1 and X2 are meaningful in Pop B
         },
         {
             'pop_id': 'C',
             'X_raw': X_all[idx_c_start:, :],
             'Y_raw': Y_all[idx_c_start:],
-            'meaningful_indices': meaningful_indices
+            'meaningful_indices': np.array([0, 1, 2])  # X1, X2, and X3 are meaningful in Pop C
         }
     ]
     return pop_data
 
 def generate_baseline_failure_2_opposing_effects(
-    dataset_size: int = 10000,
+    dataset_size: int = 15000,
     n_features: int = 5,
     noise_scale: float = 0.1,
     corr_strength: float = 0.2, 
@@ -186,19 +186,19 @@ def generate_baseline_failure_2_opposing_effects(
             'pop_id': 'A',
             'X_raw' : X_pop_a,
             'Y_raw' : Y_all[:idx_a_end],
-            'meaningful_indices': meaningful_indices
+            'meaningful_indices': np.array([0, 1]) # X1 and X2 are meaningful in Pop A
         },
         {
             'pop_id': 'B',
             'X_raw' : X_pop_b,
             'Y_raw' : Y_all[idx_b_start:idx_b_end],
-            'meaningful_indices': meaningful_indices
+            'meaningful_indices': np.array([0, 1]) # X1 and X2 are meaningful in Pop B
         },
         {
             'pop_id': 'C',
             'X_raw' : X_pop_c,
             'Y_raw' : Y_all[idx_c_start:],
-            'meaningful_indices': meaningful_indices
+            'meaningful_indices': np.array([0, 1, 2]) # X1, X2, and X3 are meaningful in Pop C
         }
     ]
 
@@ -206,7 +206,7 @@ def generate_baseline_failure_2_opposing_effects(
 
 
 def generate_baseline_failure_3_non_linearity_subgroup(
-    dataset_size: int = 10000,
+    dataset_size: int = 15000,
     n_features: int = 5,
     noise_scale: float = 0.1,
     corr_strength: float = 0.2, 
@@ -262,25 +262,25 @@ def generate_baseline_failure_3_non_linearity_subgroup(
             'pop_id': 'A',
             'X_raw' : X_pop_a,
             'Y_raw' : Y_all[:idx_a_end],
-            'meaningful_indices': meaningful_indices
+            'meaningful_indices': np.array([0, 1]) # X1 and X2 are meaningful in Pop A
         },
         {
             'pop_id': 'B',
             'X_raw' : X_pop_b,
             'Y_raw' : Y_all[idx_b_start:idx_b_end],
-            'meaningful_indices': meaningful_indices
+            'meaningful_indices': np.array([0, 1]) # X1 and X2 are meaningful in Pop B
         },
         {
             'pop_id': 'C',
             'X_raw' : X_pop_c,
             'Y_raw' : Y_all[idx_c_start:],
-            'meaningful_indices': meaningful_indices
+            'meaningful_indices': np.array([0, 1, 2]) # X1, X2, and X3 are meaningful in Pop C
         }
     ]
     return pop_data
 
 def generate_baseline_failure_4_different_noise_structures_features(
-    dataset_size: int = 10000,
+    dataset_size: int = 15000,
     n_features: int = 5,
     noise_scale_y: float = 0.5,
     x1_noise_stds: dict = None, # e.g. {'A': 0.1, 'B': 2.0, 'C': 0.5}
@@ -350,25 +350,25 @@ def generate_baseline_failure_4_different_noise_structures_features(
             'pop_id': 'A',
             'X_raw' : X_observed_all[:idx_a_end, :],
             'Y_raw' : Y_all[:idx_a_end],
-            'meaningful_indices': meaningful_indices
+            'meaningful_indices': np.array([0, 1]) # X1 and X2 are meaningful in Pop A
         },
         {
             'pop_id': 'B',
             'X_raw' : X_observed_all[idx_b_start:idx_b_end, :],
             'Y_raw' : Y_all[idx_b_start:idx_b_end],
-            'meaningful_indices': meaningful_indices
+            'meaningful_indices': np.array([0, 1]) # X1 and X2 are meaningful in Pop B
         },
         {
             'pop_id': 'C',
             'X_raw' : X_observed_all[idx_c_start:, :],
             'Y_raw' : Y_all[idx_c_start:],
-            'meaningful_indices': meaningful_indices
+            'meaningful_indices': np.array([0, 1, 2]) # X1, X2, and X3 are meaningful in Pop C
         }
     ]
     return pop_data
 
 def generate_baseline_failure_5_irrelevant_differently_distributed_features(
-    dataset_size: int = 10000,
+    dataset_size: int = 15000,
     n_features: int = 5,
     noise_scale_y: float = 1.0,
     noise_feat_dist_means: dict = None,  # e.g. {'A': 0, 'B': 5, 'C': -2}
@@ -431,9 +431,9 @@ def generate_baseline_failure_5_irrelevant_differently_distributed_features(
 
     meaningful_indices = np.array(sorted(current_meaningful))
     pop_data = [
-        {'pop_id': 'A', 'X_raw': X_all[:end_a, :], 'Y_raw': Y_all[:end_a], 'meaningful_indices': meaningful_indices},
-        {'pop_id': 'B', 'X_raw': X_all[start_b:end_b, :], 'Y_raw': Y_all[start_b:end_b], 'meaningful_indices': meaningful_indices},
-        {'pop_id': 'C', 'X_raw': X_all[start_c:, :], 'Y_raw': Y_all[start_c:], 'meaningful_indices': meaningful_indices},
+        {'pop_id': 'A', 'X_raw': X_all[:end_a, :], 'Y_raw': Y_all[:end_a], 'meaningful_indices': np.array([0, 2, 3])},
+        {'pop_id': 'B', 'X_raw': X_all[start_b:end_b, :], 'Y_raw': Y_all[start_b:end_b], 'meaningful_indices': np.array([0, 2, 3])},
+        {'pop_id': 'C', 'X_raw': X_all[start_c:, :], 'Y_raw': Y_all[start_c:], 'meaningful_indices': np.array([0, 2, 3])}
     ]
     return pop_data
 
@@ -489,19 +489,19 @@ def generate_baseline_failure_6_hierarchical_importance(dataset_size=10000, n_fe
             'pop_id': 'A',
             'X_raw': X_pop_a,
             'Y_raw': Y_all[:idx_a_end],
-            'meaningful_indices': meaningful_indices
+            'meaningful_indices': np.array([0, 1])  # Only X1 and X2 are meaningful in Pop A
         },
         {
             'pop_id': 'B',
             'X_raw': X_pop_b,
             'Y_raw': Y_all[idx_b_start:idx_b_end],
-            'meaningful_indices': meaningful_indices
+            'meaningful_indices': np.array([0, 2, 3, 4])  # Only X1, X3, X4, and X5 are meaningful in Pop B
         },
         {
             'pop_id': 'C',
             'X_raw': X_pop_c,
             'Y_raw': Y_all[idx_c_start:],
-            'meaningful_indices': meaningful_indices
+            'meaningful_indices': np.array([0, 5, 6])  # Only X1, X6, and X7 are meaningful in Pop C
         }
     ]
     return pop_data
@@ -564,19 +564,19 @@ def generate_baseline_failure_7_dilution(dataset_size=10000, n_features=20, nois
             'pop_id': 'A',
             'X_raw': X_all[:idx_a_end, :],
             'Y_raw': Y_all[:idx_a_end],
-            'meaningful_indices': meaningful_indices
+            'meaningful_indices': np.array([0, 1])  # Only X1 and X2 are meaningful in Pop A
         },
         {
             'pop_id': 'B',
             'X_raw': X_all[idx_b_start:idx_b_end, :],
             'Y_raw': Y_all[idx_b_start:idx_b_end],
-            'meaningful_indices': meaningful_indices
+            'meaningful_indices': np.array([2, 3])  # Only X3 and X4 are meaningful in Pop B
         },
         {
             'pop_id': 'C',
             'X_raw': X_all[idx_c_start:, :],
             'Y_raw': Y_all[idx_c_start:],
-            'meaningful_indices': meaningful_indices
+            'meaningful_indices': np.array([4])  # Only X5 is meaningful in Pop C
         }
     ]
     return pop_data
@@ -631,19 +631,19 @@ def generate_baseline_failure_8_signal_to_noise_evolution(dataset_size=10000, n_
             'pop_id': 'A',
             'X_raw': X_all[:idx_a_end, :],
             'Y_raw': Y_all[:idx_a_end],
-            'meaningful_indices': meaningful_indices
+            'meaningful_indices': np.array([0, 1])  # X1 and X2 are the only relevant features
         },
         {
             'pop_id': 'B',
             'X_raw': X_all[idx_b_start:idx_b_end, :],
             'Y_raw': Y_all[idx_b_start:idx_b_end],
-            'meaningful_indices': meaningful_indices
+            'meaningful_indices': np.array([0, 2])  # X1 and X3 are the only relevant features
         },
         {
             'pop_id': 'C',
             'X_raw': X_all[idx_c_start:, :],
             'Y_raw': Y_all[idx_c_start:],
-            'meaningful_indices': meaningful_indices
+            'meaningful_indices': np.array([2, 3])  # X3 and X4 are the only relevant features
         }
     ]
     return pop_data
@@ -695,19 +695,19 @@ def generate_baseline_failure_9_multiscale_relevance(dataset_size=10000, n_featu
             'pop_id': 'A',
             'X_raw': X_all[:idx_a_end, :],
             'Y_raw': Y_all[:idx_a_end],
-            'meaningful_indices': meaningful_indices
+            'meaningful_indices': np.array([0, 1])
         },
         {
             'pop_id': 'B',
             'X_raw': X_all[idx_b_start:idx_b_end, :],
             'Y_raw': Y_all[idx_b_start:idx_b_end],
-            'meaningful_indices': meaningful_indices
+            'meaningful_indices': np.array([0, 2])
         },
         {
             'pop_id': 'C',
             'X_raw': X_all[idx_c_start:, :],
             'Y_raw': Y_all[idx_c_start:],
-            'meaningful_indices': meaningful_indices
+            'meaningful_indices': np.array([0, 3])
         }
     ]
     return pop_data
@@ -763,32 +763,33 @@ def generate_baseline_failure_10_threshold_effects(dataset_size=10000, n_feature
             'pop_id': 'A',
             'X_raw': X_all[:idx_a_end, :],
             'Y_raw': Y_all[:idx_a_end],
-            'meaningful_indices': meaningful_indices
+            'meaningful_indices': np.array([0, 1])
         },
         {
             'pop_id': 'B',
             'X_raw': X_all[idx_b_start:idx_b_end, :],
             'Y_raw': Y_all[idx_b_start:idx_b_end],
-            'meaningful_indices': meaningful_indices
+            'meaningful_indices': np.array([0, 2, 3])
         },
         {
             'pop_id': 'C',
             'X_raw': X_all[idx_c_start:, :],
             'Y_raw': Y_all[idx_c_start:],
-            'meaningful_indices': meaningful_indices
+            'meaningful_indices': np.array([0, 4, 5, 6])
         }
     ]
     return pop_data
 
 def get_pop_data_baseline_failures(
     pop_configs: list,
-    dataset_size: int = 10000,
+    dataset_size: int = 15000,
     n_features: int = 5,
     noise_scale: float = 0.1,
     corr_strength: float = 0.0,
     estimator_type: str = 'plugin',
     device: str = 'cpu',
     base_model_type: str = 'rf',
+    test_val_fraction=0.6,
     seed: int = None
 ):
     """
@@ -883,22 +884,36 @@ def get_pop_data_baseline_failures(
         raise ValueError(f"Unknown dataset type: {baseline_type}")
     
     final_pop_data = [] 
-    for pop in pop_data:
+    final_test_val_data = []
+    for j, pop in enumerate(pop_data):
+        rng = np.random.default_rng(seed + j)  
         # --- Standardize Data ---
-        X_std_np, Y_std_np, _, _, Y_mean, Y_std = standardize_data(pop['X_raw'], pop['Y_raw'])
+        # split into train and test_val
+        idx = rng.permutation(pop['X_raw'].shape[0])
+        indices = idx[:int(pop['X_raw'].shape[0] * (1 - test_val_fraction))]
+        X_train = pop['X_raw'][indices]
+        Y_train = pop['Y_raw'][indices]
+        X_test_val = np.delete(pop['X_raw'], indices, axis=0)
+        Y_test_val = np.delete(pop['Y_raw'], indices, axis=0)
         print(f"Population {pop['pop_id']}: Precomputing E[Y|X] ({estimator_type}/{base_model_type})...")
-        # --- Precompute E[Y|X] using ORIGINAL Y scale ---
+        # --- Precompute E[Y|X] using ORIGINAL Y scale --- this is only for the training data
         try:
             if estimator_type == "plugin":
-                E_Yx_orig_np = plugin_estimator_conditional_mean(pop['X_raw'], pop['Y_raw'],
-                                                                 base_model_type, n_folds=N_FOLDS)
+                E_Yx_orig_np = plugin_estimator_conditional_mean(X_train, Y_train, base_model_type, n_folds=N_FOLDS)
             elif estimator_type == "if":
-                E_Yx_orig_np = IF_estimator_conditional_mean(pop['X_raw'], pop['Y_raw'], base_model_type, n_folds=N_FOLDS)
+                E_Yx_orig_np = IF_estimator_conditional_mean(X_train, Y_train, base_model_type, n_folds=N_FOLDS)
             else:
                 raise ValueError("estimator_type must be 'plugin' or 'if'")
         except Exception as e:
             print(f"ERROR: Failed to precompute E[Y|X] for pop {pop['pop_id']}: {e}")
             continue
+
+        X_train_std, Y_train_std, X_mean, X_std, Y_mean, Y_std = standardize_data(X_train, Y_train)
+        train_mean = np.mean(X_train, axis=0)
+        train_std = np.std(X_train, axis=0)
+        train_std[train_std < EPS] = EPS
+        X_test_std = (X_test_val - train_mean) / train_std
+        Y_test_std = (Y_test_val - Y_mean) / Y_std
 
         # --- Standardize the E[Y|X] estimate ---
         E_Yx_std_np = (E_Yx_orig_np - Y_mean) / Y_std
@@ -908,8 +923,8 @@ def get_pop_data_baseline_failures(
         print(f"Population {pop['pop_id']}: Precomputed Term1_std = {term1_std:.4f}")
 
         # --- Convert to Tensors ---
-        X_std_torch = torch.tensor(X_std_np, dtype=torch.float32).to(device)
-        Y_std_torch = torch.tensor(Y_std_np, dtype=torch.float32).to(device)
+        X_std_torch = torch.tensor(X_train_std, dtype=torch.float32).to(device)
+        Y_std_torch = torch.tensor(Y_train_std, dtype=torch.float32).to(device)
         E_Yx_std_torch = torch.tensor(E_Yx_std_np, dtype=torch.float32).to(device)
 
         final_pop_data.append({
@@ -922,5 +937,15 @@ def get_pop_data_baseline_failures(
             'X_raw': pop['X_raw'],
             'Y_raw': pop['Y_raw']
         })
-    return final_pop_data
-        
+        final_test_val_data.append( {
+            'pop_id': pop['pop_id'],
+            'X_std': X_test_std,
+            'Y_std': Y_test_std,
+            'X_raw': X_test_val,
+            'Y_raw': Y_test_val
+        } )
+    for i, pop in enumerate(final_pop_data):
+        print(f"Population {i} - Training Data: X_std shape: {pop['X_std'].shape}, Y_std shape: {pop['Y_std'].shape}, E_Yx_std shape: {pop['E_Yx_std'].shape}")
+    for i, pop in enumerate(final_test_val_data):
+        print(f"Population {i} - Test/Validation Data: X_std shape: {pop['X_std'].shape}, Y_std shape: {pop['Y_std'].shape}")
+    return final_pop_data, final_test_val_data

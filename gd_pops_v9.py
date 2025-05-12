@@ -1,5 +1,6 @@
-# gd_pops_v8.py: Variable Selection with Optional Theta Reparameterization and Advanced T2 Estimator
+# gd_pops_v9.py: Variable Selection with Optional Theta Reparameterization and Advanced T2 Estimator
 # for ASC data handling
+# Introduce batch gd
 """
 Performs variable subset selection using gradient descent.
 Version 8 introduces an optional IF-like T2 estimator for gradient computation.
@@ -650,7 +651,7 @@ def run_variable_selection(
 def run_experiment_multi_population(
     pop_configs: List[Dict], m1: int, m: int, dataset_size: int = 5000,
     baseline_data_size: int = 15000,
-    asc_data_fraction: float = 0.25, # Fraction of data to use for ASC
+    asc_data_fraction: float = 0.5, # Fraction of data to use for ASC
     noise_scale: float = 0.1, corr_strength: float = 0.0,
     num_epochs: int = 100, budget: Optional[int] = None,
     penalty_type: Optional[str] = None, penalty_lambda: float = 0.0,
@@ -691,16 +692,6 @@ def run_experiment_multi_population(
             estimator_type=estimator_type, device=device,
             base_model_type=base_model_type, seed=seed
         )
-        # take the union of all the meaningful indices across populations; budget is the size of this union
-        meaningful_indices_list = [pop['meaningful_indices'] for pop in pop_data]
-        if all(isinstance(indices, (list, tuple)) for indices in meaningful_indices_list if indices is not None):
-            all_meaningful_indices = set()
-            for indices in meaningful_indices_list:
-                if indices is not None:
-                    all_meaningful_indices.update(indices)
-            all_meaningful_indices = list(all_meaningful_indices)
-            budget = len(all_meaningful_indices)
-            print(f"Budget set to the size of the union of all meaningful indices: {budget}")
     elif any('asc' in pop_config['dataset_type'].lower() for pop_config in pop_configs):
         # Use ASC data generation function
         pop_data = get_asc_pop_data()
@@ -721,18 +712,18 @@ def run_experiment_multi_population(
             estimator_type=estimator_type, device=device,
             base_model_type=base_model_type, seed=seed
         )
-        # take the union of all the meaningful indices across populations; budget is the size of this union
-        meaningful_indices_list = [pop['meaningful_indices'] for pop in pop_data]
-        if all(isinstance(indices, (list, tuple)) for indices in meaningful_indices_list if indices is not None):
-            all_meaningful_indices = set()
-            for indices in meaningful_indices_list:
-                if indices is not None:
-                    all_meaningful_indices.update(indices)
-            all_meaningful_indices = list(all_meaningful_indices)
-            budget = len(all_meaningful_indices)
-            print(f"Budget set to the size of the union of all meaningful indices: {budget}")
     if not pop_data: return {'error': 'Data generation failed'}
-
+    
+    # take the union of all the meaningful indices across populations; budget is the size of this union
+    meaningful_indices_list = [pop['meaningful_indices'] for pop in pop_data]
+    if all(isinstance(indices, (list, tuple)) for indices in meaningful_indices_list if indices is not None):
+        all_meaningful_indices = set()
+        for indices in meaningful_indices_list:
+            if indices is not None:
+                all_meaningful_indices.update(indices)
+        all_meaningful_indices = list(all_meaningful_indices)
+        budget = len(all_meaningful_indices)
+        print(f"Budget set to the size of the union of all meaningful indices: {budget}")
     # VARIABLE SELECTION BEGINS
     variable_selection_results = run_variable_selection(
         pop_data=pop_data, m1=m1, m=m, dataset_size=dataset_size,
