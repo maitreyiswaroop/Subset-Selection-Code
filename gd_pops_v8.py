@@ -43,12 +43,14 @@ try:
     from data import generate_data_continuous, generate_data_continuous_with_corr
     from data_baseline_failures import get_pop_data_baseline_failures
     from data_asc import get_asc_pop_data
+    from data_uci import get_uci_pop_data
     from estimators import (
         plugin_estimator_conditional_mean,
         plugin_estimator_squared_conditional,
         IF_estimator_conditional_mean,
         IF_estimator_squared_conditional,
         estimate_conditional_keops_flexible,
+        estimate_conditional_keops_flexible_optimized,
         estimate_T2_mc_flexible,
         estimate_T2_kernel_IF_like_flexible, # <-- New Estimator
         estimate_gradient_reinforce_flexible
@@ -82,6 +84,12 @@ except ImportError:
     FREEZE_THRESHOLD_ALPHA = 1e-4
     THETA_FREEZE_THRESHOLD = math.log(FREEZE_THRESHOLD_ALPHA) if FREEZE_THRESHOLD_ALPHA > 0 else -9.2
 
+def adaptive_alpha_init(X, init_scale=2.0):
+    """Initialize alpha values based on feature variances"""
+    feature_vars = np.var(X, axis=0)
+    normalized_vars = feature_vars / np.mean(feature_vars)
+    alpha_init = init_scale * normalized_vars
+    return alpha_init
 
 def standardize_data(X, Y):
     X_mean = np.mean(X, axis=0); X_std = np.std(X, axis=0)
@@ -112,7 +120,15 @@ def compute_objective_value_mc(X, E_Y_given_X_std, term1_std, param, param_type,
         noise_var = alpha_val
         for _ in range(num_mc_samples):
             S_param = X + torch.randn_like(X) * torch.sqrt(noise_var)
-            E_Y_S_std = estimate_conditional_keops_flexible(X, S_param, E_Y_given_X_std, param_val, param_type, k=k_kernel)
+            # E_Y_S_std = estimate_conditional_keops_flexible(X, 
+            #                                                 S_param, 
+            #                                                 E_Y_given_X_std, 
+            #                                                 param_val, 
+            #                                                 param_type, k=k_kernel)
+            E_Y_S_std = estimate_conditional_keops_flexible_optimized(
+                X, S_param, E_Y_given_X_std, param_val, param_type, k=k_kernel, max_batch_size=1000
+            )
+
             avg_term2_std += E_Y_S_std.pow(2).mean()
     term2_value_std = avg_term2_std / num_mc_samples
     penalty = compute_penalty(alpha_val, penalty_type, penalty_lambda)
@@ -303,7 +319,6 @@ def create_results_dataframe(results, args_dict, save_path=None):
         df.to_pickle(os.path.join(save_path, 'results_summary_v7.pkl'))
     return df
 
-
 def run_variable_selection(
     pop_data: List[Dict], m1: int, m: int, dataset_size: int = 5000,
     asc_data_fraction: float = 0.5, # Fraction of data to use for ASC
@@ -338,7 +353,15 @@ def run_variable_selection(
     # else: budget = min(budget, m)
 
     # VARIABLE SELECTION BEGINS
-    param = init_parameter(m, parameterization, alpha_init, noise=0.1, device=device)
+    if alpha_init == 'adaptive':
+        # adaptive init of alpha, based on feature variances, pool population data for it
+        alpha_init_val = adaptive_alpha_init(np.concatenate([pop['X_std'].cpu().numpy() for pop in pop_data]), init_scale=2.0)
+        param = torch.nn.Parameter(torch.tensor(alpha_init_val, dtype=torch.float32, device=device))
+    else:
+        param = init_parameter(m, parameterization, alpha_init, noise=0.1, device=device)
+    
+    print(f"Initial parameter (alpha) values: {param.data.cpu().numpy()}") 
+
     optimizer_class = optim.Adam if optimizer_type.lower() == 'adam' else optim.SGD
     optimizer_kwargs = {'lr': learning_rate}
     if optimizer_type.lower() == 'sgd': optimizer_kwargs.update({'momentum':0.9, 'nesterov':True})
@@ -464,7 +487,7 @@ def run_variable_selection(
                         break
         
         if param.grad is not None:
-            torch.nn.utils.clip_grad_norm_([param], max_norm=10.0)
+            torch.nn.utils.clip_grad_norm_([param], max_norm=5.0)
         
         optimizer.step()
 
@@ -490,7 +513,7 @@ def run_variable_selection(
             early_stopping_counter += 1
         if epoch > 40 and early_stopping_counter >= early_stopping_patience and abs(current_robust_objective_value - best_objective_val) < 0.01 * abs(best_objective_val):
             print(f"Early stopping at epoch {epoch}."); stopped_epoch = epoch; break
-        if epoch<30:
+        if epoch<40:
             early_stopping_counter = 0 # Reset early stopping counter for first 30 epochs
             # at least train 40 epochs before checking for early stopping
             
@@ -552,7 +575,7 @@ def run_variable_selection(
     if implement_baseline_comparison:
         # BASELINE LASSO
         baseline_lasso_results = baseline_lasso_comparison(
-            pop_data=pop_data, budget=budget, alpha_lasso=alpha_lasso
+            pop_data=pop_data, budget=budget, alpha_lasso=alpha_lasso, seed=seed
         )
         if baseline_lasso_results: 
             print(f"Baseline Lasso Results: {baseline_lasso_results}")
@@ -571,7 +594,7 @@ def run_variable_selection(
             print("No valid results from Lasso baseline comparison.")
         # BASELINE DRO LASSO
         baseline_dro_lasso_results = baseline_dro_lasso_comparison(
-            pop_data=pop_data, budget=budget, alpha_lasso=alpha_lasso
+            pop_data=pop_data, budget=budget, alpha_lasso=alpha_lasso, seed=seed
         )
         if baseline_dro_lasso_results:
             print(f"Baseline DRO Lasso Results: {baseline_dro_lasso_results}")
@@ -588,7 +611,7 @@ def run_variable_selection(
             })
         # BASELINE XGB
         baseline_xgb_results = baseline_xgb_comparison(
-            pop_data=pop_data, budget=budget
+            pop_data=pop_data, budget=budget, seed=seed
         )
         if baseline_xgb_results:
             print(f"Baseline XGB Results: {baseline_xgb_results}")
@@ -607,7 +630,8 @@ def run_variable_selection(
             print("No valid results from XGB baseline comparison.")
         # BASELINE DRO XGB
         baseline_dro_xgb_results = baseline_dro_xgb_comparison(
-            pop_data=pop_data, budget=budget)
+            pop_data=pop_data, budget=budget, seed=seed
+        )
         if baseline_dro_xgb_results:
             print(f"Baseline DRO XGB Results: {baseline_dro_xgb_results}")
             if meaningful_indices_list is None or any(mi is None for mi in meaningful_indices_list):
@@ -693,14 +717,19 @@ def run_experiment_multi_population(
         )
         # take the union of all the meaningful indices across populations; budget is the size of this union
         meaningful_indices_list = [pop['meaningful_indices'] for pop in pop_data]
-        if all(isinstance(indices, (list, tuple)) for indices in meaningful_indices_list if indices is not None):
-            all_meaningful_indices = set()
-            for indices in meaningful_indices_list:
-                if indices is not None:
-                    all_meaningful_indices.update(indices)
-            all_meaningful_indices = list(all_meaningful_indices)
-            budget = len(all_meaningful_indices)
-            print(f"Budget set to the size of the union of all meaningful indices: {budget}")
+        all_meaningful_indices = set()
+        for indices in meaningful_indices_list:
+            if indices is not None:
+                if isinstance(indices, np.ndarray):
+                    indices_list = indices.tolist()
+                else:
+                    indices_list = indices
+                all_meaningful_indices.update(indices_list)
+        all_meaningful_indices = list(all_meaningful_indices)
+        budget = min(len(all_meaningful_indices), budget)
+        print(f"Budget set to the size of the union of all meaningful indices: {budget}")
+        print(f"Meaningful indices: {meaningful_indices_list}")
+        print(f"Budget: {budget}")
     elif any('asc' in pop_config['dataset_type'].lower() for pop_config in pop_configs):
         # Use ASC data generation function
         pop_data = get_asc_pop_data()
@@ -714,6 +743,69 @@ def run_experiment_multi_population(
         print(f"Setting the dim to number of features in the ASC data: {len(pop_data[0]['X_raw'][0])}")
         m=len(pop_data[0]['X_raw'][0])
         print(f"ASC data generated with {len(pop_data)} populations.")
+    elif any('uci' in pop_config['dataset_type'].lower() for pop_config in pop_configs):
+        # Extract specific population groups you want
+        pop_groups = ["Young", "Middle", "Senior"]  # Age-based populations
+        
+        # Get UCI Adult data with these populations
+        pop_data = get_uci_pop_data(
+            populations=pop_groups,
+            subsample=True,
+            subsample_fraction=0.8,  # Use 80% for training
+            target="income_binary",
+            categorical_encoding='onehot',
+            seed=seed
+        )
+        
+        # Split into train/test
+        pop_data_test_val = []
+        for pop in pop_data:
+            # Create test/val population from 20% of data
+            n_samples = pop['X_raw'].shape[0]
+            test_size = int(n_samples * 0.5)
+            
+            # Random indices for test set
+            np.random.seed(seed)
+            indices = np.random.permutation(n_samples)
+            test_indices = indices[:test_size]
+            
+            # Create test/val population
+            pop_test = {
+                'pop_id': pop['pop_id'],
+                'X_std': torch.tensor(pop['X_raw'][test_indices], dtype=torch.float32).to(device),
+                'Y_std': torch.tensor(pop['Y_raw'][test_indices], dtype=torch.float32).to(device),
+                'X_raw': pop['X_raw'][test_indices],
+                'Y_raw': pop['Y_raw'][test_indices],
+            }
+            pop_data_test_val.append(pop_test)
+            
+            # Update training data (remove test samples)
+            train_indices = indices[test_size:]
+            pop['X_std'] = torch.tensor(pop['X_raw'][train_indices], dtype=torch.float32).to(device)
+            pop['Y_std'] = torch.tensor(pop['Y_raw'][train_indices], dtype=torch.float32).to(device)
+            
+            # Calculate E[Y|X] and term1_std
+            if estimator_type == "plugin":
+                E_Yx_orig_np = plugin_estimator_conditional_mean(
+                    pop['X_raw'][train_indices], pop['Y_raw'][train_indices], 
+                    base_model_type, n_folds=N_FOLDS, seed=seed
+                )
+            elif estimator_type == "if":
+                E_Yx_orig_np = IF_estimator_conditional_mean(
+                    pop['X_raw'][train_indices], pop['Y_raw'][train_indices], 
+                    base_model_type, n_folds=N_FOLDS, seed=seed
+                )
+                
+            pop['E_Yx_std'] = torch.tensor(E_Yx_orig_np, dtype=torch.float32).to(device)
+            pop['term1_std'] = np.mean(E_Yx_orig_np ** 2)
+        
+        # Set dimension to feature count
+        if len(pop_data) > 0:
+            m = pop_data[0]['X_raw'].shape[1]
+            print(f"UCI data dimension set to {m}")    
+        # print shapes of populations in both datasets
+        for pop in pop_data:
+            print(f"Population {pop['pop_id']} - Train shape: {pop['X_std'].shape}, Test shape: {pop_data_test_val[0]['X_std'].shape}")
     else:
         pop_data, pop_data_test_val = get_pop_data(
             pop_configs=pop_configs, m1=m1, m=m, dataset_size=dataset_size,
@@ -771,170 +863,177 @@ def run_experiment_multi_population(
         train_test_indices[pop['pop_id']] = (train_idx, test_idx)
 
     # Baseline selection
-    # LASSO
-    baseline_lasso_top_indices = variable_selection_results['baseline_lasso_results']['selected_indices'][:budget]
-    baseline_lasso_results = []
-    for pop in pop_data_test_val:
-        train_idx, test_idx = train_test_indices[pop['pop_id']]
-        # slice and move to CPU/NumPy for sklearn
-        if isinstance(pop['X_std'], torch.Tensor): 
-            X_train_pop = pop['X_std'][train_idx][:, baseline_lasso_top_indices].detach().cpu().numpy()
-            Y_train_pop = pop['Y_std'][train_idx].detach().cpu().numpy()
-            X_test_pop  = pop['X_std'][test_idx][:, baseline_lasso_top_indices].detach().cpu().numpy()
-            Y_test_pop  = pop['Y_std'][test_idx].detach().cpu().numpy()
-        else:
-            X_train_pop = pop['X_std'][train_idx][:, baseline_lasso_top_indices]
-            Y_train_pop = pop['Y_std'][train_idx]
-            X_test_pop  = pop['X_std'][test_idx][:, baseline_lasso_top_indices]
-            Y_test_pop  = pop['Y_std'][test_idx]
-        model = RandomForestRegressor(n_estimators=100, random_state=seed, n_jobs=-1)
-        model.fit(X_train_pop, Y_train_pop)
-        Y_pred = model.predict(X_test_pop)
-        mse = mean_squared_error(Y_test_pop, Y_pred)
-        r2 = r2_score(Y_test_pop, Y_pred)
-        baseline_lasso_results.append({
-            'pop_id': pop['pop_id'],
-            'mse': mse,
-            'r2': r2,
-            'selected_indices': baseline_lasso_top_indices,
-            'source' : 'baseline_lasso'
-        })
-    # DRO LASSO
-    baseline_dro_lasso_top_indices = variable_selection_results['baseline_dro_lasso_results']['selected_indices'][:budget]
-    baseline_dro_lasso_results = []
-    for pop in pop_data_test_val:
-        train_idx, test_idx = train_test_indices[pop['pop_id']]
-        # slice and move to CPU/NumPy for sklearn
-        if isinstance(pop['X_std'], torch.Tensor):
-            X_train_pop = pop['X_std'][train_idx][:, baseline_dro_lasso_top_indices].detach().cpu().numpy()
-            Y_train_pop = pop['Y_std'][train_idx].detach().cpu().numpy()
-            X_test_pop  = pop['X_std'][test_idx][:, baseline_dro_lasso_top_indices].detach().cpu().numpy()
-            Y_test_pop  = pop['Y_std'][test_idx].detach().cpu().numpy()
-        else:
-            X_train_pop = pop['X_std'][train_idx][:, baseline_dro_lasso_top_indices]
-            Y_train_pop = pop['Y_std'][train_idx]
-            X_test_pop  = pop['X_std'][test_idx][:, baseline_dro_lasso_top_indices]
-            Y_test_pop  = pop['Y_std'][test_idx]
-        model = RandomForestRegressor(n_estimators=100, random_state=seed, n_jobs=-1)
-        model.fit(X_train_pop, Y_train_pop)
-        Y_pred = model.predict(X_test_pop)
-        mse = mean_squared_error(Y_test_pop, Y_pred)
-        r2 = r2_score(Y_test_pop, Y_pred)
-        baseline_dro_lasso_results.append({
-            'pop_id': pop['pop_id'],
-            'mse': mse,
-            'r2': r2,
-            'selected_indices': baseline_dro_lasso_top_indices,
-            'source' : 'baseline_dro_lasso'
-        })
+    # try for different budget values
+    if budget>=10:
+        budgets = [budget//2, budget]
+    else:
+        budgets = [budget]
+    original_budget = budget
+    for i, budget in enumerate(budgets):
+        # LASSO
+        baseline_lasso_top_indices = variable_selection_results['baseline_lasso_results']['selected_indices'][:budget]
+        baseline_lasso_results = []
+        for pop in pop_data_test_val:
+            train_idx, test_idx = train_test_indices[pop['pop_id']]
+            # slice and move to CPU/NumPy for sklearn
+            if isinstance(pop['X_std'], torch.Tensor): 
+                X_train_pop = pop['X_std'][train_idx][:, baseline_lasso_top_indices].detach().cpu().numpy()
+                Y_train_pop = pop['Y_std'][train_idx].detach().cpu().numpy()
+                X_test_pop  = pop['X_std'][test_idx][:, baseline_lasso_top_indices].detach().cpu().numpy()
+                Y_test_pop  = pop['Y_std'][test_idx].detach().cpu().numpy()
+            else:
+                X_train_pop = pop['X_std'][train_idx][:, baseline_lasso_top_indices]
+                Y_train_pop = pop['Y_std'][train_idx]
+                X_test_pop  = pop['X_std'][test_idx][:, baseline_lasso_top_indices]
+                Y_test_pop  = pop['Y_std'][test_idx]
+            model = RandomForestRegressor(n_estimators=100, random_state=seed, n_jobs=-1)
+            model.fit(X_train_pop, Y_train_pop)
+            Y_pred = model.predict(X_test_pop)
+            mse = mean_squared_error(Y_test_pop, Y_pred)
+            r2 = r2_score(Y_test_pop, Y_pred)
+            baseline_lasso_results.append({
+                'pop_id': pop['pop_id'],
+                'mse': mse,
+                'r2': r2,
+                'selected_indices': baseline_lasso_top_indices,
+                'source' : 'baseline_lasso'
+            })
+        # DRO LASSO
+        baseline_dro_lasso_top_indices = variable_selection_results['baseline_dro_lasso_results']['selected_indices'][:budget]
+        baseline_dro_lasso_results = []
+        for pop in pop_data_test_val:
+            train_idx, test_idx = train_test_indices[pop['pop_id']]
+            # slice and move to CPU/NumPy for sklearn
+            if isinstance(pop['X_std'], torch.Tensor):
+                X_train_pop = pop['X_std'][train_idx][:, baseline_dro_lasso_top_indices].detach().cpu().numpy()
+                Y_train_pop = pop['Y_std'][train_idx].detach().cpu().numpy()
+                X_test_pop  = pop['X_std'][test_idx][:, baseline_dro_lasso_top_indices].detach().cpu().numpy()
+                Y_test_pop  = pop['Y_std'][test_idx].detach().cpu().numpy()
+            else:
+                X_train_pop = pop['X_std'][train_idx][:, baseline_dro_lasso_top_indices]
+                Y_train_pop = pop['Y_std'][train_idx]
+                X_test_pop  = pop['X_std'][test_idx][:, baseline_dro_lasso_top_indices]
+                Y_test_pop  = pop['Y_std'][test_idx]
+            model = RandomForestRegressor(n_estimators=100, random_state=seed, n_jobs=-1)
+            model.fit(X_train_pop, Y_train_pop)
+            Y_pred = model.predict(X_test_pop)
+            mse = mean_squared_error(Y_test_pop, Y_pred)
+            r2 = r2_score(Y_test_pop, Y_pred)
+            baseline_dro_lasso_results.append({
+                'pop_id': pop['pop_id'],
+                'mse': mse,
+                'r2': r2,
+                'selected_indices': baseline_dro_lasso_top_indices,
+                'source' : 'baseline_dro_lasso'
+            })
 
-    # XGB
-    baseline_xgb_top_indices = variable_selection_results['baseline_xgb_results']['selected_indices'][:budget]
-    baseline_xgb_results = []
-    for pop in pop_data_test_val:
-        train_idx, test_idx = train_test_indices[pop['pop_id']]
-        # slice and move to CPU/NumPy for sklearn
-        if isinstance(pop['X_std'], torch.Tensor):
-            X_train_pop = pop['X_std'][train_idx][:, baseline_xgb_top_indices].detach().cpu().numpy()
-            Y_train_pop = pop['Y_std'][train_idx].detach().cpu().numpy()
-            X_test_pop  = pop['X_std'][test_idx][:, baseline_xgb_top_indices].detach().cpu().numpy()
-            Y_test_pop  = pop['Y_std'][test_idx].detach().cpu().numpy()
-        else:
-            X_train_pop = pop['X_std'][train_idx][:, baseline_xgb_top_indices]
-            Y_train_pop = pop['Y_std'][train_idx]
-            X_test_pop  = pop['X_std'][test_idx][:, baseline_xgb_top_indices]
-            Y_test_pop  = pop['Y_std'][test_idx]
-        model = RandomForestRegressor(n_estimators=100, random_state=seed, n_jobs=-1)
-        model.fit(X_train_pop, Y_train_pop)
-        Y_pred = model.predict(X_test_pop)
-        mse = mean_squared_error(Y_test_pop, Y_pred)
-        r2 = r2_score(Y_test_pop, Y_pred)
-        baseline_xgb_results.append({
-            'pop_id': pop['pop_id'],
-            'mse': mse,
-            'r2': r2,
-            'selected_indices': baseline_xgb_top_indices,
-            'source' : 'baseline_xgb'
-        })
+        # XGB
+        baseline_xgb_top_indices = variable_selection_results['baseline_xgb_results']['selected_indices'][:budget]
+        baseline_xgb_results = []
+        for pop in pop_data_test_val:
+            train_idx, test_idx = train_test_indices[pop['pop_id']]
+            # slice and move to CPU/NumPy for sklearn
+            if isinstance(pop['X_std'], torch.Tensor):
+                X_train_pop = pop['X_std'][train_idx][:, baseline_xgb_top_indices].detach().cpu().numpy()
+                Y_train_pop = pop['Y_std'][train_idx].detach().cpu().numpy()
+                X_test_pop  = pop['X_std'][test_idx][:, baseline_xgb_top_indices].detach().cpu().numpy()
+                Y_test_pop  = pop['Y_std'][test_idx].detach().cpu().numpy()
+            else:
+                X_train_pop = pop['X_std'][train_idx][:, baseline_xgb_top_indices]
+                Y_train_pop = pop['Y_std'][train_idx]
+                X_test_pop  = pop['X_std'][test_idx][:, baseline_xgb_top_indices]
+                Y_test_pop  = pop['Y_std'][test_idx]
+            model = RandomForestRegressor(n_estimators=100, random_state=seed, n_jobs=-1)
+            model.fit(X_train_pop, Y_train_pop)
+            Y_pred = model.predict(X_test_pop)
+            mse = mean_squared_error(Y_test_pop, Y_pred)
+            r2 = r2_score(Y_test_pop, Y_pred)
+            baseline_xgb_results.append({
+                'pop_id': pop['pop_id'],
+                'mse': mse,
+                'r2': r2,
+                'selected_indices': baseline_xgb_top_indices,
+                'source' : 'baseline_xgb'
+            })
 
-    # DRO XGB
-    baseline_dro_xgb_top_indices = variable_selection_results['baseline_dro_xgb_results']['selected_indices'][:budget]
-    baseline_dro_xgb_results = []
-    for pop in pop_data_test_val:
-        train_idx, test_idx = train_test_indices[pop['pop_id']]
-        # slice and move to CPU/NumPy for sklearn
-        if isinstance(pop['X_std'], torch.Tensor):
-            X_train_pop = pop['X_std'][train_idx][:, baseline_dro_xgb_top_indices].detach().cpu().numpy()
-            Y_train_pop = pop['Y_std'][train_idx].detach().cpu().numpy()
-            X_test_pop  = pop['X_std'][test_idx][:, baseline_dro_xgb_top_indices].detach().cpu().numpy()
-            Y_test_pop  = pop['Y_std'][test_idx].detach().cpu().numpy()
-        else:
-            X_train_pop = pop['X_std'][train_idx][:, baseline_dro_xgb_top_indices]
-            Y_train_pop = pop['Y_std'][train_idx]
-            X_test_pop  = pop['X_std'][test_idx][:, baseline_dro_xgb_top_indices]
-            Y_test_pop  = pop['Y_std'][test_idx]
-        model = RandomForestRegressor(n_estimators=100, random_state=seed, n_jobs=-1)
-        model.fit(X_train_pop, Y_train_pop)
-        Y_pred = model.predict(X_test_pop)
-        mse = mean_squared_error(Y_test_pop, Y_pred)
-        r2 = r2_score(Y_test_pop, Y_pred)
-        baseline_dro_xgb_results.append({
-            'pop_id': pop['pop_id'],
-            'mse': mse,
-            'r2': r2,
-            'selected_indices': baseline_dro_xgb_top_indices,
-        'source' : 'baseline_dro_xgb'
-        })
+        # DRO XGB
+        baseline_dro_xgb_top_indices = variable_selection_results['baseline_dro_xgb_results']['selected_indices'][:budget]
+        baseline_dro_xgb_results = []
+        for pop in pop_data_test_val:
+            train_idx, test_idx = train_test_indices[pop['pop_id']]
+            # slice and move to CPU/NumPy for sklearn
+            if isinstance(pop['X_std'], torch.Tensor):
+                X_train_pop = pop['X_std'][train_idx][:, baseline_dro_xgb_top_indices].detach().cpu().numpy()
+                Y_train_pop = pop['Y_std'][train_idx].detach().cpu().numpy()
+                X_test_pop  = pop['X_std'][test_idx][:, baseline_dro_xgb_top_indices].detach().cpu().numpy()
+                Y_test_pop  = pop['Y_std'][test_idx].detach().cpu().numpy()
+            else:
+                X_train_pop = pop['X_std'][train_idx][:, baseline_dro_xgb_top_indices]
+                Y_train_pop = pop['Y_std'][train_idx]
+                X_test_pop  = pop['X_std'][test_idx][:, baseline_dro_xgb_top_indices]
+                Y_test_pop  = pop['Y_std'][test_idx]
+            model = RandomForestRegressor(n_estimators=100, random_state=seed, n_jobs=-1)
+            model.fit(X_train_pop, Y_train_pop)
+            Y_pred = model.predict(X_test_pop)
+            mse = mean_squared_error(Y_test_pop, Y_pred)
+            r2 = r2_score(Y_test_pop, Y_pred)
+            baseline_dro_xgb_results.append({
+                'pop_id': pop['pop_id'],
+                'mse': mse,
+                'r2': r2,
+                'selected_indices': baseline_dro_xgb_top_indices,
+            'source' : 'baseline_dro_xgb'
+            })
 
-    # Our selection
-    our_top_indices = variable_selection_results['our_method_results']['selected_indices'][:budget]
-    our_results = []
-    for pop in pop_data_test_val:
-        train_idx, test_idx = train_test_indices[pop['pop_id']]
-        if isinstance(pop['X_std'], torch.Tensor):
-            X_train_pop = pop['X_std'][train_idx][:, our_top_indices].detach().cpu().numpy()
-            Y_train_pop = pop['Y_std'][train_idx].detach().cpu().numpy()
-            X_test_pop  = pop['X_std'][test_idx][:, our_top_indices].detach().cpu().numpy()
-            Y_test_pop  = pop['Y_std'][test_idx].detach().cpu().numpy()
-        else:
-            X_train_pop = pop['X_std'][train_idx][:, our_top_indices]
-            Y_train_pop = pop['Y_std'][train_idx]
-            X_test_pop  = pop['X_std'][test_idx][:, our_top_indices]
-            Y_test_pop  = pop['Y_std'][test_idx]
-        model = RandomForestRegressor(n_estimators=100, random_state=seed, n_jobs=-1)
-        model.fit(X_train_pop, Y_train_pop)
-        Y_pred = model.predict(X_test_pop)
-        mse = mean_squared_error(Y_test_pop, Y_pred)
-        r2 = r2_score(Y_test_pop, Y_pred)
-        our_results.append({
-            'pop_id': pop['pop_id'],
-            'mse': mse,
-            'r2': r2,
-            'selected_indices': our_top_indices,
-            'source' : 'our_method'
-        })
+        # Our selection
+        our_top_indices = variable_selection_results['our_method_results']['selected_indices'][:budget]
+        our_results = []
+        for pop in pop_data_test_val:
+            train_idx, test_idx = train_test_indices[pop['pop_id']]
+            if isinstance(pop['X_std'], torch.Tensor):
+                X_train_pop = pop['X_std'][train_idx][:, our_top_indices].detach().cpu().numpy()
+                Y_train_pop = pop['Y_std'][train_idx].detach().cpu().numpy()
+                X_test_pop  = pop['X_std'][test_idx][:, our_top_indices].detach().cpu().numpy()
+                Y_test_pop  = pop['Y_std'][test_idx].detach().cpu().numpy()
+            else:
+                X_train_pop = pop['X_std'][train_idx][:, our_top_indices]
+                Y_train_pop = pop['Y_std'][train_idx]
+                X_test_pop  = pop['X_std'][test_idx][:, our_top_indices]
+                Y_test_pop  = pop['Y_std'][test_idx]
+            model = RandomForestRegressor(n_estimators=100, random_state=seed, n_jobs=-1)
+            model.fit(X_train_pop, Y_train_pop)
+            Y_pred = model.predict(X_test_pop)
+            mse = mean_squared_error(Y_test_pop, Y_pred)
+            r2 = r2_score(Y_test_pop, Y_pred)
+            our_results.append({
+                'pop_id': pop['pop_id'],
+                'mse': mse,
+                'r2': r2,
+                'selected_indices': our_top_indices,
+                'source' : 'our_method'
+            })
 
-    # Concatenate the results for results_comparison.csv (downstream model performance: MSE, R2)
-    all_downstream_eval_results = []
-    # These are the lists of dicts from RandomForestRegressor evaluations done earlier in the script
-    all_downstream_eval_results.extend(baseline_lasso_results) 
-    all_downstream_eval_results.extend(baseline_dro_lasso_results)
-    all_downstream_eval_results.extend(baseline_xgb_results)
-    all_downstream_eval_results.extend(baseline_dro_xgb_results)
-    all_downstream_eval_results.extend(our_results) # 'our_results' is your method's downstream eval list
+        # Concatenate the results for results_comparison.csv (downstream model performance: MSE, R2)
+        all_downstream_eval_results = []
+        # These are the lists of dicts from RandomForestRegressor evaluations done earlier in the script
+        all_downstream_eval_results.extend(baseline_lasso_results) 
+        all_downstream_eval_results.extend(baseline_dro_lasso_results)
+        all_downstream_eval_results.extend(baseline_xgb_results)
+        all_downstream_eval_results.extend(baseline_dro_xgb_results)
+        all_downstream_eval_results.extend(our_results) # 'our_results' is your method's downstream eval list
 
-    results_comparison_df = pd.DataFrame(all_downstream_eval_results)
+        results_comparison_df = pd.DataFrame(all_downstream_eval_results)
 
-    if 'pop_id' in results_comparison_df.columns:
-        results_comparison_df = results_comparison_df.rename(columns={'pop_id': 'population'})
+        if 'pop_id' in results_comparison_df.columns:
+            results_comparison_df = results_comparison_df.rename(columns={'pop_id': 'population'})
 
-    results_path = os.path.join(save_path, 'results_comparison.csv')
-    results_comparison_df.to_csv(results_path, index=False)
-    print(f"Downstream model performance comparison saved to: {results_path}")
+        results_path = os.path.join(save_path, f'results_comparison_budget_{budget}.csv')
+        results_comparison_df.to_csv(results_path, index=False)
+        print(f"Downstream model performance comparison saved to: {results_path}")
 
-
+    budget = original_budget    
     # This section is for variable selection quality (coverage, P/R/F1 of selected features)
-    if not any('asc' in pop_config['dataset_type'].lower() for pop_config in pop_configs):
+    if not any('asc' in pop_config['dataset_type'].lower() for pop_config in pop_configs) and not any('uci' in pop_config['dataset_type'].lower() for pop_config in pop_configs):
         print("Data is not ASC. Aggregating variable selection quality results...")
         
         vsr = variable_selection_results # Main results dict from run_variable_selection
@@ -1074,7 +1173,7 @@ def parse_args():
     parser.add_argument('--m', type=int, default=20)
     parser.add_argument('--dataset-size', type=int, default=5000)
     parser.add_argument('--baseline-data-size', type=int, default=15000)
-    parser.add_argument('--asc-data-fraction', type=float, default=0.1)
+    parser.add_argument('--asc-data-fraction', type=float, default=0.2)
     parser.add_argument('--noise-scale', type=float, default=0.1)
     parser.add_argument('--corr-strength', type=float, default=0.0)
     parser.add_argument('--populations', nargs='+', default=['linear_regression', 'sinusoidal_regression'])
@@ -1120,7 +1219,7 @@ def parse_args():
 def main():
     args = parse_args()
     if args.populations[0].lower().startswith('baseline_failure'):
-        args.budget = 3
+        args.budget = 5
         base_save_path = os.path.join(args.save_path, f'{args.populations[0]}/')
     elif args.populations[0].lower().startswith('linear'):
         base_save_path = os.path.join(args.save_path, 'linear_regression/')

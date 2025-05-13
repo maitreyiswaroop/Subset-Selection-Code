@@ -33,6 +33,14 @@ def compute_population_stats(selected_indices: List[int],
     percentages = []
     selected_set = set(selected_indices)
 
+    # check if meaningful_indices_list is None
+    if meaningful_indices_list is None or any(mi is None for mi in meaningful_indices_list):
+        print(f"Since meaningful_indices_list is None, using prediction loss for selection.")
+        return pop_stats, {
+            'min_percentage': None, 'max_percentage': None,
+            'median_percentage': None, 'min_population_details': None,
+            'max_population_details': None
+        }
     for i, meaningful in enumerate(meaningful_indices_list):
         meaningful_set = set(meaningful)
         common = selected_set.intersection(meaningful_set)
@@ -63,7 +71,8 @@ def baseline_lasso_comparison(
     pop_data: List[Dict[str, Any]],
     budget: int,
     alpha_lasso: Optional[float] = None,
-    lasso_alphas_to_try: Optional[List[float]] = None
+    lasso_alphas_to_try: Optional[List[float]] = None,
+    seed: Optional[int] = None
 ) -> Dict[str, Any]:
     """
     Run Lasso baseline comparison on pooled pop_data.
@@ -72,6 +81,8 @@ def baseline_lasso_comparison(
         baseline_pop_stats, baseline_overall_stats,
         precision, recall, f1_score
     """
+    if seed is not None:
+        np.random.seed(seed)
     # pool raw X, Y
     X_pooled = np.vstack([pop['X_raw'] for pop in pop_data])
     Y_pooled = np.hstack([pop['Y_raw'] for pop in pop_data])
@@ -117,7 +128,8 @@ def baseline_lasso_comparison(
             rec  = intersect / len(true_set)  if true_set else 0.0
             f1   = 2*prec*rec/(prec+rec)      if (prec+rec)>0 else 0.0
 
-            if f1 > best_lasso_f1:
+            if prediction_loss < best_prediction_loss:
+                best_prediction_loss = prediction_loss
                 best_lasso_f1 = f1
                 pop_stats, overall_stats = compute_population_stats(
                     selected_idx.tolist(), meaningful_indices_list
@@ -138,7 +150,8 @@ def baseline_lasso_comparison(
 
 def baseline_xgb_comparison(pop_data: List[Dict[str, Any]],
                             budget: int,
-                            classification: bool = False):
+                            classification: bool = False,
+                            seed: Optional[int] = None) -> Dict[str, Any]:
     """
     Run XGBoost baseline comparison on pooled pop_data.
     Returns the best baseline_results dict with keys:
@@ -146,6 +159,8 @@ def baseline_xgb_comparison(pop_data: List[Dict[str, Any]],
         baseline_pop_stats, baseline_overall_stats,
         precision, recall, f1_score
     """
+    if seed is not None:
+        np.random.seed(seed)
     # pool raw X, Y
     X_pooled = np.vstack([pop['X_raw'] for pop in pop_data])
     Y_pooled = np.hstack([pop['Y_raw'] for pop in pop_data])
@@ -209,7 +224,8 @@ def baseline_dro_lasso_comparison(
     lasso_alphas_to_try: Optional[List[float]] = None,
     max_iter: int = 100,
     tol: float = 1e-4,
-    eta: float = 0.1  # Step size for weight updates
+    eta: float = 0.1,  # Step size for weight updates
+    seed: Optional[int] = None
 ) -> Dict[str, Any]:
     """
     Run DRO Lasso comparison on pop_data.
@@ -220,6 +236,8 @@ def baseline_dro_lasso_comparison(
         baseline_pop_stats, baseline_overall_stats,
         precision, recall, f1_score
     """
+    if seed is not None:
+        np.random.seed(seed)
     # Determine alphas to try
     if lasso_alphas_to_try is None:
         lasso_alphas_to_try = [alpha_lasso] if alpha_lasso is not None else [0.0001, 0.001, 0.01, 0.1]
@@ -300,7 +318,8 @@ def baseline_dro_lasso_comparison(
             rec = intersect / len(true_set) if true_set else 0.0
             f1 = 2 * prec * rec / (prec + rec) if (prec + rec) > 0 else 0.0
             
-            if f1 > best_lasso_f1:
+            if max_loss < best_prediction_max_loss:
+                best_prediction_max_loss = max_loss
                 best_lasso_f1 = f1
                 pop_stats, overall_stats = compute_population_stats(
                     selected_idx.tolist(), meaningful_indices_list
@@ -326,8 +345,9 @@ def baseline_dro_xgb_comparison(
     pop_data: List[Dict[str, Any]],
     budget: int,
     classification: bool = False,
-    max_iter: int = 10,
-    eta: float = 0.1  # Step size for weight updates
+    max_iter: int = 20,
+    eta: float = 0.1,  # Step size for weight updates
+    seed: Optional[int] = None
 ) -> Dict[str, Any]:
     """
     Run DRO XGBoost comparison on pop_data.
@@ -337,6 +357,8 @@ def baseline_dro_xgb_comparison(
       - selected_indices, baseline_coeffs, baseline_pop_stats,
         baseline_overall_stats, precision, recall, f1_score
     """
+    if seed is not None:
+        np.random.seed(seed)
     # Get population data
     population_data = []
     for pop in pop_data:

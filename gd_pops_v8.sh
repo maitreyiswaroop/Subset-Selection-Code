@@ -65,7 +65,7 @@ for population in "${populations[@]}"; do
         --base-model-type xgb \
         --objective-value-estimator if \
         --k-kernel 1000 \
-        --scheduler-type CosineAnnealingLR \
+        --scheduler-type ReduceLROnPlateau \
         --scheduler-t-max 150 \
         --scheduler-min-lr 1e-6 \
         --seed $seed \

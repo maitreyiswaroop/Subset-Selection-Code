@@ -28,7 +28,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from folktables import ACSDataSource
 from sklearn.impute import SimpleImputer
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
 import argparse
 
 # FIPS codes for the states of interest
@@ -183,6 +185,28 @@ def generate_data_asc(
 
     return X_all, Y_all, Xs, Ys, feature_cols, states
 
+def preprocess_asc_features(X_raw, categorical_cols=None):
+    """Apply ASC-specific feature preprocessing"""
+    # Identify categorical columns if not specified
+    if categorical_cols is None:
+        categorical_cols = []
+        for i in range(X_raw.shape[1]):
+            if len(np.unique(X_raw[:, i])) < 10:  # Threshold for categorical
+                categorical_cols.append(i)
+    
+    # Create preprocessing pipeline
+    numeric_cols = [i for i in range(X_raw.shape[1]) if i not in categorical_cols]
+    preprocessor = ColumnTransformer(
+        transformers=[
+            ('num', StandardScaler(), numeric_cols),
+            ('cat', OneHotEncoder(handle_unknown='ignore'), categorical_cols)
+        ]
+    )
+    
+    # Apply preprocessing
+    X_processed = preprocessor.fit_transform(X_raw)
+    
+    return X_processed, preprocessor
 
 def preprocess_data(X_all, Xs, impute_strategy="mean", scale=True):
     """

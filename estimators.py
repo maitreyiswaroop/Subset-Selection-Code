@@ -590,6 +590,92 @@ def chunked_pairwise_distance(X: torch.Tensor, S: torch.Tensor, chunk_size: int 
                 
     return D2
 
+def estimate_conditional_keops_flexible_optimized(
+    X: torch.Tensor,           # (n_train, d) - Reference features
+    S: torch.Tensor,           # (n_test, d)  - Query features
+    E_Y_X: torch.Tensor,       # (n_train,) - Reference values
+    param: torch.Tensor,       # (d,)       - Either alpha or theta
+    param_type: str = 'alpha', # 'alpha' or 'theta'
+    k: int = 1000,
+    clamp_min_alpha: float = 1e-4, 
+    max_batch_size: int = 500  # Max batch size to control memory usage
+) -> torch.Tensor:
+    """
+    Memory-efficient GPU implementation that avoids OOM errors
+    by processing in smaller batches while staying on GPU.
+    """
+    device = param.device
+    n_train, d = X.shape
+    n_test = S.shape[0]
+    
+    # Scale features according to parameter type
+    if param_type == 'alpha':
+        alpha_clamped = torch.clamp(param, min=clamp_min_alpha)
+        inv_sqrt_var_t = torch.rsqrt(alpha_clamped)
+    elif param_type == 'theta':
+        inv_sqrt_var_t = torch.exp(-param / 2.0)
+    else:
+        raise ValueError("param_type must be 'alpha' or 'theta'")
+    
+    # Scale reference points (only once)
+    Xs_scaled = X * inv_sqrt_var_t
+    
+    # Create output tensor
+    results = torch.zeros(n_test, dtype=S.dtype, device=device)
+    
+    # Automatically determine batch size based on data dimensions
+    # Adjust the divisor based on your GPU memory
+    min_batch_size = 1
+    suggested_batch_size = max(min_batch_size, min(max_batch_size, int(1e9 / (n_train * d * 4))))
+    batch_size = suggested_batch_size
+    
+    # Process in batches to manage memory
+    for i in range(0, n_test, batch_size):
+        end_i = min(i + batch_size, n_test)
+        batch_S = S[i:end_i]
+        
+        # Scale query points for this batch
+        batch_S_scaled = batch_S * inv_sqrt_var_t
+        
+        # Compute distances efficiently in chunks if reference set is large
+        if n_train > 10000:
+            inner_batch_size = min(5000, n_train)
+            D2 = torch.zeros((end_i - i, n_train), device=device)
+            
+            for j in range(0, n_train, inner_batch_size):
+                end_j = min(j + inner_batch_size, n_train)
+                # Compute and store partial distance matrix
+                D2[:, j:end_j] = torch.cdist(batch_S_scaled, Xs_scaled[j:end_j], p=2).pow(2)
+                
+                # Free memory explicitly
+                torch.cuda.empty_cache()
+        else:
+            # If reference set is small enough, compute in one go
+            D2 = torch.cdist(batch_S_scaled, Xs_scaled, p=2).pow(2)
+        
+        # Find k nearest neighbors
+        k_actual = min(k, n_train)
+        dists, indices = torch.topk(D2, k_actual, largest=False, dim=1)
+        
+        # Free the distance matrix explicitly
+        del D2
+        torch.cuda.empty_cache()
+        
+        # Compute weights
+        weights = torch.exp(-0.5 * dists)
+        weights_sum = torch.sum(weights, dim=1, keepdim=True)
+        weights = weights / torch.clamp(weights_sum, min=1e-8)
+        
+        # Get values and compute weighted sum
+        values = E_Y_X[indices]
+        results[i:end_i] = torch.sum(weights * values, dim=1)
+        
+        # Free batch memory
+        del batch_S_scaled, dists, indices, weights, values
+        torch.cuda.empty_cache()
+        
+    return results
+
 def estimate_conditional_keops_flexible(
     X: torch.Tensor,           # (n_train, d) - Reference features
     S: torch.Tensor,           # (n_test, d)  - Query features
@@ -878,12 +964,23 @@ def estimate_T2_mc_flexible(
         epsilon_k = torch.randn_like(X_std_torch)
         S_param_k = X_std_torch + epsilon_k * noise_scale
         
-        # Use memory-efficient kernel estimator
-        E_Y_S_std_k = estimate_conditional_keops_flexible(
+        try:
+            # Use memory-efficient kernel estimator
+            E_Y_S_std_k = estimate_conditional_keops_flexible(
             X_std_torch, S_param_k, E_Yx_std_torch, 
             param_for_kernel, param_type, k=k_kernel,
             chunk_size=chunk_size
-        )
+            )
+        except RuntimeError as e:
+            if 'CUDA out of memory' in str(e):
+                print("Warning: CUDA out of memory error detected. Switching to optimized estimator.")
+            E_Y_S_std_k = estimate_conditional_keops_flexible_optimized(
+                X_std_torch, S_param_k, E_Yx_std_torch,
+                param_for_kernel, param_type, k=k_kernel,
+                max_batch_size=500
+            )
+        else:
+            raise e
         
         term2_sample_std_k = E_Y_S_std_k.pow(2).mean()
         avg_term2_std += term2_sample_std_k
@@ -941,11 +1038,23 @@ def estimate_T2_kernel_IF_like_flexible(
         S_param_k = X_std_torch + epsilon_k * noise_scale
         
         # Use memory-efficient kernel estimator
-        mu_S_hat_k = estimate_conditional_keops_flexible(
-            X_std_torch, S_param_k, E_Yx_std_torch,
-            param_torch, param_type, k=k_kernel,
-            chunk_size=chunk_size
-        )
+        try:
+            # Use memory-efficient kernel estimator
+            mu_S_hat_k = estimate_conditional_keops_flexible(
+                X_std_torch, S_param_k, E_Yx_std_torch,
+                param_torch, param_type, k=k_kernel,
+                chunk_size=chunk_size
+            )
+        except RuntimeError as e:
+            if 'CUDA out of memory' in str(e):
+                print("Warning: CUDA out of memory error detected. Switching to optimized estimator.")
+            mu_S_hat_k = estimate_conditional_keops_flexible_optimized(
+                X_std_torch, S_param_k, E_Yx_std_torch,
+                param_torch, param_type, k=k_kernel,
+                max_batch_size=500
+            )
+        else:
+            raise e
         
         term2_sample_if_like_k = (2 * Y_std_torch * mu_S_hat_k - mu_S_hat_k.pow(2)).mean()
         avg_term2_if_like += term2_sample_if_like_k
@@ -953,39 +1062,49 @@ def estimate_T2_kernel_IF_like_flexible(
     return avg_term2_if_like / actual_mc_samples
 
 def estimate_E_Y_S_kernel_flexible(X_std_torch: torch.Tensor,
-                                   E_Yx_std_torch: torch.Tensor,
-                                   param_torch: torch.Tensor, # Detached alpha or theta
-                                   param_type: str,
-                                   n_mc_samples_S: int = 1,
-                                   k_kernel: int = 1000) -> torch.Tensor:
-     """
-     Estimates E[Y_std|S] value using the flexible kernel method.
-     Averages over n_mc_samples_S realizations of S. Uses detached param.
-     """
-     avg_E_Y_S = torch.zeros(X_std_torch.shape[0], device=X_std_torch.device, dtype=X_std_torch.dtype)
-     param_val = param_torch.detach().clone() # Use detached value
+                                E_Yx_std_torch: torch.Tensor,
+                                param_torch: torch.Tensor, # Detached alpha or theta
+                                param_type: str,
+                                n_mc_samples_S: int = 1,
+                                k_kernel: int = 1000) -> torch.Tensor:
+    """
+    Estimates E[Y_std|S] value using the flexible kernel method.
+    Averages over n_mc_samples_S realizations of S. Uses detached param.
+    """
+    avg_E_Y_S = torch.zeros(X_std_torch.shape[0], device=X_std_torch.device, dtype=X_std_torch.dtype)
+    param_val = param_torch.detach().clone() # Use detached value
 
-     if param_type == 'alpha':
-         alpha_clamped = param_val.clamp(min=CLAMP_MIN_ALPHA, max=CLAMP_MAX_ALPHA)
-         noise_scale = torch.sqrt(alpha_clamped)
-     elif param_type == 'theta':
-         # Clamp the resulting alpha for noise stability
-         alpha_for_noise = torch.exp(param_val).clamp(min=CLAMP_MIN_ALPHA, max=CLAMP_MAX_ALPHA)
-         noise_scale = torch.sqrt(alpha_for_noise)
-     else:
-         raise ValueError("param_type must be 'alpha' or 'theta'")
+    if param_type == 'alpha':
+        alpha_clamped = param_val.clamp(min=CLAMP_MIN_ALPHA, max=CLAMP_MAX_ALPHA)
+        noise_scale = torch.sqrt(alpha_clamped)
+    elif param_type == 'theta':
+        # Clamp the resulting alpha for noise stability
+        alpha_for_noise = torch.exp(param_val).clamp(min=CLAMP_MIN_ALPHA, max=CLAMP_MAX_ALPHA)
+        noise_scale = torch.sqrt(alpha_for_noise)
+    else:
+        raise ValueError("param_type must be 'alpha' or 'theta'")
 
-     with torch.no_grad():
-         for _ in range(n_mc_samples_S):
-             epsilon_k = torch.randn_like(X_std_torch)
-             S_param_k = X_std_torch + epsilon_k * noise_scale
-             # Pass detached param for value estimation
-             E_Y_S_std_k = estimate_conditional_keops_flexible(
-                 X_std_torch, S_param_k, E_Yx_std_torch, param_val, param_type, k=k_kernel
-             )
-             avg_E_Y_S += E_Y_S_std_k
+    with torch.no_grad():
+        for _ in range(n_mc_samples_S):
+            epsilon_k = torch.randn_like(X_std_torch)
+            S_param_k = X_std_torch + epsilon_k * noise_scale
+            # Pass detached param for value estimation
+        try:
+            E_Y_S_std_k = estimate_conditional_keops_flexible(
+                X_std_torch, S_param_k, E_Yx_std_torch, param_val, param_type, k=k_kernel
+            )
+        except RuntimeError as e:
+            if 'CUDA out of memory' in str(e):
+                print("Warning: CUDA out of memory error detected. Switching to optimized estimator.")
+            E_Y_S_std_k = estimate_conditional_keops_flexible_optimized(
+                X_std_torch, S_param_k, E_Yx_std_torch, param_val, param_type, k=k_kernel,
+                max_batch_size=500
+            )
+        else:
+            raise e
+        avg_E_Y_S += E_Y_S_std_k
 
-     return avg_E_Y_S / n_mc_samples_S
+    return avg_E_Y_S / n_mc_samples_S
 
 
 # def estimate_T2_kernel_IF_like_flexible(
