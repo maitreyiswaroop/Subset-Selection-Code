@@ -3,7 +3,7 @@
 #SBATCH --output=/data/user_data/mswaroop/Subset-Selection-Code/logs/gd_pops/v7_gd_pops_%j.out  # CHANGE: Specify log directory
 #SBATCH --error=/data/user_data/mswaroop/Subset-Selection-Code/logs/gd_pops/v7_gd_pops_%j.err   # CHANGE: Specify log directory
 #SBATCH --gres=gpu:1                         # Request 1 GPU (adjust if needed)
-#SBATCH --cpus-per-task=2                  # Request CPUs (adjust if needed)
+#SBATCH --cpus-per-task=4                  # Request CPUs (adjust if needed)
 #SBATCH --time=05:00:00                      # Time limit (e.g., 2 hours, adjust)
 #SBATCH --mem=32G                          # Memory requirement (adjust if needed)
 #SBATCH --partition=general                  # CHANGE: Specify your cluster partition

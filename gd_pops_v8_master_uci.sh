@@ -7,10 +7,11 @@
 pop=uci
 t2_types=(mc_plugin)
 t2=mc_plugin
-seeds=(26)
+seeds=(15)
 seed=26
-penalty_lambdas=(0.1 0.01 1.0)
-lrs=(0.005 0.001 0.0001)
+penalty_lambdas=(0.0001)
+lrs=(0.0005 0.0002 0.0001)
+# lrs=(0.001)
 
 # for seed in "${seeds[@]}"; do
 for penalty_lambda in "${penalty_lambdas[@]}"; do
@@ -33,7 +34,7 @@ for penalty_lambda in "${penalty_lambdas[@]}"; do
       --optimizer-type adam \
       --parameterization theta \
       --alpha-init random_2 \
-      --num-epochs 50 \
+      --num-epochs 80 \
       --patience 15 \
       --gradient-mode autograd \
       --t2-estimator-type $t2 \
@@ -43,7 +44,7 @@ for penalty_lambda in "${penalty_lambdas[@]}"; do
       --objective-value-estimator if \
       --k-kernel 2000 \
       --scheduler-type CosineAnnealingLR \
-      --scheduler-t-max 50 \
+      --scheduler-t-max 80 \
       --seed $seed \
       --save-path $SAVE_PATH \
       --verbose

@@ -123,8 +123,8 @@ def prepare_adult_dataset(df):
     df['race'] = df['race'].apply(lambda x: 'White' if x == 'White' else 'Other')
     
     # Convert income to binary numeric target
-    # df['income_binary'] = (df['income'] == '>50K').astype(float)
-    df['income_binary'] = df['income']
+    df['income_binary'] = (df['income'] == '>50K').astype(float)
+    # df['income_binary'] = df['income']
     
     return df
 

@@ -19,12 +19,15 @@ import os
 import json
 import numpy as np
 import torch
+# torch.set_num_threads(4)
 import torch.nn.functional as F
 import torch.optim as optim
 import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.kernel_ridge import KernelRidge
 from sklearn.model_selection import KFold
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, roc_auc_score, f1_score
 from sklearn.metrics import f1_score, precision_score, recall_score, mean_squared_error, r2_score
 import argparse
 from torch.utils.data import DataLoader
@@ -73,6 +76,7 @@ except ImportError as e:
 # Assuming global_vars.py defines these appropriately
 try:
     from global_vars import *
+    torch.set_num_threads(CPU_COUNT)
 except ImportError:
     print("Warning: global_vars.py not found. Using placeholder values for gd_pops_v7.py.")
     EPS = 1e-9
@@ -91,12 +95,18 @@ def adaptive_alpha_init(X, init_scale=2.0):
     alpha_init = init_scale * normalized_vars
     return alpha_init
 
-def standardize_data(X, Y):
+def standardize_data(X, Y, classification=False):
     X_mean = np.mean(X, axis=0); X_std = np.std(X, axis=0)
-    Y_mean = np.mean(Y); Y_std = np.std(Y)
     X_std[X_std < EPS] = EPS
-    if Y_std < EPS: Y_std = EPS
-    return (X - X_mean) / X_std, (Y - Y_mean) / Y_std, X_mean, X_std, Y_mean, Y_std
+    
+    if classification:
+        # For classification, don't standardize Y
+        return (X - X_mean) / X_std, Y, X_mean, X_std, None, None
+    else:
+        # For regression, standardize Y as before
+        Y_mean = np.mean(Y); Y_std = np.std(Y)
+        if Y_std < EPS: Y_std = EPS
+        return (X - X_mean) / X_std, (Y - Y_mean) / Y_std, X_mean, X_std, Y_mean, Y_std
 
 def compute_penalty(alpha: torch.Tensor, penalty_type: Optional[str], penalty_lambda: float, epsilon: float = EPS) -> torch.Tensor:
     alpha_clamped = torch.clamp(alpha, min=CLAMP_MIN_ALPHA, max=CLAMP_MAX_ALPHA)
@@ -336,10 +346,13 @@ def run_variable_selection(
     scheduler_type: Optional[str] = None, scheduler_kwargs: Optional[Dict] = None,
     seed: Optional[int] = None, save_path: str = './results_v7/multi_population/',
     verbose: bool = False, implement_baseline_comparison: bool = True,
-    alpha_lasso: float = None
+    alpha_lasso: float = None,
+    is_classification: bool = False,
     ) -> Dict[str, Any]:
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
+    if device == "cpu" and torch.backends.mps.is_available():
+        device = "mps"
     print(f"--- Starting Experiment (v7.0) ---")
     print(f"Parameterization: {parameterization}, Gradient Mode: {gradient_mode}, T2 Estimator (Grad): {t2_estimator_type}")
     print(f"Using device: {device}")
@@ -516,6 +529,50 @@ def run_variable_selection(
         if epoch<40:
             early_stopping_counter = 0 # Reset early stopping counter for first 30 epochs
             # at least train 40 epochs before checking for early stopping
+        # # every tem epochs, plot and save for diagnostics
+        # if verbose and (epoch % 10 == 0 or epoch == num_epochs - 1):
+        #     try:
+        #         # collect meaningful lists (may be None)
+        #         meaningful_indices_list = [pop.get('meaningful_indices') for pop in pop_data]
+        #         plt.figure(figsize=(18, 6))
+        #         # Objective
+        #         plt.subplot(1, 3, 1)
+        #         plt.plot(objective_history, label="Robust Objective L")
+        #         plt.xlabel("Epoch"); plt.ylabel("Objective Value"); plt.title("Objective vs Epoch"); plt.grid(True)
+                
+        #         # Gradients
+        #         plt.subplot(1, 3, 2)
+        #         valid_gradients = [g for g in gradient_history if g is not None]
+        #         grad_norms = [np.linalg.norm(g) for g in valid_gradients]
+        #         if grad_norms: plt.plot(grad_norms, label="Total Gradient Norm")
+        #         plt.xlabel("Epoch"); plt.ylabel("Gradient Norm"); plt.title("Gradient Norm vs Epoch"); plt.yscale('log'); plt.grid(True)
+                
+        #         # Parameters (alpha or theta)
+        #         plt.subplot(1, 3, 3)
+        #         param_hist_np = np.array(param_history)
+        #         indices_to_plot = selected_indices
+        #         # ASCII-only
+        #         param_label = 'alpha' if parameterization == 'alpha' else 'theta'
+        #         for i in indices_to_plot:
+        #             label = f'{param_label}_{i}'
+        #             # only mark "(True)" if we actually have lists of meaningful indices
+        #             if meaningful_indices_list and all(isinstance(mi, (list, tuple)) for mi in meaningful_indices_list):
+        #                 if any(i in mi for mi in meaningful_indices_list if mi):
+        #                     label += " (True)"
+        #             plt.plot(param_hist_np[:, i], label=label)
+        #         plt.xlabel("Epoch"); plt.ylabel(f"{param_label} Value")
+        #         plt.title(f"{param_label} Trajectories (Top {len(indices_to_plot)})")
+        #         if parameterization == 'alpha':
+        #             plt.yscale('log')
+        #         plt.legend(fontsize='small', loc='center left', bbox_to_anchor=(1, 0.5))
+        #         plt.grid(True)
+
+        #         plt.tight_layout()
+        #         diag_path = os.path.join(save_path, f"optimization_diagnostics_v6_{parameterization}.png")
+        #         plt.savefig(diag_path); plt.close()
+        #         print(f"Diagnostic plots saved to {diag_path}")
+        #     except Exception as e: print(f"Warning: Failed to generate diagnostic plots: {e}")
+
             
     total_time = time.time() - total_start_time
     print(f"\nOptimization finished in {total_time:.2f}s. Best obj: {best_objective_val:.4f}")
@@ -575,7 +632,7 @@ def run_variable_selection(
     if implement_baseline_comparison:
         # BASELINE LASSO
         baseline_lasso_results = baseline_lasso_comparison(
-            pop_data=pop_data, budget=budget, alpha_lasso=alpha_lasso, seed=seed
+            pop_data=pop_data, budget=budget, alpha_lasso=alpha_lasso, seed=seed, classification=is_classification
         )
         if baseline_lasso_results: 
             print(f"Baseline Lasso Results: {baseline_lasso_results}")
@@ -594,7 +651,7 @@ def run_variable_selection(
             print("No valid results from Lasso baseline comparison.")
         # BASELINE DRO LASSO
         baseline_dro_lasso_results = baseline_dro_lasso_comparison(
-            pop_data=pop_data, budget=budget, alpha_lasso=alpha_lasso, seed=seed
+            pop_data=pop_data, budget=budget, alpha_lasso=alpha_lasso, seed=seed, classification=is_classification
         )
         if baseline_dro_lasso_results:
             print(f"Baseline DRO Lasso Results: {baseline_dro_lasso_results}")
@@ -611,7 +668,7 @@ def run_variable_selection(
             })
         # BASELINE XGB
         baseline_xgb_results = baseline_xgb_comparison(
-            pop_data=pop_data, budget=budget, seed=seed
+            pop_data=pop_data, budget=budget, seed=seed, classification=is_classification
         )
         if baseline_xgb_results:
             print(f"Baseline XGB Results: {baseline_xgb_results}")
@@ -630,7 +687,7 @@ def run_variable_selection(
             print("No valid results from XGB baseline comparison.")
         # BASELINE DRO XGB
         baseline_dro_xgb_results = baseline_dro_xgb_comparison(
-            pop_data=pop_data, budget=budget, seed=seed
+            pop_data=pop_data, budget=budget, seed=seed, classification=is_classification
         )
         if baseline_dro_xgb_results:
             print(f"Baseline DRO XGB Results: {baseline_dro_xgb_results}")
@@ -705,6 +762,7 @@ def run_experiment_multi_population(
     if budget is None: budget = min(m, max(1, m1 // 2) + len(pop_configs) * (m1 - max(1, m1 // 2)))
     else: budget = min(budget, m)
     
+    is_classification = False
     if any('baseline' in pop_config['dataset_type'].lower() for pop_config in pop_configs):
         # Use baseline data generation function
         dataset_size = baseline_data_size
@@ -744,6 +802,7 @@ def run_experiment_multi_population(
         m=len(pop_data[0]['X_raw'][0])
         print(f"ASC data generated with {len(pop_data)} populations.")
     elif any('uci' in pop_config['dataset_type'].lower() for pop_config in pop_configs):
+        is_classification = True
         # Extract specific population groups you want
         pop_groups = ["Young", "Middle", "Senior"]  # Age-based populations
         
@@ -804,8 +863,8 @@ def run_experiment_multi_population(
             m = pop_data[0]['X_raw'].shape[1]
             print(f"UCI data dimension set to {m}")    
         # print shapes of populations in both datasets
-        for pop in pop_data:
-            print(f"Population {pop['pop_id']} - Train shape: {pop['X_std'].shape}, Test shape: {pop_data_test_val[0]['X_std'].shape}")
+        for i,pop in enumerate(pop_data):
+            print(f"Population {pop['pop_id']} - Train shape: {pop['X_std'].shape}, Test shape: {pop_data_test_val[i]['X_std'].shape}")
     else:
         pop_data, pop_data_test_val = get_pop_data(
             pop_configs=pop_configs, m1=m1, m=m, dataset_size=dataset_size,
@@ -842,7 +901,7 @@ def run_experiment_multi_population(
         scheduler_type=scheduler_type, scheduler_kwargs=scheduler_kwargs,
         seed=seed, save_path=save_path, verbose=verbose,
         implement_baseline_comparison=implement_baseline_comparison,
-        alpha_lasso=alpha_lasso
+        alpha_lasso=alpha_lasso, is_classification=is_classification
     )
     if variable_selection_results.get('error'):
         print(f"Variable selection failed: {variable_selection_results['error']}")
@@ -886,18 +945,27 @@ def run_experiment_multi_population(
                 Y_train_pop = pop['Y_std'][train_idx]
                 X_test_pop  = pop['X_std'][test_idx][:, baseline_lasso_top_indices]
                 Y_test_pop  = pop['Y_std'][test_idx]
-            model = RandomForestRegressor(n_estimators=100, random_state=seed, n_jobs=-1)
+            model = RandomForestClassifier(n_estimators=100, random_state=seed, n_jobs=-1) if is_classification else RandomForestRegressor(n_estimators=100, random_state=seed, n_jobs=-1)
             model.fit(X_train_pop, Y_train_pop)
             Y_pred = model.predict(X_test_pop)
-            mse = mean_squared_error(Y_test_pop, Y_pred)
-            r2 = r2_score(Y_test_pop, Y_pred)
-            baseline_lasso_results.append({
-                'pop_id': pop['pop_id'],
-                'mse': mse,
-                'r2': r2,
-                'selected_indices': baseline_lasso_top_indices,
-                'source' : 'baseline_lasso'
-            })
+            if is_classification:
+                downstream_accuracy = accuracy_score(Y_test_pop, Y_pred)
+                baseline_lasso_results.append({
+                    'pop_id': pop['pop_id'],
+                    'downstream_accuracy': downstream_accuracy,
+                    'selected_indices': baseline_lasso_top_indices,
+                    'source' : 'baseline_lasso'
+                })
+            else:
+                mse = mean_squared_error(Y_test_pop, Y_pred)
+                r2 = r2_score(Y_test_pop, Y_pred)
+                baseline_lasso_results.append({
+                    'pop_id': pop['pop_id'],
+                    'mse': mse,
+                    'r2': r2,
+                    'selected_indices': baseline_lasso_top_indices,
+                    'source' : 'baseline_lasso'
+                })
         # DRO LASSO
         baseline_dro_lasso_top_indices = variable_selection_results['baseline_dro_lasso_results']['selected_indices'][:budget]
         baseline_dro_lasso_results = []
@@ -914,18 +982,27 @@ def run_experiment_multi_population(
                 Y_train_pop = pop['Y_std'][train_idx]
                 X_test_pop  = pop['X_std'][test_idx][:, baseline_dro_lasso_top_indices]
                 Y_test_pop  = pop['Y_std'][test_idx]
-            model = RandomForestRegressor(n_estimators=100, random_state=seed, n_jobs=-1)
+            model = RandomForestClassifier(n_estimators=100, random_state=seed, n_jobs=-1) if is_classification else RandomForestRegressor(n_estimators=100, random_state=seed, n_jobs=-1)
             model.fit(X_train_pop, Y_train_pop)
             Y_pred = model.predict(X_test_pop)
-            mse = mean_squared_error(Y_test_pop, Y_pred)
-            r2 = r2_score(Y_test_pop, Y_pred)
-            baseline_dro_lasso_results.append({
-                'pop_id': pop['pop_id'],
-                'mse': mse,
-                'r2': r2,
-                'selected_indices': baseline_dro_lasso_top_indices,
-                'source' : 'baseline_dro_lasso'
-            })
+            if is_classification:
+                downstream_accuracy = accuracy_score(Y_test_pop, Y_pred)
+                baseline_dro_lasso_results.append({
+                    'pop_id': pop['pop_id'],
+                    'downstream_accuracy': downstream_accuracy,
+                    'selected_indices': baseline_dro_lasso_top_indices,
+                    'source' : 'baseline_dro_lasso'
+                })
+            else:
+                mse = mean_squared_error(Y_test_pop, Y_pred)
+                r2 = r2_score(Y_test_pop, Y_pred)
+                baseline_dro_lasso_results.append({
+                    'pop_id': pop['pop_id'],
+                    'mse': mse,
+                    'r2': r2,
+                    'selected_indices': baseline_dro_lasso_top_indices,
+                    'source' : 'baseline_dro_lasso'
+                })
 
         # XGB
         baseline_xgb_top_indices = variable_selection_results['baseline_xgb_results']['selected_indices'][:budget]
@@ -943,18 +1020,27 @@ def run_experiment_multi_population(
                 Y_train_pop = pop['Y_std'][train_idx]
                 X_test_pop  = pop['X_std'][test_idx][:, baseline_xgb_top_indices]
                 Y_test_pop  = pop['Y_std'][test_idx]
-            model = RandomForestRegressor(n_estimators=100, random_state=seed, n_jobs=-1)
+            model = RandomForestClassifier(n_estimators=100, random_state=seed, n_jobs=-1) if is_classification else RandomForestRegressor(n_estimators=100, random_state=seed, n_jobs=-1)
             model.fit(X_train_pop, Y_train_pop)
             Y_pred = model.predict(X_test_pop)
-            mse = mean_squared_error(Y_test_pop, Y_pred)
-            r2 = r2_score(Y_test_pop, Y_pred)
-            baseline_xgb_results.append({
-                'pop_id': pop['pop_id'],
-                'mse': mse,
-                'r2': r2,
-                'selected_indices': baseline_xgb_top_indices,
-                'source' : 'baseline_xgb'
-            })
+            if is_classification:
+                downstream_accuracy = accuracy_score(Y_test_pop, Y_pred)
+                baseline_xgb_results.append({
+                    'pop_id': pop['pop_id'],
+                    'downstream_accuracy': downstream_accuracy,
+                    'selected_indices': baseline_xgb_top_indices,
+                    'source' : 'baseline_xgb'
+                })
+            else:
+                mse = mean_squared_error(Y_test_pop, Y_pred)
+                r2 = r2_score(Y_test_pop, Y_pred)
+                baseline_xgb_results.append({
+                    'pop_id': pop['pop_id'],
+                    'mse': mse,
+                    'r2': r2,
+                    'selected_indices': baseline_xgb_top_indices,
+                    'source' : 'baseline_xgb'
+                })
 
         # DRO XGB
         baseline_dro_xgb_top_indices = variable_selection_results['baseline_dro_xgb_results']['selected_indices'][:budget]
@@ -972,18 +1058,27 @@ def run_experiment_multi_population(
                 Y_train_pop = pop['Y_std'][train_idx]
                 X_test_pop  = pop['X_std'][test_idx][:, baseline_dro_xgb_top_indices]
                 Y_test_pop  = pop['Y_std'][test_idx]
-            model = RandomForestRegressor(n_estimators=100, random_state=seed, n_jobs=-1)
+            model = RandomForestClassifier(n_estimators=100, random_state=seed, n_jobs=-1) if is_classification else RandomForestRegressor(n_estimators=100, random_state=seed, n_jobs=-1)
             model.fit(X_train_pop, Y_train_pop)
             Y_pred = model.predict(X_test_pop)
-            mse = mean_squared_error(Y_test_pop, Y_pred)
-            r2 = r2_score(Y_test_pop, Y_pred)
-            baseline_dro_xgb_results.append({
-                'pop_id': pop['pop_id'],
-                'mse': mse,
-                'r2': r2,
-                'selected_indices': baseline_dro_xgb_top_indices,
-            'source' : 'baseline_dro_xgb'
-            })
+            if is_classification:
+                downstream_accuracy = accuracy_score(Y_test_pop, Y_pred)
+                baseline_dro_xgb_results.append({
+                    'pop_id': pop['pop_id'],
+                    'downstream_accuracy': downstream_accuracy,
+                    'selected_indices': baseline_dro_xgb_top_indices,
+                    'source' : 'baseline_dro_xgb'
+                })
+            else:
+                mse = mean_squared_error(Y_test_pop, Y_pred)
+                r2 = r2_score(Y_test_pop, Y_pred)
+                baseline_dro_xgb_results.append({
+                    'pop_id': pop['pop_id'],
+                    'mse': mse,
+                    'r2': r2,
+                    'selected_indices': baseline_dro_xgb_top_indices,
+                'source' : 'baseline_dro_xgb'
+                })
 
         # Our selection
         our_top_indices = variable_selection_results['our_method_results']['selected_indices'][:budget]
@@ -1000,18 +1095,27 @@ def run_experiment_multi_population(
                 Y_train_pop = pop['Y_std'][train_idx]
                 X_test_pop  = pop['X_std'][test_idx][:, our_top_indices]
                 Y_test_pop  = pop['Y_std'][test_idx]
-            model = RandomForestRegressor(n_estimators=100, random_state=seed, n_jobs=-1)
+            model = RandomForestClassifier(n_estimators=100, random_state=seed, n_jobs=-1) if is_classification else RandomForestRegressor(n_estimators=100, random_state=seed, n_jobs=-1)
             model.fit(X_train_pop, Y_train_pop)
             Y_pred = model.predict(X_test_pop)
-            mse = mean_squared_error(Y_test_pop, Y_pred)
-            r2 = r2_score(Y_test_pop, Y_pred)
-            our_results.append({
-                'pop_id': pop['pop_id'],
-                'mse': mse,
-                'r2': r2,
-                'selected_indices': our_top_indices,
-                'source' : 'our_method'
-            })
+            if is_classification:
+                downstream_accuracy = accuracy_score(Y_test_pop, Y_pred)
+                our_results.append({
+                    'pop_id': pop['pop_id'],
+                    'downstream_accuracy': downstream_accuracy,
+                    'selected_indices': our_top_indices,
+                    'source' : 'our_method'
+                })
+            else:
+                mse = mean_squared_error(Y_test_pop, Y_pred)
+                r2 = r2_score(Y_test_pop, Y_pred)
+                our_results.append({
+                    'pop_id': pop['pop_id'],
+                    'mse': mse,
+                    'r2': r2,
+                    'selected_indices': our_top_indices,
+                    'source' : 'our_method'
+                })
 
         # Concatenate the results for results_comparison.csv (downstream model performance: MSE, R2)
         all_downstream_eval_results = []
