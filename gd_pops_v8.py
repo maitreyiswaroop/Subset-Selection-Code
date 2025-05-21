@@ -23,9 +23,11 @@ import torch.nn.functional as F
 import torch.optim as optim
 import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.neural_network import MLPRegressor
 from sklearn.kernel_ridge import KernelRidge
 from sklearn.model_selection import KFold
-from sklearn.metrics import f1_score, precision_score, recall_score, mean_squared_error, r2_score
+from sklearn.metrics import f1_score, precision_score, recall_score, mean_squared_error, r2_score, log_loss
+
 import argparse
 from torch.utils.data import DataLoader
 import re
@@ -136,6 +138,8 @@ def compute_objective_value_mc(X, E_Y_given_X_std, term1_std, param, param_type,
 
 def compute_objective_value_if(X, Y_std, term1_std, param, param_type, penalty_lambda=0.0, penalty_type=None, base_model_type="rf", n_folds=N_FOLDS):
     param_val = param.detach().clone()
+    # device is cpu
+    if param.device.type == 'mps': param_val = param_val.cpu()
     if param_type == 'alpha': alpha_val = param_val.clamp(min=CLAMP_MIN_ALPHA, max=CLAMP_MAX_ALPHA)
     elif param_type == 'theta': alpha_val = torch.exp(param_val.clamp(min=THETA_CLAMP_MIN, max=THETA_CLAMP_MAX)).clamp(min=CLAMP_MIN_ALPHA, max=CLAMP_MAX_ALPHA)
     else: raise ValueError("Invalid param_type")
@@ -340,6 +344,8 @@ def run_variable_selection(
     ) -> Dict[str, Any]:
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
+    if device == "cpu" and torch.backends.mps.is_available():
+        device = "mps"
     print(f"--- Starting Experiment (v7.0) ---")
     print(f"Parameterization: {parameterization}, Gradient Mode: {gradient_mode}, T2 Estimator (Grad): {t2_estimator_type}")
     print(f"Using device: {device}")
@@ -867,12 +873,13 @@ def run_experiment_multi_population(
     if budget>=10:
         budgets = [budget//2, budget]
     else:
-        budgets = [budget]
+        budgets = [budget, 2, 7, 10]
     original_budget = budget
     for i, budget in enumerate(budgets):
         # LASSO
         baseline_lasso_top_indices = variable_selection_results['baseline_lasso_results']['selected_indices'][:budget]
         baseline_lasso_results = []
+        baseline_lasso_results_mlp = []
         for pop in pop_data_test_val:
             train_idx, test_idx = train_test_indices[pop['pop_id']]
             # slice and move to CPU/NumPy for sklearn
@@ -898,9 +905,23 @@ def run_experiment_multi_population(
                 'selected_indices': baseline_lasso_top_indices,
                 'source' : 'baseline_lasso'
             })
+            # MLP
+            model_mlp = MLPRegressor(hidden_layer_sizes=(100,), max_iter=1000, random_state=seed)
+            model_mlp.fit(X_train_pop, Y_train_pop)
+            Y_pred_mlp = model_mlp.predict(X_test_pop)
+            mse_mlp = mean_squared_error(Y_test_pop, Y_pred_mlp)
+            r2_mlp = r2_score(Y_test_pop, Y_pred_mlp)
+            baseline_lasso_results_mlp.append({
+                'pop_id': pop['pop_id'],
+                'mse': mse_mlp,
+                'r2': r2_mlp,
+                'selected_indices': baseline_lasso_top_indices,
+                'source' : 'baseline_lasso_mlp'
+            })
         # DRO LASSO
         baseline_dro_lasso_top_indices = variable_selection_results['baseline_dro_lasso_results']['selected_indices'][:budget]
         baseline_dro_lasso_results = []
+        baseline_dro_lasso_results_mlp = []
         for pop in pop_data_test_val:
             train_idx, test_idx = train_test_indices[pop['pop_id']]
             # slice and move to CPU/NumPy for sklearn
@@ -926,10 +947,23 @@ def run_experiment_multi_population(
                 'selected_indices': baseline_dro_lasso_top_indices,
                 'source' : 'baseline_dro_lasso'
             })
-
+            # MLP
+            model_mlp = MLPRegressor(hidden_layer_sizes=(100,), max_iter=1000, random_state=seed)
+            model_mlp.fit(X_train_pop, Y_train_pop)
+            Y_pred_mlp = model_mlp.predict(X_test_pop)
+            mse_mlp = mean_squared_error(Y_test_pop, Y_pred_mlp)
+            r2_mlp = r2_score(Y_test_pop, Y_pred_mlp)
+            baseline_dro_lasso_results_mlp.append({
+                'pop_id': pop['pop_id'],
+                'mse': mse_mlp,
+                'r2': r2_mlp,
+                'selected_indices': baseline_dro_lasso_top_indices,
+                'source' : 'baseline_dro_lasso_mlp'
+            })
         # XGB
         baseline_xgb_top_indices = variable_selection_results['baseline_xgb_results']['selected_indices'][:budget]
         baseline_xgb_results = []
+        baseline_xgb_results_mlp = []
         for pop in pop_data_test_val:
             train_idx, test_idx = train_test_indices[pop['pop_id']]
             # slice and move to CPU/NumPy for sklearn
@@ -955,10 +989,23 @@ def run_experiment_multi_population(
                 'selected_indices': baseline_xgb_top_indices,
                 'source' : 'baseline_xgb'
             })
-
+            # MLP
+            model_mlp = MLPRegressor(hidden_layer_sizes=(100,), max_iter=1000, random_state=seed)
+            model_mlp.fit(X_train_pop, Y_train_pop)
+            Y_pred_mlp = model_mlp.predict(X_test_pop)
+            mse_mlp = mean_squared_error(Y_test_pop, Y_pred_mlp)
+            r2_mlp = r2_score(Y_test_pop, Y_pred_mlp)
+            baseline_xgb_results_mlp.append({
+                'pop_id': pop['pop_id'],
+                'mse': mse_mlp,
+                'r2': r2_mlp,
+                'selected_indices': baseline_xgb_top_indices,
+                'source' : 'baseline_xgb_mlp'
+            })
         # DRO XGB
         baseline_dro_xgb_top_indices = variable_selection_results['baseline_dro_xgb_results']['selected_indices'][:budget]
         baseline_dro_xgb_results = []
+        baseline_dro_xgb_results_mlp = []
         for pop in pop_data_test_val:
             train_idx, test_idx = train_test_indices[pop['pop_id']]
             # slice and move to CPU/NumPy for sklearn
@@ -984,10 +1031,23 @@ def run_experiment_multi_population(
                 'selected_indices': baseline_dro_xgb_top_indices,
             'source' : 'baseline_dro_xgb'
             })
-
+            # MLP
+            model_mlp = MLPRegressor(hidden_layer_sizes=(100,), max_iter=1000, random_state=seed)
+            model_mlp.fit(X_train_pop, Y_train_pop)
+            Y_pred_mlp = model_mlp.predict(X_test_pop)
+            mse_mlp = mean_squared_error(Y_test_pop, Y_pred_mlp)
+            r2_mlp = r2_score(Y_test_pop, Y_pred_mlp)
+            baseline_dro_xgb_results_mlp.append({
+                'pop_id': pop['pop_id'],
+                'mse': mse_mlp,
+                'r2': r2_mlp,
+                'selected_indices': baseline_dro_xgb_top_indices,
+                'source' : 'baseline_dro_xgb_mlp'
+            })
         # Our selection
         our_top_indices = variable_selection_results['our_method_results']['selected_indices'][:budget]
         our_results = []
+        our_results_mlp = []
         for pop in pop_data_test_val:
             train_idx, test_idx = train_test_indices[pop['pop_id']]
             if isinstance(pop['X_std'], torch.Tensor):
@@ -1012,6 +1072,33 @@ def run_experiment_multi_population(
                 'selected_indices': our_top_indices,
                 'source' : 'our_method'
             })
+            # MLP
+            model_mlp = MLPRegressor(hidden_layer_sizes=(100,), max_iter=1000, random_state=seed)
+            model_mlp.fit(X_train_pop, Y_train_pop)
+            Y_pred_mlp = model_mlp.predict(X_test_pop)
+            mse_mlp = mean_squared_error(Y_test_pop, Y_pred_mlp)
+            r2_mlp = r2_score(Y_test_pop, Y_pred_mlp)
+            our_results_mlp.append({
+                'pop_id': pop['pop_id'],
+                'mse': mse_mlp,
+                'r2': r2_mlp,
+                'selected_indices': our_top_indices,
+                'source' : 'our_method_mlp'
+            })
+        # Concatenate the results for results_comparison_mlp.csv (downstream model performance: MSE, R2)
+        all_downstream_eval_results_mlp = []
+        # These are the lists of dicts from RandomForestRegressor evaluations done earlier in the script
+        all_downstream_eval_results_mlp.extend(baseline_lasso_results_mlp)
+        all_downstream_eval_results_mlp.extend(baseline_dro_lasso_results_mlp)
+        all_downstream_eval_results_mlp.extend(baseline_xgb_results_mlp)
+        all_downstream_eval_results_mlp.extend(baseline_dro_xgb_results_mlp)
+        all_downstream_eval_results_mlp.extend(our_results_mlp) # 'our_results' is your method's downstream eval list
+        results_comparison_mlp_df = pd.DataFrame(all_downstream_eval_results_mlp)
+        if 'pop_id' in results_comparison_mlp_df.columns:
+            results_comparison_mlp_df = results_comparison_mlp_df.rename(columns={'pop_id': 'population'})
+        results_path_mlp = os.path.join(save_path, f'results_comparison_budget_{budget}_mlp.csv')
+        results_comparison_mlp_df.to_csv(results_path_mlp, index=False)
+        print(f"Downstream model performance comparison (MLP) saved to: {results_path_mlp}")
 
         # Concatenate the results for results_comparison.csv (downstream model performance: MSE, R2)
         all_downstream_eval_results = []
@@ -1147,7 +1234,7 @@ def run_experiment_multi_population(
 
 def convert_numpy_to_python(obj: Any) -> Any:
     if isinstance(obj, (np.integer, np.int_)): return int(obj)
-    if isinstance(obj, (np.floating, np.float_)): return float(obj)
+    if isinstance(obj, (np.floating, np.float64)): return float(obj)
     if isinstance(obj, np.ndarray): return obj.tolist()
     if isinstance(obj, (torch.Tensor)): return obj.detach().cpu().numpy().tolist()
     if isinstance(obj, dict): return {k: convert_numpy_to_python(v) for k, v in obj.items()}

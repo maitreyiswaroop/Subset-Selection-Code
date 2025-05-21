@@ -1,0 +1,21 @@
+\begin{table}[htbp]
+\centering
+\caption{Average Performance Metrics Across Runs}
+\label{tab:results-comparison}
+\begin{tabular}{lrrr}
+\toprule
+Source & Population & Downstream Accuracy & Logloss \\
+\midrule
+baseline_dro_lasso & Female & 0.88 & 0.4650 \\
+baseline_dro_lasso & Male & 0.75 & 0.5289 \\
+baseline_dro_xgb & Female & 0.88 & 0.4934 \\
+baseline_dro_xgb & Male & 0.75 & 0.5452 \\
+baseline_lasso & Female & 0.88 & 0.6097 \\
+baseline_lasso & Male & 0.74 & 0.4930 \\
+baseline_xgb & Female & 0.88 & 0.3520 \\
+baseline_xgb & Male & 0.73 & 0.5783 \\
+our_method & Female & 0.92 & 0.3184 \\
+our_method & Male & 0.77 & 0.5220 \\
+\bottomrule
+\end{tabular}
+\end{table}

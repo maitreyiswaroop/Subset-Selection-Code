@@ -1,0 +1,61 @@
+{
+  "data_loaded": true,
+  "our_method_complete": true,
+  "baselines_complete": true,
+  "downstream_eval_complete": true,
+  "run_params": {
+    "resume": null,
+    "save_path": "./results_v10",
+    "populations": [
+      "uci"
+    ],
+    "m1": 10,
+    "m": 100,
+    "dataset_size": 48842,
+    "noise_scale": 0.1,
+    "corr_strength": 0.0,
+    "estimator_type": "plugin",
+    "base_model_type": "xgb",
+    "asc_data_fraction": 0.5,
+    "force_regenerate_data": true,
+    "budget": 10,
+    "parameterization": "theta",
+    "learning_rate": 0.02,
+    "optimizer_type": "adam",
+    "alpha_init": "random_4",
+    "num_epochs": 120,
+    "penalty_type": "Reciprocal_L1",
+    "penalty_lambda": 5e-06,
+    "patience": 15,
+    "param_freezing": true,
+    "smooth_minmax": 20.0,
+    "gradient_mode": "autograd",
+    "t2_estimator_type": "mc_plugin",
+    "N_grad_samples": 25,
+    "use_baseline": false,
+    "objective_value_estimator": "if",
+    "k_kernel": 500,
+    "lasso_alpha": 0.1,
+    "seed": 26,
+    "uci_populations": [
+      "Male",
+      "Female"
+    ],
+    "exclude_population_features": true,
+    "pop_configs": [
+      {
+        "pop_id": 0,
+        "dataset_type": "uci"
+      }
+    ],
+    "script_version": "v10.0_modular",
+    "final_save_path": "./results_v10/run_4/"
+  },
+  "stage_paths": {
+    "data": "./results_v10/run_4/data_checkpoint.pkl",
+    "our_method_intermediate": "./results_v10/run_4/our_method_checkpoint_epoch110.pkl",
+    "our_method": "./results_v10/run_4/our_method_checkpoint.pkl",
+    "baselines": "./results_v10/run_4/baselines_checkpoint.pkl",
+    "downstream_eval": "./results_v10/run_4/downstream_eval_checkpoint.pkl"
+  }
+}

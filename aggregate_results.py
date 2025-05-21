@@ -10,35 +10,51 @@ import seaborn as sns
 def aggregate_csv_files(directory, run_range, csv_filename, 
                         exclude_columns=None,
                         run_numbers=None,
-                        suffix=None):
+                        suffix=None,
+                        file_paths=None):
     """
     Aggregate CSV files across run directories and compute averages
     """
     if run_range is None:
         if run_numbers is None:
-            raise ValueError("Either run_range or run_numbers must be provided")
+            # raise ValueError("Either run_range or run_numbers must be provided")
         # Use provided run numbers
-        run_numbers = run_numbers
+            if file_paths:
+                files_to_read = file_paths
+            else:
+                # your existing run‐number / glob logic
+                files_to_read = []
+                for run_num in run_numbers:
+                    pattern = os.path.join(directory, f"**/run_{run_num}", csv_filename)
+                    files_to_read += glob.glob(pattern, recursive=True)
+        else:
+            # Use provided run numbers
+            print(f"Using provided run numbers: {run_numbers}")
+            files_to_read = []
+            for run_num in run_numbers:
+                pattern = os.path.join(directory, f"**/run_{run_num}", csv_filename)
+                files_to_read += glob.glob(pattern, recursive=True)
     else:
         # Parse run range
         start_run, end_run = map(int, run_range.split('-'))
         run_numbers = range(start_run, end_run + 1)
-    
-    # Find all matching CSV files
+        files_to_read = []
+        for run_num in run_numbers:
+            pattern = os.path.join(directory, f"**/run_{run_num}", csv_filename)
+            files_to_read += glob.glob(pattern, recursive=True)
+    print(f"reading files: {files_to_read}")
+
     all_dfs = []
-    for run_num in run_numbers:
-        pattern = os.path.join(directory, f"**/run_{run_num}", csv_filename)
-        files = glob.glob(pattern, recursive=True)
         
-        for file_path in files:
-            print(f"Reading {file_path}")
-            df = pd.read_csv(file_path)
-            
-            # Exclude specified columns
-            if exclude_columns:
-                df = df.drop(columns=[col for col in exclude_columns if col in df.columns])
-            
-            all_dfs.append(df)
+    for file_path in files_to_read:
+        print(f"Reading {file_path}")
+        df = pd.read_csv(file_path)
+        
+        # Exclude specified columns
+        if exclude_columns:
+            df = df.drop(columns=[col for col in exclude_columns if col in df.columns])
+        
+        all_dfs.append(df)
     
     if not all_dfs:
         print(f"No {csv_filename} files found in the specified run range")
@@ -68,19 +84,94 @@ def aggregate_csv_files(directory, run_range, csv_filename,
     
     # If we have grouping columns, group by them and average numeric columns
     if group_cols and numeric_cols:
-        aggregated_df = combined_df.groupby(group_cols, as_index=False)[numeric_cols].mean()
-        
-        # For any other non-numeric columns that aren't in group_cols, take the first value
-        other_cols = [col for col in combined_df.columns 
-                      if col not in numeric_cols and col not in group_cols]
-        
+        # 1) Compute mean + std
+        mean_df = combined_df.groupby(group_cols, as_index=False)[numeric_cols].mean()
+        std_df  = combined_df.groupby(group_cols, as_index=False)[numeric_cols].std()
+        # rename std cols → "<col>_std"
+        std_df = std_df.rename(columns={c: f"{c}_std" for c in numeric_cols})
+        # merge mean + std
+        aggregated_df = pd.merge(mean_df, std_df, on=group_cols, how='left')
+        # 2) carry through any other non-numeric cols (first value)
+        other_cols = [c for c in combined_df.columns
+                      if c not in numeric_cols + group_cols]
         if other_cols:
-            first_values = combined_df.groupby(group_cols)[other_cols].first().reset_index()
-            # Only keep the columns we need from first_values
-            first_values = first_values[group_cols + other_cols]
+            first_vals = combined_df.groupby(group_cols)[other_cols].first().reset_index()
+            aggregated_df = pd.merge(aggregated_df, first_vals, on=group_cols, how='left')
+    else:
+        # No valid grouping or no numeric columns to average
+        if numeric_cols:
+            # Calculate means only for numeric columns
+            numeric_means = combined_df[numeric_cols].mean().to_frame().T
             
-            # Merge with the averaged numeric data
-            aggregated_df = pd.merge(aggregated_df, first_values, on=group_cols)
+            # For non-numeric columns, take the first value
+            non_numeric_cols = [col for col in combined_df.columns if col not in numeric_cols]
+            if non_numeric_cols:
+                first_values = combined_df[non_numeric_cols].iloc[0:1]
+                aggregated_df = pd.concat([first_values.reset_index(drop=True), 
+                                          numeric_means.reset_index(drop=True)], axis=1)
+            else:
+                aggregated_df = numeric_means
+        else:
+            # No numeric columns, just return the first row
+            aggregated_df = combined_df.iloc[0:1].copy()
+    
+    return aggregated_df
+
+
+
+    all_dfs = []
+        
+    for file_path in files_to_read:
+        print(f"Reading {file_path}")
+        df = pd.read_csv(file_path)
+        
+        # Exclude specified columns
+        if exclude_columns:
+            df = df.drop(columns=[col for col in exclude_columns if col in df.columns])
+        
+        all_dfs.append(df)
+    
+    if not all_dfs:
+        print(f"No {csv_filename} files found in the specified run range")
+        return None
+    
+    # Combine all dataframes
+    combined_df = pd.concat(all_dfs, ignore_index=True)
+    
+    # Determine grouping columns based on the file type
+    group_cols = []
+    if csv_filename.startswith("results_comparison"):
+        # In results_comparison.csv, "population" and "source" are categorical
+        if "source" in combined_df.columns and "population" in combined_df.columns:
+            group_cols = ["source", "population"]
+        elif "source" in combined_df.columns:
+            group_cols = ["source"]
+        elif "population" in combined_df.columns:
+            group_cols = ["population"]
+    elif csv_filename == "variable_selection_per_population.csv":
+        if "population" in combined_df.columns:
+            group_cols = ["population"]
+    
+    # Identify numeric columns for averaging
+    numeric_cols = combined_df.select_dtypes(include=np.number).columns.tolist()
+    # Filter out any grouping columns from numeric columns if they happen to be numeric
+    numeric_cols = [col for col in numeric_cols if col not in group_cols]
+    
+    # If we have grouping columns, group by them and average numeric columns
+    if group_cols and numeric_cols:
+        # 1) Compute mean + std
+        mean_df = combined_df.groupby(group_cols, as_index=False)[numeric_cols].mean()
+        std_df  = combined_df.groupby(group_cols, as_index=False)[numeric_cols].std()
+        # rename std cols → "<col>_std"
+        std_df = std_df.rename(columns={c: f"{c}_std" for c in numeric_cols})
+        # merge mean + std
+        aggregated_df = pd.merge(mean_df, std_df, on=group_cols, how='left')
+        # 2) carry through any other non-numeric cols (first value)
+        other_cols = [c for c in combined_df.columns
+                      if c not in numeric_cols + group_cols]
+        if other_cols:
+            first_vals = combined_df.groupby(group_cols)[other_cols].first().reset_index()
+            aggregated_df = pd.merge(aggregated_df, first_vals, on=group_cols, how='left')
     else:
         # No valid grouping or no numeric columns to average
         if numeric_cols:
@@ -137,6 +228,9 @@ def dataframe_to_latex(df, caption, label):
                 elif "mse" in col.lower() or "error" in col.lower():
                     # Scientific notation for error metrics
                     row_values.append(f"{val:.4e}")
+                elif "downstream_accuracy" in col.lower():
+                    # Format accuracy with 2 decimal places
+                    row_values.append(f"{val:.2f}")
                 elif val == int(val):  # Check if float is effectively an integer
                     row_values.append(f"{int(val)}")
                 else:
@@ -255,10 +349,17 @@ def create_bar_plots(df, output_dir, file_prefix):
         
         # Set x-ticks at population group centers
         ax.set_xticks(index)
-        ax.set_xticklabels([f'Population {pop}' for pop in populations], fontsize=11)
+        ax.set_xticklabels([f'{pop}' for pop in populations], fontsize=11)
         
         # Set title and labels
-        title = 'Mean Squared Error by Method' if metric == 'mse' else 'R² Score by Method'
+        if metric == 'mse':
+            title = 'Mean Squared Error by Method'
+        elif metric == 'r2':
+            title = 'R² Score by Method'
+        elif metric == 'downstream_accuracy' or metric == 'accuracy' or metric == 'accuracy_score':
+            title = 'Downstream Accuracy by Method'
+        else:
+            title = 'Metric by Method'
         ax.set_title(title, fontsize=14, pad=10, fontweight='bold')
         
         # Set appropriate y-axis label
@@ -334,7 +435,7 @@ def create_bar_plots(df, output_dir, file_prefix):
         plt.subplots_adjust(bottom=0.2)
         
         # Save the figure with extra bottom margin to accommodate the legend
-        plt.savefig(os.path.join(output_dir, f"{file_prefix}_{metric}_refined.png"), 
+        plt.savefig(os.path.join(output_dir, f"{file_prefix}_{metric}_refined.pdf"), 
                    dpi=300, bbox_inches='tight')
         plt.close()
     
@@ -483,7 +584,7 @@ def create_horizontal_comparison_plots(df, output_dir, file_prefix):
                 bars[best_idx].set_linewidth(1.5)
             
             # Add a title for each population
-            ax.set_title(f'Population {pop}', fontsize=12, pad=5)
+            ax.set_title(f'{pop}', fontsize=12, pad=5)
             
             # # Add indicator for which direction is better
             # direction = "← Lower is better" if is_lower_better else "→ Higher is better"
@@ -521,11 +622,120 @@ def create_horizontal_comparison_plots(df, output_dir, file_prefix):
         plt.subplots_adjust(hspace=0.3)
         
         # Save the figure
-        plt.savefig(os.path.join(output_dir, f"{file_prefix}_{metric}_horizontal.png"), 
+        plt.savefig(os.path.join(output_dir, f"{file_prefix}_{metric}_horizontal.pdf"), 
                    dpi=300, bbox_inches='tight')
         plt.close()
     
     print(f"Horizontal comparison plots saved to {output_dir}")
+
+def create_multi_series_horizontal_bars_2(df, output_dir, file_prefix):
+    """
+    Create horizontal multi-series bar charts for all metrics side by side,
+    with a single shared legend at the bottom center.
+    """
+    if 'population' not in df.columns or 'source' not in df.columns:
+        print("Required columns 'population' and 'source' not found")
+        return
+
+    # decide which metrics to plot
+    if 'downstream_accuracy' in df.columns or 'logloss' in df.columns:
+        metrics = [m for m in ['downstream_accuracy', 'logloss'] if m in df.columns]
+    else:
+        metrics = [m for m in ['mse', 'r2'] if m in df.columns]
+    if not metrics:
+        print("No metrics found to plot")
+        return
+
+    plt.style.use('ggplot')
+    methods     = sorted(df['source'].unique())
+    populations = sorted(df['population'].unique(), reverse=True)
+
+    # same colours as requested
+    method_colors = {
+        'our_method':        '#4e79a7',
+        'baseline_lasso':    '#59a14f',
+        'baseline_dro_lasso':'#f28e2b',
+        'baseline_xgb':      '#4e4e4e',
+        'baseline_dro_xgb':  '#edc948'
+    }
+
+    # clean names for legend
+    method_names = {}
+    for m in methods:
+        if m == 'our_method':
+            method_names[m] = 'Our Method'
+        elif m.startswith('baseline_'):
+            name = ' '.join(w.capitalize() for w in m.replace('baseline_', '').split('_'))
+            method_names[m] = name
+        else:
+            method_names[m] = m
+
+    # layout
+    n_metrics   = len(metrics)
+    fig, axes   = plt.subplots(1, n_metrics,
+                               figsize=(6 * n_metrics, max(6, len(populations)*1.2 + 1)),
+                               sharey=True)
+    if n_metrics == 1:
+        axes = [axes]
+
+    fig.subplots_adjust(wspace=0.1)   # <- try values like 0.1 or 0.15 too
+    # shared y positions and bar offsets
+    y_pos       = np.arange(len(populations))
+    bar_height  = 0.7 / len(methods)
+    offsets     = {m: (i - len(methods)/2 + 0.5) * bar_height
+                   for i, m in enumerate(methods)}
+
+    # gather legend handles
+    handles, labels = [], []
+
+    for ax, metric in zip(axes, metrics):
+        std_col = f"{metric}_std"
+        for m in methods:
+            vals, errs, ys = [], [], []
+            for i, pop in enumerate(populations):
+                sel = df[(df['population']==pop) & (df['source']==m)]
+                if not sel.empty:
+                    v = float(sel[metric].iloc[0])
+                    e = float(sel[std_col].iloc[0]) if std_col in sel.columns else 0.0
+                else:
+                    v, e = 0.0, 0.0
+                vals.append(v); errs.append(e)
+                ys.append(y_pos[i] + offsets[m])
+
+            bar = ax.barh(ys, vals,
+                          height=bar_height * 0.9,
+                          color=method_colors.get(m, '#999999'),
+                          xerr=errs if std_col in df.columns else None,
+                          error_kw=dict(ecolor='gray', capsize=3),
+                          label=method_names[m],
+                          alpha=0.8, edgecolor='white', linewidth=0.5)
+            # only collect one handle per method
+            if ax is axes[0]:
+                handles.append(bar[0])
+                labels.append(method_names[m])
+
+        # formatting
+        ax.set_yticks(y_pos)
+        ax.set_yticklabels(populations, fontsize=10)
+        title_map = {'mse':'Mean Squared Error', 'r2':'R2 Score',
+                     'logloss':'Log Loss', 'downstream_accuracy':'Accuracy'}
+        ax.set_title(title_map.get(metric, metric), fontsize=12, pad=8)
+        ax.grid(axis='x', linestyle='--', alpha=0.3)
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.set_xlabel(title_map.get(metric, metric))
+
+    # shared legend at bottom center
+    fig.legend(handles, labels,
+               loc='lower center',
+               ncol=min(len(methods), 3),
+               frameon=True, framealpha=0.8)
+    plt.subplots_adjust(bottom=0.2, left=0.1, right=0.95, top=0.9)
+
+    out_path = os.path.join(output_dir, f"{file_prefix}_multi_series.pdf")
+    fig.savefig(out_path, dpi=300, bbox_inches='tight')
+    plt.close(fig)
+    print(f"Multi-series bar plots saved to {out_path}")
 
 def create_multi_series_horizontal_bars(df, output_dir, file_prefix):
     """
@@ -539,7 +749,12 @@ def create_multi_series_horizontal_bars(df, output_dir, file_prefix):
         return
     
     # Get metrics to plot
-    metric_cols = ['mse', 'r2']  # Focus on these key metrics
+    # the metrics are either mse and r2 or downstream_accuracy
+
+    if 'downstream_accuracy' in df.columns or 'logloss' in df.columns:
+        metric_cols = ['downstream_accuracy', 'logloss']
+    else:
+        metric_cols = ['mse', 'r2']  # Focus on these key metrics
     available_metrics = [col for col in metric_cols if col in df.columns]
     
     if not available_metrics:
@@ -550,6 +765,7 @@ def create_multi_series_horizontal_bars(df, output_dir, file_prefix):
     plt.style.use('ggplot')
     
     # Vibrant color palette for methods (distinct colors)
+    # if the metrics are accuracy and logloss, instead of lasso we have 
     method_colors = {
         'our_method': '#4e79a7',           # Blue
         'baseline_lasso': '#59a14f',        # Green
@@ -585,6 +801,14 @@ def create_multi_series_horizontal_bars(df, output_dir, file_prefix):
             format_func = lambda x: f"{x:.2e}" if x < 0.01 else f"{x:.3f}"
             metric_label = "Mean Squared Error"
             is_lower_better = True
+        elif metric == 'logloss':
+            format_func = lambda x: f"{x:.3f}"
+            metric_label = "Log Loss"
+            is_lower_better = True
+        elif metric == 'downstream_accuracy':
+            format_func = lambda x: f"{x:.3f}" 
+            metric_label = "Accuracy"
+            is_lower_better = False
         else:
             format_func = lambda x: f"{x:.3f}"
             metric_label = "R² Score"
@@ -600,6 +824,7 @@ def create_multi_series_horizontal_bars(df, output_dir, file_prefix):
         method_y_offsets = {}
         bar_height = 0.7 / len(methods)
         
+        std_col = f"{metric}_std"
         for i, method in enumerate(methods):
             # Calculate offset for this method's bars (vertically within each population's row)
             offset = i - len(methods) / 2 + 0.5
@@ -626,14 +851,30 @@ def create_multi_series_horizontal_bars(df, output_dir, file_prefix):
                     y_coords.append(y_positions[j] + method_y_offsets[method])
             
             # Plot horizontal bars for this method across all populations
-            bars = ax.barh(
-                y_coords, values, height=bar_height * 0.9,
-                color=method_colors.get(method, '#999999'),
-                edgecolor='white',
-                linewidth=0.5,
-                label=method_names[method],
-                alpha=0.9
-            )
+            if std_col in df.columns:
+                yerrs = []
+                for j, pop in enumerate(populations):
+                    pop_data = df[(df['population']==pop) & (df['source']==method)]
+                    yerrs.append(float(pop_data[std_col].values[0]) if not pop_data.empty else 0.0)
+                bars = ax.barh(
+                    y_coords, values, height=bar_height * 0.9,
+                    color=method_colors.get(method, '#999999'),
+                    edgecolor='white',
+                    linewidth=0.5,
+                    label=method_names[method],
+                    alpha=0.9,
+                    xerr=yerrs,
+                    error_kw=dict(ecolor='gray', capsize=3)
+                )
+            else:
+                bars = ax.barh(
+                    y_coords, values, height=bar_height * 0.9,
+                    color=method_colors.get(method, '#999999'),
+                    edgecolor='white',
+                    linewidth=0.5,
+                    label=method_names[method],
+                    alpha=0.9
+                )
             
             # Add value labels
             for bar, label, value in zip(bars, labels, values):
@@ -660,7 +901,7 @@ def create_multi_series_horizontal_bars(df, output_dir, file_prefix):
         
         # Set y-ticks at population positions
         ax.set_yticks(y_positions)
-        ax.set_yticklabels([f'Population {pop}' for pop in populations], fontsize=10)
+        ax.set_yticklabels([f'{pop}' for pop in populations], fontsize=10)
         
         # Set x-axis limits with a bit of padding
         ax.set_xlim(0, max_value * 1.15)
@@ -707,11 +948,13 @@ def create_multi_series_horizontal_bars(df, output_dir, file_prefix):
         plt.subplots_adjust(bottom=0.2)  # Make room for the legend
         
         # Save the figure
-        plt.savefig(os.path.join(output_dir, f"{file_prefix}_{metric}_multi_series.png"), 
+        plt.savefig(os.path.join(output_dir, f"{file_prefix}_{metric}_multi_series.pdf"), 
                    dpi=300, bbox_inches='tight')
         plt.close()
     
     print(f"Multi-series horizontal bar plots saved to {output_dir}")
+
+
 
 def main():
     parser = argparse.ArgumentParser(description="Aggregate CSV results across multiple runs")
@@ -724,6 +967,8 @@ def main():
                         help="Output directory for aggregated results")
     parser.add_argument("--no-plots", action="store_true", help="Skip generating plots")
     parser.add_argument("--suffix", default="", help="Suffix for csv file (eg if we values results_comparison_5.csv)")
+    parser.add_argument("--file_paths", default=None, nargs='+', 
+                        help="Specific file paths to include (overrides run_range and run_numbers)")
     
     args = parser.parse_args()
     
@@ -736,7 +981,8 @@ def main():
         f"results_comparison{args.suffix}.csv",
         exclude_columns=["selected_indices"],
         run_numbers=args.run_numbers,
-        suffix= args.suffix
+        suffix= args.suffix,
+        file_paths=args.file_paths
     )
     
     if results_comp_df is not None:
@@ -760,38 +1006,39 @@ def main():
             create_bar_plots(results_comp_df, args.output, "results_comparison")
 
         # Generate horizontal comparison plots
-        create_horizontal_comparison_plots(results_comp_df, args.output, "results_comparison")
+        # create_horizontal_comparison_plots(results_comp_df, args.output, "results_comparison")
         # Generate multi-series horizontal bar plots
         create_multi_series_horizontal_bars(results_comp_df, args.output, "results_comparison")
+        create_multi_series_horizontal_bars_2(results_comp_df, args.output, "results_comparison")
     
-    # Process variable_selection_per_population.csv
-    var_select_df = aggregate_csv_files(
-        args.directory, 
-        args.run_range, 
-        "variable_selection_per_population.csv",
-        run_numbers=args.run_numbers,
-        suffix= args.suffix
-    )
+    # # Process variable_selection_per_population.csv
+    # var_select_df = aggregate_csv_files(
+    #     args.directory, 
+    #     args.run_range, 
+    #     "variable_selection_per_population.csv",
+    #     run_numbers=args.run_numbers,
+    #     suffix= args.suffix,
+    # )
     
-    if var_select_df is not None:
-        var_select_output = os.path.join(args.output, "aggregated_variable_selection.csv")
-        var_select_df.to_csv(var_select_output, index=False)
-        print(f"Saved aggregated variable selection to {var_select_output}")
+    # if var_select_df is not None:
+    #     var_select_output = os.path.join(args.output, "aggregated_variable_selection.csv")
+    #     var_select_df.to_csv(var_select_output, index=False)
+    #     print(f"Saved aggregated variable selection to {var_select_output}")
         
-        # Generate LaTeX table
-        latex_code = dataframe_to_latex(
-            var_select_df, 
-            "Average Variable Selection Performance by Population", 
-            "tab:variable-selection"
-        )
-        latex_output = os.path.join(args.output, "variable_selection_latex.txt")
-        with open(latex_output, "w") as f:
-            f.write(latex_code)
-        print(f"Saved LaTeX table to {latex_output}")
+    #     # Generate LaTeX table
+    #     latex_code = dataframe_to_latex(
+    #         var_select_df, 
+    #         "Average Variable Selection Performance by Population", 
+    #         "tab:variable-selection"
+    #     )
+    #     latex_output = os.path.join(args.output, "variable_selection_latex.txt")
+    #     with open(latex_output, "w") as f:
+    #         f.write(latex_code)
+    #     print(f"Saved LaTeX table to {latex_output}")
         
-        # Generate bar plots for variable selection metrics
-        if not args.no_plots and 'population' in var_select_df.columns:
-            create_bar_plots(var_select_df, args.output, "variable_selection")
+    #     # Generate bar plots for variable selection metrics
+    #     if not args.no_plots and 'population' in var_select_df.columns:
+    #         create_bar_plots(var_select_df, args.output, "variable_selection")
 
 if __name__ == "__main__":
     main()

@@ -941,6 +941,16 @@ def estimate_T2_mc_flexible(
     """
     device = param_torch.device
     avg_term2_std = torch.zeros(1, device=device, dtype=torch.float32)
+
+    # Move input tensors to GPU instead of moving param to CPU
+    X_std_torch = X_std_torch.to(device)
+    E_Yx_std_torch = E_Yx_std_torch.to(device)
+
+    # # print the devices of all tensors
+    # print(f"X_std_torch device: {X_std_torch.device}")
+    # print(f"E_Yx_std_torch device: {E_Yx_std_torch.device}")
+    # print(f"param_torch device: {param_torch.device}")
+
     
     # Determine noise scale based on param type
     if param_type == 'alpha':
@@ -974,13 +984,13 @@ def estimate_T2_mc_flexible(
         except RuntimeError as e:
             if 'CUDA out of memory' in str(e):
                 print("Warning: CUDA out of memory error detected. Switching to optimized estimator.")
-            E_Y_S_std_k = estimate_conditional_keops_flexible_optimized(
-                X_std_torch, S_param_k, E_Yx_std_torch,
-                param_for_kernel, param_type, k=k_kernel,
-                max_batch_size=500
-            )
-        else:
-            raise e
+                E_Y_S_std_k = estimate_conditional_keops_flexible_optimized(
+                    X_std_torch, S_param_k, E_Yx_std_torch,
+                    param_for_kernel, param_type, k=k_kernel,
+                    max_batch_size=500
+                )
+            else:
+                raise e
         
         term2_sample_std_k = E_Y_S_std_k.pow(2).mean()
         avg_term2_std += term2_sample_std_k
@@ -1048,13 +1058,13 @@ def estimate_T2_kernel_IF_like_flexible(
         except RuntimeError as e:
             if 'CUDA out of memory' in str(e):
                 print("Warning: CUDA out of memory error detected. Switching to optimized estimator.")
-            mu_S_hat_k = estimate_conditional_keops_flexible_optimized(
-                X_std_torch, S_param_k, E_Yx_std_torch,
-                param_torch, param_type, k=k_kernel,
-                max_batch_size=500
-            )
-        else:
-            raise e
+                mu_S_hat_k = estimate_conditional_keops_flexible_optimized(
+                    X_std_torch, S_param_k, E_Yx_std_torch,
+                    param_torch, param_type, k=k_kernel,
+                    max_batch_size=500
+                )
+            else:
+                raise e
         
         term2_sample_if_like_k = (2 * Y_std_torch * mu_S_hat_k - mu_S_hat_k.pow(2)).mean()
         avg_term2_if_like += term2_sample_if_like_k
@@ -1096,12 +1106,12 @@ def estimate_E_Y_S_kernel_flexible(X_std_torch: torch.Tensor,
         except RuntimeError as e:
             if 'CUDA out of memory' in str(e):
                 print("Warning: CUDA out of memory error detected. Switching to optimized estimator.")
-            E_Y_S_std_k = estimate_conditional_keops_flexible_optimized(
-                X_std_torch, S_param_k, E_Yx_std_torch, param_val, param_type, k=k_kernel,
-                max_batch_size=500
-            )
-        else:
-            raise e
+                E_Y_S_std_k = estimate_conditional_keops_flexible_optimized(
+                    X_std_torch, S_param_k, E_Yx_std_torch, param_val, param_type, k=k_kernel,
+                    max_batch_size=500
+                )
+            else:
+                raise e
         avg_E_Y_S += E_Y_S_std_k
 
     return avg_E_Y_S / n_mc_samples_S

@@ -614,7 +614,7 @@ def parse_args():
     parser.add_argument('--run-baseline', action='store_true',
                         help='Run baseline Pooled Lasso for comparison')
     parser.add_argument('--smooth-minmax', type=float, default=float('inf'),
-                        help='Beta param value for SmoothMax for the objective. Default is infinity, i.e. true max')
+                        help='Beta param value for SmoothMax for the objective. Default is "Infinity", i.e. true max')
     parser.add_argument('--param-freezing', action='store_true',
                         help='Enable parameter freezing for alpha values below threshold')
     parser.add_argument('--save-path', type=str, default='./results/multi_population/')

@@ -9,8 +9,8 @@
 #SBATCH --partition=general
 #SBATCH --export=ALL,PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 echo "Loading environment..."
-source /home/$USER/miniconda/etc/profile.d/conda.sh
-conda activate venv   # or your env name
+# source /home/$USER/miniconda/etc/profile.d/conda.sh
+# conda activate venv   # or your env name
 
-SCRIPT_DIR="/data/user_data/mswaroop/Subset-Selection-Code"
+SCRIPT_DIR="/Users/mswaroop/Desktop/Projects/Bryan/Subset_selection/Subset-Selection-Code"
 python3 "$SCRIPT_DIR/gd_pops_v8.py" "$@"

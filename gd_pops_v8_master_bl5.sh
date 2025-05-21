@@ -6,20 +6,22 @@
 # baseline_failure_1 baseline_failure_2 baseline_failure_3 baseline_failure_4 baseline_failure_5
 # populations=(linear_regression cubic_regression)
 t2_types=(mc_plugin)
+t2=mc_plugin
 # seeds=(17 30 29 9 26)
 # seeds=(14 15 16)
 # seeds=(100 101 102 103 104)
-seeds=(15 9 103 104 3)
+seeds=(7 10 2 26 29)
 # seed=42
 estimator=plugin
 # population=quadratic_regression
 populations=(baseline_failure_5)
-N_GRAD_SAMPLES=25
-
+N_GRAD_SAMPLES=5
+learning_rates=(0.05)
 # for baseline 3, smaller lr is better
 # for pop in "${populations[@]}"; do
 #   for t2 in "${t2_types[@]}"; do
-for t2 in "${t2_types[@]}"; do
+# for t2 in "${t2_types[@]}"; do
+for lr in "${learning_rates[@]}"; do
   for seed in "${seeds[@]}"; do
     for population in "${populations[@]}"; do
       joc_count=$(squeue -u mswaroop | wc -l)
@@ -28,22 +30,22 @@ for t2 in "${t2_types[@]}"; do
         sleep 60
         joc_count=$(squeue -u mswaroop | wc -l)
       done
-      SAVE_PATH="/data/user_data/mswaroop/Subset-Selection-Code/results_v8/${t2}/${population}/"
+      SAVE_PATH="/Users/mswaroop/Desktop/Projects/Bryan/Subset_selection/Subset-Selection-Code/results_v8/${t2}/${population}/may15/"
       mkdir -p "$SAVE_PATH" "logs"
-      sbatch gd_pops_v8_task.sh \
+      bash gd_pops_v8_task.sh \
         --populations $population $population $population  \
         --m1 4 \
-        --m 50 \
+        --m 15 \
         --dataset-size 12000 \
-        --baseline-data-size 25000 \
+        --baseline-data-size 30000 \
         --noise-scale 0.1 \
         --corr-strength 0.1 \
-        --num-epochs 150 \
-        --budget 5 \
+        --num-epochs 100 \
+        --budget 10 \
         --penalty-type Reciprocal_L1 \
         --penalty-lambda 0.001 \
-        --learning-rate 0.05 \
-        --optimizer-type adam \
+        --learning-rate $lr \
+        --optimizer-type sgd \
         --parameterization theta \
         --alpha-init random_1 \
         --patience 20 \
@@ -55,7 +57,7 @@ for t2 in "${t2_types[@]}"; do
         --objective-value-estimator if \
         --k-kernel 1000 \
         --scheduler-type CosineAnnealingLR \
-        --scheduler-t-max 150 \
+        --scheduler-t-max 180 \
         --scheduler-min-lr 1e-6 \
         --seed $seed \
         --save-path $SAVE_PATH \

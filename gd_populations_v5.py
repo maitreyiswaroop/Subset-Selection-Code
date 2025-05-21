@@ -837,7 +837,7 @@ def convert_numpy_to_python(obj):
         if np.isnan(obj):
             return None # Or 'NaN' as string
         if np.isinf(obj):
-            return None # Or 'Infinity' or '-Infinity'
+            return None # Or '"Infinity"' or '-"Infinity"'
         return float(obj)
     elif isinstance(obj, np.ndarray):
         return [convert_numpy_to_python(item) for item in obj] # Recursively convert array elements

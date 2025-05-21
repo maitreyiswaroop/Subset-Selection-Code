@@ -254,7 +254,7 @@ def generate_baseline_failure_5(dataset_size: int = 15000,
         # This will confuse Lasso which looks for linear relationships
         for i in range(0, n_features, 10):
             if i not in important_idx and i+1 < n_features and i+1 not in important_idx:
-                X_raw[:, i+1] = 0.3 * X_raw[:, i] + 0.7 * np.random.randn(n_samples)
+                X_raw[:, i+1] = 0.05 * X_raw[:, i] + 0.95 * np.random.randn(n_samples)
                 
         # Add some noise
         Y_raw += np.random.normal(0, noise_scale, n_samples)
@@ -323,20 +323,18 @@ def generate_baseline_failure_6_sharp_interactions_conditionals(
     ]
     return pop_data
 
-def generate_baseline_failure_7_disjoint_correlated_sets(
-    dataset_size: int = 10000,
-    n_features: int = 20, # Needs enough for distinct true features and their correlates
-    noise_scale: float = 0.1,
-    corr_strength: float = 0.6, # Stronger correlation
-    seed: int = None
-):
+def generate_baseline_failure_7_disjoint_correlated_sets(dataset_size=10000, n_features=20, noise_scale=0.1, seed=None):
     """
-    Scenario 7 v2: Disjoint True Features, Each with Unique Correlated Noise.
-    Pop A (33%): Y ~ 3*X0 + 2*X1 (X0 corr w/ X10, X1 corr w/ X11)
-    Pop B (33%): Y ~ 3*X2 + 2*X3 (X2 corr w/ X12, X3 corr w/ X13)
-    Pop C (34%): Y ~ 3*X4 + 2*X5 (X4 corr w/ X14, X5 corr w/ X15)
-    Requires n_features >= 16 for this setup.
+    Cleaner test case:
+    - Pop A (25%): Y strongly depends on features 0-4, weakly negative on 10-14
+    - Pop B (25%): Y strongly depends on features 5-9, weakly negative on 10-14
+    - Pop C (25%): Y strongly depends on features 0-9, weakly negative on 10-14
+    - Pop D (25%): Y weakly depends on features 0-9, strongly positive on 10-14
+    
+    All other features are pure noise. This creates a clear tension where standard
+    methods will likely pick features 0-9 but miss the importance of 10-14 for pop D.
     """
+    # [Initialization code...]
     if n_features < 6: # Minimum for X0-X5
         raise ValueError("Scenario 7 needs at least 6 features for the distinct true sets.")
     if n_features < 16:
@@ -345,46 +343,81 @@ def generate_baseline_failure_7_disjoint_correlated_sets(
     if seed is not None:
         np.random.seed(seed)
 
-    n_a = dataset_size // 3
-    n_b = dataset_size // 3
-    n_c = dataset_size - n_a - n_b
+    n_a = dataset_size // 4
+    n_b = dataset_size // 4
+    n_c = dataset_size // 4
+    n_d = dataset_size - n_a - n_b - n_c
 
+    # X_all = np.random.randn(dataset_size, n_features)
+    # Y_all = np.zeros(dataset_size)
+    # for populations A, B, C; the first 8 features are higher valued than the next 8 features; the last 4 features are noise
+    # for population D; the first 8 features are lower valued than the next 8 features; the last 4 features are noise
     X_all = np.random.randn(dataset_size, n_features)
     Y_all = np.zeros(dataset_size)
 
-    # Pop A: True features X0, X1. Correlated noise X10, X11.
+    # Pop A: 
     idx_a_end = n_a
     X_pop_a = X_all[:idx_a_end, :]
-    if n_features > 10: X_pop_a[:, 10] = corr_strength * X_pop_a[:, 0] + (1-corr_strength) * np.random.normal(0,1,n_a)
-    if n_features > 11: X_pop_a[:, 11] = corr_strength * X_pop_a[:, 1] + (1-corr_strength) * np.random.normal(0,1,n_a)
-    Y_all[:idx_a_end] = 3.0 * X_pop_a[:, 0] + 2.0 * X_pop_a[:, 1] + np.random.normal(0, noise_scale, n_a)
-    meaningful_indices_A = np.array([0, 1])
-
-    # Pop B: True features X2, X3. Correlated noise X12, X13.
+    # Population A: strong 0-4, weak negative 10-14
+    Y_all[:idx_a_end] = 5.0 * X_pop_a[:, 0] + 5.0 * X_pop_a[:, 1] + 5.0 * X_pop_a[:, 2] + \
+                        5.0 * X_pop_a[:, 3] + 5.0 * X_pop_a[:, 4] - \
+                        0.5 * X_pop_a[:, 10] - 0.5 * X_pop_a[:, 11] - 0.5 * X_pop_a[:, 12] - \
+                        0.5 * X_pop_a[:, 13] - 0.5 * X_pop_a[:, 14]
+    meaningful_indices_A = np.array([0, 1, 2, 3, 4])
+    
+    # Population B: strong 5-9, weak negative 10-14
     idx_b_start = n_a
     idx_b_end = n_a + n_b
     X_pop_b = X_all[idx_b_start:idx_b_end, :]
-    if n_features > 12: X_pop_b[:, 12] = corr_strength * X_pop_b[:, 2] + (1-corr_strength) * np.random.normal(0,1,n_b)
-    if n_features > 13: X_pop_b[:, 13] = corr_strength * X_pop_b[:, 3] + (1-corr_strength) * np.random.normal(0,1,n_b)
-    Y_all[idx_b_start:idx_b_end] = 3.0 * X_pop_b[:, 2] + 2.0 * X_pop_b[:, 3] + np.random.normal(0, noise_scale, n_b)
-    meaningful_indices_B = np.array([2, 3])
-
-    # Pop C: True features X4, X5. Correlated noise X14, X15.
+    Y_all[idx_b_start:idx_b_end] = 5.0 * X_pop_b[:, 5] + 5.0 * X_pop_b[:, 6] + 5.0 * X_pop_b[:, 7] + \
+                                   5.0 * X_pop_b[:, 8] + 5.0 * X_pop_b[:, 9] - \
+                                   0.5 * X_pop_b[:, 10] - 0.5 * X_pop_b[:, 11] - 0.5 * X_pop_b[:, 12] - \
+                                   0.5 * X_pop_b[:, 13] - 0.5 * X_pop_b[:, 14]
+    meaningful_indices_B = np.array([5, 6, 7, 8, 9])
+    
+    # Population C: strong 0-9
     idx_c_start = n_a + n_b
-    X_pop_c = X_all[idx_c_start:, :]
-    if n_features > 14: X_pop_c[:, 14] = corr_strength * X_pop_c[:, 4] + (1-corr_strength) * np.random.normal(0,1,n_c)
-    if n_features > 15: X_pop_c[:, 15] = corr_strength * X_pop_c[:, 5] + (1-corr_strength) * np.random.normal(0,1,n_c)
-    Y_all[idx_c_start:] = 3.0 * X_pop_c[:, 4] + 2.0 * X_pop_c[:, 5] + np.random.normal(0, noise_scale, n_c)
-    meaningful_indices_C = np.array([4, 5])
-
-
+    idx_c_end = n_a + n_b + n_c
+    X_pop_c = X_all[idx_c_start:idx_c_end, :]
+    Y_all[idx_c_start:idx_c_end] = 4.0 * X_pop_c[:, 0] + 4.0 * X_pop_c[:, 1] + 4.0 * X_pop_c[:, 2] + \
+                                   4.0 * X_pop_c[:, 3] + 4.0 * X_pop_c[:, 4] + 4.0 * X_pop_c[:, 5] + \
+                                   4.0 * X_pop_c[:, 6] + 4.0 * X_pop_c[:, 7] + 4.0 * X_pop_c[:, 8] + \
+                                   4.0 * X_pop_c[:, 9] - \
+                                   0.5 * X_pop_c[:, 10] - 0.5 * X_pop_c[:, 11] - 0.5 * X_pop_c[:, 12] - \
+                                   0.5 * X_pop_c[:, 13] - 0.5 * X_pop_c[:, 14]
+    meaningful_indices_C = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+    
+    # Population D: weak 0-9, strong positive 10-14
+    idx_d_start = n_a + n_b + n_c
+    X_pop_d = X_all[idx_d_start:, :]
+    # Population D: weak 0-9, strong positive 10-14
+    Y_all[idx_d_start:] = 0.5 * X_pop_d[:, 0] + 0.5 * X_pop_d[:, 1] + 0.5 * X_pop_d[:, 2] + \
+                         0.5 * X_pop_d[:, 3] + 0.5 * X_pop_d[:, 4] + 0.5 * X_pop_d[:, 5] + \
+                         0.5 * X_pop_d[:, 6] + 0.5 * X_pop_d[:, 7] + 0.5 * X_pop_d[:, 8] + \
+                         0.5 * X_pop_d[:, 9] + \
+                         5.0 * X_pop_d[:, 10] + 5.0 * X_pop_d[:, 11] + 5.0 * X_pop_d[:, 12] + \
+                         5.0 * X_pop_d[:, 13] + 5.0 * X_pop_d[:, 14]
+    meaningful_indices_D = np.array([10, 11, 12, 13, 14])
+    
+    # Add proper noise features
+    for i in range(15, n_features):
+        for pop_data in [X_pop_a, X_pop_b, X_pop_c, X_pop_d]:
+            pop_data[:, i] = np.random.randn(pop_data.shape[0]) * noise_scale
+    # Add noise to Y
+    Y_all += np.random.normal(0, noise_scale, dataset_size)
+    # Add noise to Y for each population
+    Y_all[:idx_a_end] += np.random.normal(0, noise_scale, n_a)
+    Y_all[idx_b_start:idx_b_end] += np.random.normal(0, noise_scale, n_b)
+    Y_all[idx_c_start:idx_c_end] += np.random.normal(0, noise_scale, n_c)
+    Y_all[idx_d_start:] += np.random.normal(0, noise_scale, n_d)
+    
     pop_data = [
         {'pop_id': 'A', 'X_raw': X_pop_a, 'Y_raw': Y_all[:idx_a_end], 'meaningful_indices': meaningful_indices_A},
         {'pop_id': 'B', 'X_raw': X_pop_b, 'Y_raw': Y_all[idx_b_start:idx_b_end], 'meaningful_indices': meaningful_indices_B},
-        {'pop_id': 'C', 'X_raw': X_pop_c, 'Y_raw': Y_all[idx_c_start:], 'meaningful_indices': meaningful_indices_C}
+        {'pop_id': 'C', 'X_raw': X_pop_c, 'Y_raw': Y_all[idx_c_start:idx_c_end], 'meaningful_indices': meaningful_indices_C},
+        {'pop_id': 'D', 'X_raw': X_pop_d, 'Y_raw': Y_all[idx_d_start:], 'meaningful_indices': meaningful_indices_D}
     ]
     return pop_data
-
 
 def generate_baseline_failure_8(
     dataset_size: int = 10000,
@@ -438,8 +471,8 @@ def generate_baseline_failure_8(
     idx_b_start = n_a
     idx_b_end = n_a + n_b
     X_pop_b = X_all[idx_b_start:idx_b_end, :]
-    Y_all[idx_b_start:idx_b_end] = 3.0 * X_pop_b[:, 0] + 2.0 * X_pop_b[:, 1] + 4.0 * X_pop_b[:, 2] + 5.0 * X_pop_b[:, 3] + \
-                                    6.0 * X_pop_b[:, 4] + 7.0 * X_pop_b[:, 5] + \
+    Y_all[idx_b_start:idx_b_end] = 2.0 * X_pop_b[:, 0] + 3.0 * X_pop_b[:, 1] + 6.0 * X_pop_b[:, 2] + 7.0 * X_pop_b[:, 3] + \
+                                    4.0 * X_pop_b[:, 4] + 5.0 * X_pop_b[:, 5] + \
                                     8.0 * (X_pop_b[:, 6]) + 9.0 * X_pop_b[:, 7] - \
                                     2.0 * X_pop_b[:, 8] - 2.0 * X_pop_b[:, 9] - \
                                     2.0 * X_pop_b[:, 10] - 2.0 * X_pop_b[:, 11] - \
@@ -450,8 +483,8 @@ def generate_baseline_failure_8(
     idx_c_start = n_a + n_b
     idx_c_end = n_a + n_b + n_c
     X_pop_c = X_all[idx_c_start:idx_c_end, :]
-    Y_all[idx_c_start:idx_c_end] = 3.0 * X_pop_c[:, 0] + 2.0 * X_pop_c[:, 1] + 4.0 * X_pop_c[:, 2] + 5.0 * X_pop_c[:, 3] + \
-                        6.0 * X_pop_c[:, 4] + 7.0 * X_pop_c[:, 5] + \
+    Y_all[idx_c_start:idx_c_end] = 6.0 * X_pop_c[:, 0] + 2.0 * X_pop_c[:, 1] + 5.0 * X_pop_c[:, 2] + 4.0 * X_pop_c[:, 3] + \
+                        3.0 * X_pop_c[:, 4] + 2.0 * X_pop_c[:, 5] + \
                         8.0 * (X_pop_c[:, 6]) + 9.0 * X_pop_c[:, 7] - \
                         2.0 * X_pop_c[:, 8] - 2.0 * X_pop_c[:, 9] - \
                         2.0 * X_pop_c[:, 10] - 2.0 * X_pop_c[:, 11] - \
@@ -463,7 +496,7 @@ def generate_baseline_failure_8(
     idx_d_start = n_a + n_b + n_c
     X_pop_d = X_all[idx_d_start:, :]
     Y_all[idx_d_start:] = 0.01 * X_pop_d[:, 0] + 0.02 * X_pop_d[:, 1] + 0.04 * X_pop_d[:, 2] + 0.05 * X_pop_d[:, 3] + 0.06 * X_pop_d[:, 4] + 0.07 * X_pop_d[:, 5] + 0.08 * (X_pop_d[:, 6]**2) + 0.09 * X_pop_d[:, 7]
-    Y_all[idx_d_start:] = Y_all[idx_d_start:] + 3.0 * X_pop_d[:, 8] + 2.0 * X_pop_d[:, 9] + 4.0 * X_pop_d[:, 10] + 5.0 * X_pop_d[:, 11] + 5.0 * X_pop_d[:, 12] + 5.0 * X_pop_d[:, 13] + 5.0 * X_pop_d[:, 14] + 5.0 * X_pop_d[:, 15]
+    Y_all[idx_d_start:] = Y_all[idx_d_start:] + 6.0 * X_pop_d[:, 8] + 2.0 * X_pop_d[:, 9] + 6.0 * X_pop_d[:, 10] + 5.0 * X_pop_d[:, 11] + 5.0 * X_pop_d[:, 12] + 8.0 * X_pop_d[:, 13] + 5.0 * X_pop_d[:, 14] + 5.0 * X_pop_d[:, 15]
     meaningful_indices_D = np.array([8, 9, 10, 11, 12, 13, 14, 15])
 
     # Append random noise to the last 4 features
@@ -481,6 +514,102 @@ def generate_baseline_failure_8(
     ]
     return pop_data
 
+def generate_baseline_failure_9(
+    dataset_size: int = 10000,
+    n_features: int = 25,
+    noise_scale: float = 0.1,
+    seed: int = None
+):
+    """
+    Scenario 9: Complex non-linear interactions that defeat DRO LASSO
+    - Pop A: Primarily interaction effects (X0*X1, X2*X3)
+    - Pop B: Threshold effects with different directions above/below threshold
+    - Pop C: Complex conditional logic with exclusive OR (XOR) patterns
+    - Pop D: Non-linear transformations (sine, exponential)
+    - Added correlations between features to create misleading linear signals
+    """
+    if n_features < 20:
+        raise ValueError("Scenario 9 requires at least 20 features")
+    if seed is not None:
+        np.random.seed(seed)
+
+    n_a = dataset_size // 4
+    n_b = dataset_size // 4
+    n_c = dataset_size // 4
+    n_d = dataset_size - n_a - n_b - n_c
+
+    X_all = np.random.randn(dataset_size, n_features)
+    Y_all = np.zeros(dataset_size)
+
+    # Add misleading correlations to confuse LASSO
+    # Correlation structure: X17-X19 correlate with outcome but aren't causal
+    for i in range(dataset_size):
+        # Cross-population correlations to confuse global models
+        X_all[i, 17] = 0.7 * (X_all[i, 0] + X_all[i, 1]) + 0.3 * np.random.randn()
+        X_all[i, 18] = 0.7 * (X_all[i, 5] + X_all[i, 6]) + 0.3 * np.random.randn()
+        X_all[i, 19] = 0.7 * (X_all[i, 10] + X_all[i, 11]) + 0.3 * np.random.randn()
+
+    # Pop A: Pure interaction effects, no main effects
+    idx_a_end = n_a
+    X_pop_a = X_all[:idx_a_end, :]
+    interaction1 = X_pop_a[:, 0] * X_pop_a[:, 1]  # Interaction term
+    interaction2 = X_pop_a[:, 2] * X_pop_a[:, 3]  # Interaction term
+    interaction3 = X_pop_a[:, 4] * (X_pop_a[:, 4] > 0)  # Conditional effect
+    Y_all[:idx_a_end] = 5.0 * interaction1 + 3.0 * interaction2 + 4.0 * interaction3 + np.random.normal(0, noise_scale, n_a)
+    meaningful_indices_A = np.array([0, 1, 2, 3, 4])
+
+    # Pop B: Threshold effects (different directions above/below threshold)
+    idx_b_start = n_a
+    idx_b_end = n_a + n_b
+    X_pop_b = X_all[idx_b_start:idx_b_end, :]
+    threshold_effect1 = np.zeros(n_b)
+    threshold_effect1[X_pop_b[:, 5] > 0.5] = 4.0 * X_pop_b[X_pop_b[:, 5] > 0.5, 5]
+    threshold_effect1[X_pop_b[:, 5] <= 0.5] = -3.0 * X_pop_b[X_pop_b[:, 5] <= 0.5, 5]
+    
+    threshold_effect2 = np.zeros(n_b)
+    threshold_effect2[X_pop_b[:, 6] > 0] = 3.0 * X_pop_b[X_pop_b[:, 6] > 0, 7]
+    threshold_effect2[X_pop_b[:, 6] <= 0] = -3.0 * X_pop_b[X_pop_b[:, 6] <= 0, 8]
+    
+    Y_all[idx_b_start:idx_b_end] = threshold_effect1 + threshold_effect2 + 2.0 * X_pop_b[:, 9] + np.random.normal(0, noise_scale, n_b)
+    meaningful_indices_B = np.array([5, 6, 7, 8, 9])
+
+    # Pop C: Complex conditional logic (XOR-like patterns)
+    idx_c_start = n_a + n_b
+    idx_c_end = n_a + n_b + n_c
+    X_pop_c = X_all[idx_c_start:idx_c_end, :]
+    # XOR-like: (X10>0 AND X11<0) OR (X10<0 AND X11>0)
+    xor_effect = ((X_pop_c[:, 10] > 0) & (X_pop_c[:, 11] < 0)) | ((X_pop_c[:, 10] < 0) & (X_pop_c[:, 11] > 0))
+    xor_effect = xor_effect.astype(float) * 5.0
+    
+    # Another complex pattern
+    complex_pattern = np.zeros(n_c)
+    complex_pattern[(X_pop_c[:, 12] > 0.5) & (X_pop_c[:, 13] > 0.5)] = 4.0
+    complex_pattern[(X_pop_c[:, 12] < -0.5) & (X_pop_c[:, 13] < -0.5)] = -4.0
+    
+    Y_all[idx_c_start:idx_c_end] = xor_effect + complex_pattern + np.random.normal(0, noise_scale, n_c)
+    meaningful_indices_C = np.array([10, 11, 12, 13])
+
+    # Pop D: Non-linear transformations
+    idx_d_start = n_a + n_b + n_c
+    X_pop_d = X_all[idx_d_start:, :]
+    sine_effect = 5.0 * np.sin(3.0 * X_pop_d[:, 14])  # Sinusoidal effect
+    exp_effect = 4.0 * np.exp(-np.abs(X_pop_d[:, 15]))  # Exponential effect
+    cubic_effect = 2.0 * np.power(X_pop_d[:, 16], 3)  # Cubic effect
+    
+    Y_all[idx_d_start:] = sine_effect + exp_effect + cubic_effect + np.random.normal(0, noise_scale * 1.5, n_d)
+    meaningful_indices_D = np.array([14, 15, 16])
+
+    # Add heavy-tailed noise to a random subset to create outlier challenges
+    outlier_indices = np.random.choice(dataset_size, size=int(dataset_size * 0.05), replace=False)
+    Y_all[outlier_indices] += np.random.standard_t(df=3, size=len(outlier_indices)) * noise_scale * 3
+
+    pop_data = [
+        {'pop_id': 'A', 'X_raw': X_pop_a, 'Y_raw': Y_all[:idx_a_end], 'meaningful_indices': meaningful_indices_A},
+        {'pop_id': 'B', 'X_raw': X_pop_b, 'Y_raw': Y_all[idx_b_start:idx_b_end], 'meaningful_indices': meaningful_indices_B},
+        {'pop_id': 'C', 'X_raw': X_pop_c, 'Y_raw': Y_all[idx_c_start:idx_c_end], 'meaningful_indices': meaningful_indices_C},
+        {'pop_id': 'D', 'X_raw': X_pop_d, 'Y_raw': Y_all[idx_d_start:], 'meaningful_indices': meaningful_indices_D}
+    ]
+    return pop_data
 
 # Add other v2 scenarios here if needed, following the pattern...
 # generate_baseline_failure_4...
@@ -552,6 +681,10 @@ def get_pop_data_baseline_failures( # Renamed main getter function
         )
     # Add other elif blocks for other v2 scenarios if you implement them
     # elif baseline_type == 'baseline_failure_4': ...
+    elif baseline_type == 'baseline_failure_9':
+        pop_data_generated = generate_baseline_failure_9(
+            dataset_size=dataset_size, n_features=n_features, noise_scale=noise_scale, seed=seed
+        )
     else:
         raise ValueError(f"Unknown V2 dataset type: {baseline_type}")
 

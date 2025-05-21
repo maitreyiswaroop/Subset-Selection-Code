@@ -125,7 +125,7 @@ def prepare_adult_dataset(df):
     # Convert income to binary numeric target
     # df['income_binary'] = (df['income'] == '>50K').astype(float)
     df['income_binary'] = df['income']
-    
+
     return df
 
 
@@ -135,6 +135,7 @@ def generate_data_uci(
     target="income_binary",
     save_dir=None,
     categorical_encoding=None,  # None, 'onehot', or 'label'
+    force_regenerate=False,
 ):
     """
     Load UCI Adult data, filter to specified populations,
@@ -150,19 +151,25 @@ def generate_data_uci(
     """
     # ----------------------------------------------------------------
     # If save_dir is set and contains all pickles, just load & return them
-    if save_dir:
+    if save_dir and not force_regenerate:
+        # Use population names in cache key
+        pop_key = "_".join(sorted(populations))
+        pop_cache_dir = os.path.join(save_dir, f"pop_{pop_key}")
+        os.makedirs(pop_cache_dir, exist_ok=True)
+        
         expected = [
             "X_all.pkl", "Y_all.pkl",
             "Xs.pkl",    "Ys.pkl",
             "feature_cols.pkl", "populations.pkl"
         ]
-        if all(os.path.isfile(os.path.join(save_dir, fn)) for fn in expected):
-            X_all_path = os.path.join(save_dir, "X_all.pkl")
-            Y_all_path = os.path.join(save_dir, "Y_all.pkl")
-            Xs_path    = os.path.join(save_dir, "Xs.pkl")
-            Ys_path    = os.path.join(save_dir, "Ys.pkl")
-            feats_path = os.path.join(save_dir, "feature_cols.pkl")
-            pops_path  = os.path.join(save_dir, "populations.pkl")
+        
+        if all(os.path.isfile(os.path.join(pop_cache_dir, fn)) for fn in expected):
+            X_all_path = os.path.join(pop_cache_dir, "X_all.pkl")
+            Y_all_path = os.path.join(pop_cache_dir, "Y_all.pkl")
+            Xs_path    = os.path.join(pop_cache_dir, "Xs.pkl")
+            Ys_path    = os.path.join(pop_cache_dir, "Ys.pkl")
+            feats_path = os.path.join(pop_cache_dir, "feature_cols.pkl")
+            pops_path  = os.path.join(pop_cache_dir, "populations.pkl")
 
             with open(X_all_path,    "rb") as f: X_all         = pickle.load(f)
             with open(Y_all_path,    "rb") as f: Y_all         = pickle.load(f)
@@ -171,7 +178,7 @@ def generate_data_uci(
             with open(feats_path,    "rb") as f: feature_cols  = pickle.load(f)
             with open(pops_path,     "rb") as f: populations   = pickle.load(f)
 
-            print(f"Loaded cached UCI Adult data from {save_dir}")
+            print(f"Loaded cached UCI Adult data from {pop_cache_dir}")
             return X_all, Y_all, Xs, Ys, feature_cols, populations
     # ----------------------------------------------------------------
 
@@ -179,6 +186,10 @@ def generate_data_uci(
     train_path, test_path = download_adult_dataset()
     df = load_adult_dataset(train_path, test_path)
     df = prepare_adult_dataset(df)
+    
+    # Fix: Convert income_binary to numeric type
+    if target == "income_binary":
+        df['income_binary'] = (df['income'] == '>50K').astype(float)
     
     # Check if target column exists
     if target not in df.columns:
@@ -238,7 +249,7 @@ def generate_data_uci(
     Y_all = df[target].to_numpy()
     
     # Drop any rows where the target is NaN
-    non_nan_mask = ~np.isnan(Y_all)
+    non_nan_mask = ~pd.isnull(Y_all)
     if not non_nan_mask.all():
         print(f"Dropping {np.count_nonzero(~non_nan_mask)} rows with NaN target")
     X_all = X_all[non_nan_mask]
@@ -290,18 +301,22 @@ def generate_data_uci(
 
     # Optionally save
     if save_dir:
-        os.makedirs(save_dir, exist_ok=True)
-        with open(os.path.join(save_dir, "X_all.pkl"), "wb") as f:
+        # Create population-specific cache directory
+        pop_key = "_".join(sorted(populations))
+        pop_cache_dir = os.path.join(save_dir, f"pop_{pop_key}")
+        os.makedirs(pop_cache_dir, exist_ok=True)
+        
+        with open(os.path.join(pop_cache_dir, "X_all.pkl"), "wb") as f:
             pickle.dump(X_all, f)
-        with open(os.path.join(save_dir, "Y_all.pkl"), "wb") as f:
+        with open(os.path.join(pop_cache_dir, "Y_all.pkl"), "wb") as f:
             pickle.dump(Y_all, f)
-        with open(os.path.join(save_dir, "Xs.pkl"), "wb") as f:
+        with open(os.path.join(pop_cache_dir, "Xs.pkl"), "wb") as f:
             pickle.dump(Xs, f)
-        with open(os.path.join(save_dir, "Ys.pkl"), "wb") as f:
+        with open(os.path.join(pop_cache_dir, "Ys.pkl"), "wb") as f:
             pickle.dump(Ys, f)
-        with open(os.path.join(save_dir, "feature_cols.pkl"), "wb") as f:
+        with open(os.path.join(pop_cache_dir, "feature_cols.pkl"), "wb") as f:
             pickle.dump(feature_cols, f)
-        with open(os.path.join(save_dir, "populations.pkl"), "wb") as f:
+        with open(os.path.join(pop_cache_dir, "populations.pkl"), "wb") as f:
             pickle.dump(populations, f)
     
     return X_all, Y_all, Xs, Ys, feature_cols, populations
@@ -432,29 +447,72 @@ def get_uci_pop_data(
     seed=42,
     save_dir='./data_uci',
     categorical_encoding=None,
+    force_regenerate=False,
+    exclude_population_features=True,
 ):
     """
-    Return population data dicts in the same format as data_baseline_failures:
-      - 'pop_id': population name
-      - 'X_raw': raw feature array
-      - 'Y_raw': raw label array
-      - 'meaningful_indices': None (unknown for real data)
+    Return population data dicts for the specified populations
     """
     pop_list = populations or list(POPULATION_GROUPS.keys())
+    print(f"Using explicitly provided UCI populations: {pop_list}")
     np.random.seed(seed)
     
+    population_defining_features = set()
+    if exclude_population_features:
+        for pop_name in pop_list:
+            if pop_name in POPULATION_GROUPS:
+                # Add the criteria columns to the set of population-defining features
+                population_defining_features.update(POPULATION_GROUPS[pop_name].keys())
+        
+        print(f"Will exclude these population-defining features: {population_defining_features}")
+
+    custom_feature_cols = None
+    if exclude_population_features and feature_cols is None:
+        # Start with default features
+        custom_feature_cols = [
+            'age', 'education_num', 'capital_gain', 'capital_loss', 'hours_per_week',
+            'workclass', 'marital_status', 'occupation', 'relationship', 'race', 'sex'
+        ]
+        # Remove population-defining features
+        custom_feature_cols = [f for f in custom_feature_cols 
+                              if f not in population_defining_features]
+        print(f"Using custom feature columns (excluded population features): {custom_feature_cols}")
+
     try:
         X_all, Y_all, Xs, Ys, feats, pops = generate_data_uci(
             populations=pop_list,
-            feature_cols=feature_cols,
+            feature_cols=custom_feature_cols,
             target=target,
             save_dir=save_dir,
             categorical_encoding=categorical_encoding,
+            force_regenerate=force_regenerate  # Pass this parameter through
         )
     except Exception as e:
         print(f"Error generating data: {e}")
         raise
     
+    # Further filter one-hot encoded features if needed
+    if exclude_population_features and categorical_encoding == 'onehot':
+        # Find feature indexes to keep (exclude one-hot encoded population features)
+        feat_indices_to_keep = []
+        for i, feat in enumerate(feats):
+            # Check if this is a one-hot encoded population feature
+            is_pop_feature = False
+            for pop_feat in population_defining_features:
+                if feat.startswith(f"{pop_feat}_"):
+                    is_pop_feature = True
+                    break
+            
+            if not is_pop_feature:
+                feat_indices_to_keep.append(i)
+        
+        # Filter features by index
+        if len(feat_indices_to_keep) < len(feats):
+            print(f"Filtering out {len(feats) - len(feat_indices_to_keep)} one-hot encoded population features")
+            feats = [feats[i] for i in feat_indices_to_keep]
+            X_all = X_all[:, feat_indices_to_keep]
+            Xs = [X[:, feat_indices_to_keep] if X.size > 0 else X for X in Xs]
+            
     # Check if any population has empty data
     empty_pops = [pop for pop, X, y in zip(pops, Xs, Ys) if X.size == 0 or y.size == 0]
     if empty_pops:

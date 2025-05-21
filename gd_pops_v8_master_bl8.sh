@@ -28,25 +28,25 @@ for t2 in "${t2_types[@]}"; do
         sleep 60
         joc_count=$(squeue -u mswaroop | wc -l)
       done
-      SAVE_PATH="/data/user_data/mswaroop/Subset-Selection-Code/results_v8/${t2}/${population}/"
+      SAVE_PATH="/Users/mswaroop/Desktop/Projects/Bryan/Subset_selection/Subset-Selection-Code/results_v8/${t2}/${population}/final/"
       mkdir -p "$SAVE_PATH" "logs"
-      sbatch gd_pops_v8_task.sh \
+      bash gd_pops_v8_task.sh \
         --populations $population $population $population  \
         --m1 4 \
         --m 20 \
         --dataset-size 16000 \
-        --baseline-data-size 30000 \
+        --baseline-data-size 36000 \
         --noise-scale 0.1 \
         --corr-strength 0.1 \
-        --num-epochs 150 \
+        --num-epochs 80 \
         --budget 10 \
         --penalty-type Reciprocal_L1 \
-        --penalty-lambda 0.001 \
-        --learning-rate 0.05 \
+        --penalty-lambda 0.05 \
+        --learning-rate 0.02 \
         --optimizer-type adam \
         --parameterization theta \
-        --alpha-init random_1 \
-        --patience 20 \
+        --alpha-init random_2 \
+        --patience 10 \
         --gradient-mode autograd \
         --t2-estimator-type $t2 \
         --N-grad-samples $N_GRAD_SAMPLES \
@@ -55,12 +55,13 @@ for t2 in "${t2_types[@]}"; do
         --objective-value-estimator if \
         --k-kernel 1000 \
         --scheduler-type CosineAnnealingLR \
-        --scheduler-t-max 150 \
-        --scheduler-min-lr 1e-6 \
+        --scheduler-t-max 80 \
+        --scheduler-min-lr 1e-5 \
         --seed $seed \
         --save-path $SAVE_PATH \
         --verbose \
-        --param-freezing
+        --param-freezing \
+        --smooth-minmax 10
       sleep 10
     done
   done
