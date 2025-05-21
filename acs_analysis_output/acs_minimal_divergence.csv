@@ -1,0 +1,5 @@
+population_split,outcome,importance_divergence,populations
+sex,PINCP,0.5240501909204689,"['Male', 'Female']"
+race,PINCP,0.5161002680943808,"['White', 'Black']"
+sex,PINCP,0.44039596700888184,"['Male', 'Female']"
+race,PINCP,0.35359441989827317,"['White', 'Black']"

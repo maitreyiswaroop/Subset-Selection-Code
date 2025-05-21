@@ -1,0 +1,26 @@
+\begin{table}[htbp]
+\centering
+\caption{Average Performance Metrics Across Runs}
+\label{tab:results-comparison}
+\begin{tabular}{lrrrrr}
+\toprule
+Source & Population & Mse & R2 & Mse Std & R2 Std \\
+\midrule
+baseline_dro_lasso & CA & 2.6049e-01 & 0.7576 & 7.5879e-02 & 0.0670 \\
+baseline_dro_lasso & FL & 3.1805e-01 & 0.6885 & 5.4140e-02 & 0.0563 \\
+baseline_dro_lasso & NY & 2.2609e-01 & 0.7656 & 1.3237e-01 & 0.0635 \\
+baseline_dro_xgb & CA & 1.0628e+00 & 0.0199 & 1.7407e-01 & 0.0789 \\
+baseline_dro_xgb & FL & 1.0919e+00 & -0.0490 & 2.6182e-01 & 0.0780 \\
+baseline_dro_xgb & NY & 1.0581e+00 & -0.0990 & 4.7937e-01 & 0.0601 \\
+baseline_lasso & CA & 6.0351e-01 & 0.4332 & 4.0997e-01 & 0.3809 \\
+baseline_lasso & FL & 6.2838e-01 & 0.3585 & 3.0875e-01 & 0.3732 \\
+baseline_lasso & NY & 6.6770e-01 & 0.3726 & 6.5369e-01 & 0.4450 \\
+baseline_xgb & CA & 1.0218e+00 & 0.0503 & 1.0974e-01 & 0.1043 \\
+baseline_xgb & FL & 1.0982e+00 & -0.0523 & 2.8648e-01 & 0.0997 \\
+baseline_xgb & NY & 1.0219e+00 & -0.0695 & 4.2603e-01 & 0.0575 \\
+our_method & CA & 1.6164e-02 & 0.9853 & 1.2416e-02 & 0.0103 \\
+our_method & FL & 1.7173e-02 & 0.9835 & 9.7996e-03 & 0.0092 \\
+our_method & NY & 4.0308e-02 & 0.9669 & 5.1794e-02 & 0.0305 \\
+\bottomrule
+\end{tabular}
+\end{table}

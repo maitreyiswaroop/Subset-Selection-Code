@@ -1,5 +1,5 @@
 # gd_pops_v8.py: Variable Selection with Optional Theta Reparameterization and Advanced T2 Estimator
-# for ASC data handling
+# for ACS data handling
 """
 Performs variable subset selection using gradient descent.
 Version 8 introduces an optional IF-like T2 estimator for gradient computation.
@@ -28,7 +28,7 @@ from sklearn.kernel_ridge import KernelRidge
 from sklearn.model_selection import KFold
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, roc_auc_score, f1_score
-from sklearn.metrics import f1_score, precision_score, recall_score, mean_squared_error, r2_score
+from sklearn.metrics import f1_score, precision_score, recall_score, mean_squared_error, r2_score, log_loss
 import argparse
 from torch.utils.data import DataLoader
 import re
@@ -45,7 +45,7 @@ from downstream_models import (
 try:
     from data import generate_data_continuous, generate_data_continuous_with_corr
     from data_baseline_failures import get_pop_data_baseline_failures
-    from data_asc import get_asc_pop_data
+    from data_acs import get_acs_pop_data
     from data_uci import get_uci_pop_data
     from estimators import (
         plugin_estimator_conditional_mean,
@@ -215,9 +215,9 @@ def get_pop_data(pop_configs, m1, m, dataset_size=15000, noise_scale=0.0, corr_s
         print(f"Population {i} - Test/Val Data: X shape: {pop_data['X_std'].shape}, Y shape: {pop_data['Y_std'].shape}")
     return pop_data_list, pop_data_list_test_val
 
-def get_pop_data_asc(pop_configs, m1, m, 
+def get_pop_data_acs(pop_configs, m1, m, 
                      dataset_size=10000, 
-                     asc_data_fraction=0.5, # Fraction of data to use for ASC
+                     acs_data_fraction=0.5, # Fraction of data to use for ASC
                      estimator_type="plugin", device="cpu", 
                      base_model_type="rf", seed=None):
     """
@@ -236,7 +236,7 @@ def get_pop_data_asc(pop_configs, m1, m,
         pop_id = pop_config.get('pop_id', i); 
         # subsample the data to dataset_size
         idx = rng.permutation(pop_config['X_raw'].shape[0])
-        indices = idx[:int(pop_config['X_raw'].shape[0] * asc_data_fraction)]
+        indices = idx[:int(pop_config['X_raw'].shape[0] * acs_data_fraction)]
         X_np = pop_config['X_raw'][indices]
         Y_np = pop_config['Y_raw'][indices]
         X_np_test_val = np.delete(pop_config['X_raw'], indices, axis=0)
@@ -331,7 +331,7 @@ def create_results_dataframe(results, args_dict, save_path=None):
 
 def run_variable_selection(
     pop_data: List[Dict], m1: int, m: int, dataset_size: int = 5000,
-    asc_data_fraction: float = 0.5, # Fraction of data to use for ASC
+    acs_data_fraction: float = 0.5, # Fraction of data to use for ASC
     noise_scale: float = 0.1, corr_strength: float = 0.0,
     num_epochs: int = 100, budget: Optional[int] = None,
     penalty_type: Optional[str] = None, penalty_lambda: float = 0.0,
@@ -731,7 +731,7 @@ def run_variable_selection(
 def run_experiment_multi_population(
     pop_configs: List[Dict], m1: int, m: int, dataset_size: int = 5000,
     baseline_data_size: int = 15000,
-    asc_data_fraction: float = 0.25, # Fraction of data to use for ASC
+    acs_data_fraction: float = 0.25, # Fraction of data to use for ASC
     noise_scale: float = 0.1, corr_strength: float = 0.0,
     num_epochs: int = 100, budget: Optional[int] = None,
     penalty_type: Optional[str] = None, penalty_lambda: float = 0.0,
@@ -789,22 +789,23 @@ def run_experiment_multi_population(
         print(f"Meaningful indices: {meaningful_indices_list}")
         print(f"Budget: {budget}")
     elif any('asc' in pop_config['dataset_type'].lower() for pop_config in pop_configs):
-        # Use ASC data generation function
-        pop_data = get_asc_pop_data()
-        pop_data, pop_data_test_val = get_pop_data_asc(
+        # Use ACS data generation function
+        pop_data = get_acs_pop_data()
+        pop_data, pop_data_test_val = get_pop_data_acs(
             pop_configs=pop_data, m1=m1, m=m, dataset_size=dataset_size,
-            asc_data_fraction=asc_data_fraction,
+            acs_data_fraction=acs_data_fraction,
             estimator_type=estimator_type, device=device,
             base_model_type=base_model_type, seed=seed
         )
-        print(f"ASC data generated with {len(pop_data)} populations.")
-        print(f"Setting the dim to number of features in the ASC data: {len(pop_data[0]['X_raw'][0])}")
+        print(f"ACS data generated with {len(pop_data)} populations.")
+        print(f"Setting the dim to number of features in the ACS data: {len(pop_data[0]['X_raw'][0])}")
         m=len(pop_data[0]['X_raw'][0])
-        print(f"ASC data generated with {len(pop_data)} populations.")
+        print(f"ACS data generated with {len(pop_data)} populations.")
     elif any('uci' in pop_config['dataset_type'].lower() for pop_config in pop_configs):
         is_classification = True
         # Extract specific population groups you want
-        pop_groups = ["Young", "Middle", "Senior"]  # Age-based populations
+        # pop_groups = ["Young", "Middle", "Senior"]  # Age-based populations
+        pop_groups = ["Male", "Female"]
         
         # Get UCI Adult data with these populations
         pop_data = get_uci_pop_data(
@@ -887,7 +888,7 @@ def run_experiment_multi_population(
     # VARIABLE SELECTION BEGINS
     variable_selection_results = run_variable_selection(
         pop_data=pop_data, m1=m1, m=m, dataset_size=dataset_size,
-        asc_data_fraction=asc_data_fraction, noise_scale=noise_scale,
+        acs_data_fraction=acs_data_fraction, noise_scale=noise_scale,
         corr_strength=corr_strength, num_epochs=num_epochs,
         budget=budget, penalty_type=penalty_type, penalty_lambda=penalty_lambda,
         learning_rate=learning_rate, optimizer_type=optimizer_type,
@@ -950,11 +951,13 @@ def run_experiment_multi_population(
             Y_pred = model.predict(X_test_pop)
             if is_classification:
                 downstream_accuracy = accuracy_score(Y_test_pop, Y_pred)
+                logloss = log_loss(Y_test_pop, Y_pred)
                 baseline_lasso_results.append({
                     'pop_id': pop['pop_id'],
                     'downstream_accuracy': downstream_accuracy,
                     'selected_indices': baseline_lasso_top_indices,
-                    'source' : 'baseline_lasso'
+                    'source' : 'baseline_lasso',
+                    'logloss': logloss
                 })
             else:
                 mse = mean_squared_error(Y_test_pop, Y_pred)
@@ -987,11 +990,13 @@ def run_experiment_multi_population(
             Y_pred = model.predict(X_test_pop)
             if is_classification:
                 downstream_accuracy = accuracy_score(Y_test_pop, Y_pred)
+                logloss = log_loss(Y_test_pop, Y_pred)
                 baseline_dro_lasso_results.append({
                     'pop_id': pop['pop_id'],
                     'downstream_accuracy': downstream_accuracy,
                     'selected_indices': baseline_dro_lasso_top_indices,
-                    'source' : 'baseline_dro_lasso'
+                    'source' : 'baseline_dro_lasso',
+                    'logloss': logloss
                 })
             else:
                 mse = mean_squared_error(Y_test_pop, Y_pred)
@@ -1025,11 +1030,13 @@ def run_experiment_multi_population(
             Y_pred = model.predict(X_test_pop)
             if is_classification:
                 downstream_accuracy = accuracy_score(Y_test_pop, Y_pred)
+                logloss = log_loss(Y_test_pop, Y_pred)
                 baseline_xgb_results.append({
                     'pop_id': pop['pop_id'],
                     'downstream_accuracy': downstream_accuracy,
                     'selected_indices': baseline_xgb_top_indices,
-                    'source' : 'baseline_xgb'
+                    'source' : 'baseline_xgb',
+                    'logloss': logloss
                 })
             else:
                 mse = mean_squared_error(Y_test_pop, Y_pred)
@@ -1063,11 +1070,13 @@ def run_experiment_multi_population(
             Y_pred = model.predict(X_test_pop)
             if is_classification:
                 downstream_accuracy = accuracy_score(Y_test_pop, Y_pred)
+                logloss = log_loss(Y_test_pop, Y_pred)
                 baseline_dro_xgb_results.append({
                     'pop_id': pop['pop_id'],
                     'downstream_accuracy': downstream_accuracy,
                     'selected_indices': baseline_dro_xgb_top_indices,
-                    'source' : 'baseline_dro_xgb'
+                    'source' : 'baseline_dro_xgb',
+                    'logloss': logloss
                 })
             else:
                 mse = mean_squared_error(Y_test_pop, Y_pred)
@@ -1104,7 +1113,8 @@ def run_experiment_multi_population(
                     'pop_id': pop['pop_id'],
                     'downstream_accuracy': downstream_accuracy,
                     'selected_indices': our_top_indices,
-                    'source' : 'our_method'
+                    'source' : 'our_method',
+                    'logloss': log_loss(Y_test_pop, Y_pred)
                 })
             else:
                 mse = mean_squared_error(Y_test_pop, Y_pred)
@@ -1277,7 +1287,7 @@ def parse_args():
     parser.add_argument('--m', type=int, default=20)
     parser.add_argument('--dataset-size', type=int, default=5000)
     parser.add_argument('--baseline-data-size', type=int, default=15000)
-    parser.add_argument('--asc-data-fraction', type=float, default=0.2)
+    parser.add_argument('--acs-data-fraction', type=float, default=0.2)
     parser.add_argument('--noise-scale', type=float, default=0.1)
     parser.add_argument('--corr-strength', type=float, default=0.0)
     parser.add_argument('--populations', nargs='+', default=['linear_regression', 'sinusoidal_regression'])
@@ -1363,7 +1373,7 @@ def main():
     results = run_experiment_multi_population(
         pop_configs=pop_configs, m1=args.m1, m=args.m, dataset_size=args.dataset_size,
         baseline_data_size=args.baseline_data_size,
-        asc_data_fraction=args.asc_data_fraction,
+        acs_data_fraction=args.acs_data_fraction,
         noise_scale=args.noise_scale, corr_strength=args.corr_strength, num_epochs=args.num_epochs,
         budget=args.budget, penalty_type=args.penalty_type, penalty_lambda=args.penalty_lambda,
         learning_rate=args.learning_rate, optimizer_type=args.optimizer_type,

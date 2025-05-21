@@ -1,0 +1,66 @@
+{
+  "data_loaded": true,
+  "our_method_complete": true,
+  "baselines_complete": true,
+  "downstream_eval_complete": true,
+  "run_params": {
+    "resume": null,
+    "save_path": "/data/user_data/mswaroop/Subset-Selection-Code/results_v10/mc_plugin/29/",
+    "populations": [
+      "uci",
+      "uci"
+    ],
+    "m1": 10,
+    "m": 100,
+    "dataset_size": 48842,
+    "noise_scale": 0.1,
+    "corr_strength": 0.0,
+    "estimator_type": "plugin",
+    "base_model_type": "xgb",
+    "acs_data_fraction": 0.5,
+    "force_regenerate_data": true,
+    "budget": 10,
+    "parameterization": "theta",
+    "learning_rate": 0.01,
+    "optimizer_type": "adam",
+    "alpha_init": "random_5",
+    "num_epochs": 100,
+    "penalty_type": "Reciprocal_L1",
+    "penalty_lambda": 0.0001,
+    "patience": 15,
+    "param_freezing": true,
+    "smooth_minmax": "Infinity",
+    "gradient_mode": "autograd",
+    "t2_estimator_type": "mc_plugin",
+    "N_grad_samples": 25,
+    "use_baseline": false,
+    "objective_value_estimator": "if",
+    "k_kernel": 500,
+    "lasso_alpha": 0.1,
+    "seed": 29,
+    "uci_populations": [
+      "Male",
+      "Female"
+    ],
+    "exclude_population_features": false,
+    "pop_configs": [
+      {
+        "pop_id": 0,
+        "dataset_type": "uci"
+      },
+      {
+        "pop_id": 1,
+        "dataset_type": "uci"
+      }
+    ],
+    "script_version": "v10.0_modular",
+    "final_save_path": "/data/user_data/mswaroop/Subset-Selection-Code/results_v10/mc_plugin/29/run_1/"
+  },
+  "stage_paths": {
+    "data": "/data/user_data/mswaroop/Subset-Selection-Code/results_v10/mc_plugin/29/run_1/data_checkpoint.pkl",
+    "our_method_intermediate": "/data/user_data/mswaroop/Subset-Selection-Code/results_v10/mc_plugin/29/run_1/our_method_checkpoint_epoch70.pkl",
+    "our_method": "/data/user_data/mswaroop/Subset-Selection-Code/results_v10/mc_plugin/29/run_1/our_method_checkpoint.pkl",
+    "baselines": "/data/user_data/mswaroop/Subset-Selection-Code/results_v10/mc_plugin/29/run_1/baselines_checkpoint.pkl",
+    "downstream_eval": "/data/user_data/mswaroop/Subset-Selection-Code/results_v10/mc_plugin/29/run_1/downstream_eval_checkpoint.pkl"
+  }
+}

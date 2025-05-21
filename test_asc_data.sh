@@ -31,7 +31,7 @@ fi
 
 # --- Script Execution ---
 SCRIPT_DIR="/data/user_data/mswaroop/Subset-Selection-Code"
-SCRIPT_NAME="data_asc.py"
+SCRIPT_NAME="data_acs.py"
 SCRIPT_PATH="$SCRIPT_DIR/$SCRIPT_NAME"
 
 # Define a specific, writable cache directory for folktables data
@@ -44,7 +44,7 @@ FOLK_SURVEY="person"
 FOLK_HORIZON="1-Year"
 TARGET_COL="PINCP"
 # FEATURES_TO_PLOT="AGEP WKHP"
-PLOT_DIR="$SCRIPT_DIR/data_asc_plots"
+PLOT_DIR="$SCRIPT_DIR/data_acs_plots"
 YEAR="2018"
 
 # Debug info
@@ -66,7 +66,7 @@ PARAMS="--states $ACS_STATES_CHOICE \
     --plot_dir $PLOT_DIR"
 
 echo "----------------------------------------"
-echo "Running data_asc.py with parameters:"
+echo "Running data_acs.py with parameters:"
 echo "$PARAMS"
 echo "----------------------------------------"
 

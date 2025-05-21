@@ -32,7 +32,7 @@ for learning_rate in "${learningrates[@]}"; do
         --m 20 \
         --dataset-size 5000 \
         --noise-scale 0.1 \
-        --asc-data-fraction 0.5 \
+        --acs-data-fraction 0.5 \
         --corr-strength 0.1 \
         --num-epochs 50 \
         --budget 50 \

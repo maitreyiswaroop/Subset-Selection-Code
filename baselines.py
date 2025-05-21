@@ -116,12 +116,14 @@ def baseline_lasso_comparison(
                 penalty='l1', 
                 solver='liblinear',  # Efficient solver for L1
                 fit_intercept=False,
-                max_iter=10000,
-                random_state=seed
+                max_iter=20000,
+                random_state=seed,
+                tol=1e-6
             )
         else:
             # For regression, use Lasso as before
-            model = Lasso(alpha=current_alpha, fit_intercept=False, max_iter=10000, tol=1e-4)
+            # to avoid warnings about convergence
+            model = Lasso(alpha=current_alpha, fit_intercept=False, max_iter=10000, tol=1e-6)
         
         model.fit(X_std, Y_std)
         
@@ -318,8 +320,9 @@ def baseline_dro_lasso_comparison(
                 penalty='l1',
                 solver='liblinear',
                 fit_intercept=False,
-                max_iter=10000,
-                random_state=seed
+                max_iter=20000,
+                random_state=seed,
+                tol=tol
             )
         else:
             model = Lasso(alpha=current_alpha, fit_intercept=False, max_iter=10000, tol=tol)

@@ -37,7 +37,7 @@ import pandas as pd
 try:
     from data import generate_data_continuous, generate_data_continuous_with_corr
     from data_baseline_failures import get_pop_data_baseline_failures
-    from data_asc import get_asc_pop_data
+    from data_acs import get_acs_pop_data
     from estimators import (
         plugin_estimator_conditional_mean,
         plugin_estimator_squared_conditional,
@@ -296,8 +296,8 @@ def run_experiment_multi_population(
             base_model_type=base_model_type, seed=seed
         )
     elif any('asc' in pop_config['dataset_type'].lower() for pop_config in pop_configs):
-        # Use ASC data generation function
-        pop_data = get_asc_pop_data(
+        # Use ACS data generation function
+        pop_data = get_acs_pop_data(
             pop_configs=pop_configs, dataset_size=dataset_size,
             n_features=m, noise_scale=noise_scale, corr_strength=corr_strength,
             estimator_type=estimator_type, device=device,

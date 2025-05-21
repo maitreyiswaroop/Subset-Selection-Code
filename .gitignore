@@ -9,7 +9,7 @@ optuna_studies/
 logs/
 folktables_data_storage/
 data_regression_plots/
-data_asc/
+data_acs/
 data/
 
 # Python basics
@@ -22,3 +22,8 @@ __pycache__/
 # Results
 results/
 *.png
+
+data_cache/
+results_v8/
+results_v9/
+results_v10/
